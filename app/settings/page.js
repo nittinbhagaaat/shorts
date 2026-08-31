@@ -467,6 +467,42 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* SECTION 4: YouTube Authentication (Optional) */}
+          <div className="glass-panel rounded-2xl p-6 md:p-8 space-y-6 border border-white/8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-[10px] bg-[#2cb7d3]/20 text-[#2cb7d3] flex items-center justify-center font-mono text-sm border border-[#2cb7d3]/30">
+                    4
+                  </span>
+                  YouTube Authentication & Cookies (Optional)
+                </h2>
+                <p className="text-[#909cac] text-xs font-light mt-1">
+                  Automatic stream bypass is enabled by default. If you need to render age-restricted or private videos, paste your YouTube cookies here.
+                </p>
+              </div>
+              <span className="text-[10px] text-[#909cac] bg-white/5 px-2.5 py-1 rounded-[10px] border border-white/5 w-fit">
+                Optional
+              </span>
+            </div>
+
+            <div className="p-4 rounded-[10px] bg-[#15181b] border border-white/8 space-y-2">
+              <label className="block text-xs font-semibold text-white">
+                Netscape cookies.txt content (<span className="font-mono text-[#909cac]">youtube_cookies</span>)
+              </label>
+              <textarea
+                rows={3}
+                value={formData.youtube_cookies || ''}
+                onChange={(e) => handleChange('youtube_cookies', e.target.value)}
+                placeholder="# Netscape HTTP Cookie File&#10;.youtube.com  TRUE  /  TRUE  1799999999  VISITOR_INFO1_LIVE  ..."
+                className="w-full px-4 py-3 bg-[#1d2125] border border-white/10 rounded-[10px] text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/60 resize-y"
+              />
+              <p className="text-[11px] text-[#6e7d91] font-light">
+                Export using browser extensions like <em>Get cookies.txt LOCALLY</em> if accessing age-restricted YouTube videos.
+              </p>
+            </div>
+          </div>
+
           {/* Bottom Action Controls */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/8">
             <button
