@@ -10,6 +10,9 @@ import path from 'path';
 export async function GET(req, { params }) {
   try {
     const settings = extractSettings(req);
+    if (!settings.mongodb_uri || !settings.mongodb_uri.trim()) {
+      return NextResponse.json({ error: 'MongoDB connection string is required' }, { status: 400 });
+    }
     await dbConnect(settings.mongodb_uri);
 
     const resolvedParams = await params;

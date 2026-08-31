@@ -30,11 +30,10 @@ RUN npm run build
 # 5. Create output and temp directories
 RUN mkdir -p public/temp public/outputs
 
-# 6. Expose port and start Next.js production server
-ENV PORT=3000
+# 6. Bind to 0.0.0.0 and dynamic $PORT provided by Render
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV=production
 
-EXPOSE 3000
+EXPOSE 3000 10000
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx next start -H 0.0.0.0 -p ${PORT:-3000}"]

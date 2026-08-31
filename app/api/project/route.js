@@ -114,12 +114,15 @@ export async function POST(req) {
 export async function GET(req) {
   try {
     const settings = extractSettings(req);
+    if (!settings.mongodb_uri || !settings.mongodb_uri.trim()) {
+      return NextResponse.json({ projects: [] });
+    }
     await dbConnect(settings.mongodb_uri);
     
     const projects = await Project.find({}).sort({ createdAt: -1 });
     return NextResponse.json({ projects });
   } catch (error) {
-    console.error('[API PROJECT] Error fetching projects:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('[API PROJECT] MongoDB not connected yet:', error.message);
+    return NextResponse.json({ projects: [] });
   }
 }
