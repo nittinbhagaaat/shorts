@@ -1,5 +1,5 @@
 # Dockerfile for deploying Next.js + FFmpeg (libass) + yt-dlp on Render / Docker
-FROM node:20-bullseye-slim
+FROM node:20-bookworm-slim
 
 # 1. Install system dependencies: FFmpeg with libass support, python3, python3-pip, and curl
 RUN apt-get update && apt-get install -y --no-install-recommends \
