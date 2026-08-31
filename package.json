@@ -3,11 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/ensure-ytdlp.js && next dev",
+    "build": "node scripts/ensure-ytdlp.js && next build",
     "start": "next start",
-    "lint": "eslint",
-    "postinstall": "node scripts/ensure-ytdlp.js"
+    "lint": "eslint"
   },
   "dependencies": {
     "googleapis": "^176.0.0",
