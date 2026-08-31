@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Download and install yt-dlp via both pip and direct executable
-RUN pip3 install --no-cache-dir yt-dlp \
+# 2. Download and install latest standalone yt-dlp binary with symlinks
+RUN pip3 install --no-cache-dir --break-system-packages yt-dlp || true \
     && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp \
     && ln -sf /usr/local/bin/yt-dlp /usr/bin/yt-dlp
