@@ -1,18 +1,21 @@
 # Dockerfile for deploying Next.js + FFmpeg (libass) + yt-dlp on Render / Docker
 FROM node:20-bullseye-slim
 
-# 1. Install system dependencies: FFmpeg with libass support, python3, and curl
+# 1. Install system dependencies: FFmpeg with libass support, python3, python3-pip, and curl
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libass-dev \
     python3 \
+    python3-pip \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Download and install the latest standalone yt-dlp binary
-RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp
+# 2. Download and install yt-dlp via both pip and direct executable
+RUN pip3 install --no-cache-dir yt-dlp \
+    && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
+    && chmod a+rx /usr/local/bin/yt-dlp \
+    && ln -sf /usr/local/bin/yt-dlp /usr/bin/yt-dlp
 
 WORKDIR /app
 

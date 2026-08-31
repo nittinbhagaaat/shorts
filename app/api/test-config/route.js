@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import { spawn } from 'child_process';
-import fs from 'fs';
+import path from 'path';
 
 function testCommand(command, args = ['--version']) {
   return new Promise((resolve) => {
     try {
-      const proc = spawn(command, args);
+      // If command contains spaces like "python3 -m yt_dlp", parse binary and args
+      const parts = command.split(' ');
+      const bin = parts[0];
+      const cmdArgs = parts.length > 1 ? [...parts.slice(1), ...args] : args;
+
+      const proc = spawn(bin, cmdArgs);
       let output = '';
       let errorOutput = '';
 
@@ -71,19 +76,27 @@ async function testAIKey(provider, key) {
 
   try {
     if (provider === 'groq') {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: 'Say OK' }],
-          max_tokens: 5
-        })
-      });
-      if (res.ok) return { ok: true, message: 'Groq API Key valid!' };
+      const callGroq = async (model) => {
+        return fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [{ role: 'user', content: 'Say OK' }],
+            max_tokens: 5
+          })
+        });
+      };
+
+      let res = await callGroq('llama-3.3-70b-versatile');
+      if (!res.ok) {
+        res = await callGroq('llama-3.1-8b-instant');
+      }
+
+      if (res.ok) return { ok: true, message: 'Groq API Key valid! (Free tier active)' };
       const err = await res.json();
       return { ok: false, message: err.error?.message || res.statusText };
     }
@@ -102,21 +115,30 @@ async function testAIKey(provider, key) {
     }
 
     if (provider === 'mistral') {
-      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`
-        },
-        body: JSON.stringify({
-          model: 'mistral-large-latest',
-          messages: [{ role: 'user', content: 'Say OK' }],
-          max_tokens: 5
-        })
-      });
-      if (res.ok) return { ok: true, message: 'Mistral API Key valid!' };
+      const callMistral = async (model) => {
+        return fetch('https://api.mistral.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [{ role: 'user', content: 'Say OK' }],
+            max_tokens: 5
+          })
+        });
+      };
+
+      // Try free-tier mistral-small-latest first, then open-mistral-7b
+      let res = await callMistral('mistral-small-latest');
+      if (!res.ok) {
+        res = await callMistral('open-mistral-7b');
+      }
+
+      if (res.ok) return { ok: true, message: 'Mistral API Key valid! (Free Tier model: mistral-small)' };
       const err = await res.json();
-      return { ok: false, message: err.message || res.statusText };
+      return { ok: false, message: err.message || err.error?.message || res.statusText };
     }
 
     if (provider === 'openai') {
@@ -181,11 +203,14 @@ export async function POST(req) {
     ];
     results.ffmpeg = await resolveAndTestBinary(ffmpeg_path, ffmpegCandidates, ['-version']);
 
-    // 3. Test yt-dlp with server candidates fallback
+    // 3. Test yt-dlp with bundled, system, pip, and candidate paths
+    const bundledYtDlp = path.join(process.cwd(), 'bin', 'yt-dlp');
     const ytDlpCandidates = [
+      bundledYtDlp,
       '/usr/local/bin/yt-dlp',
       '/usr/bin/yt-dlp',
       'yt-dlp',
+      'python3 -m yt_dlp',
       '/opt/homebrew/bin/yt-dlp'
     ];
     results.yt_dlp = await resolveAndTestBinary(yt_dlp_path, ytDlpCandidates, ['--version']);

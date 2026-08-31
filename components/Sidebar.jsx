@@ -74,34 +74,34 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-[#060318]/95 backdrop-blur-2xl border-r border-white/5 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-[#1d2125]/95 backdrop-blur-2xl border-r border-white/8 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Top Branding */}
         <div>
-          <div className="p-6 border-b border-white/5 flex items-center justify-between">
+          <div className="p-6 border-b border-white/8 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-2xl gradient-button flex items-center justify-center shadow-lg shadow-red-600/30 group-hover:scale-105 transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+                <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5 font-sans">
                   ViralClips
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30 uppercase">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#dd2222]/20 text-[#ef9595] font-semibold border border-[#dd2222]/30 uppercase tracking-wide">
                     Studio
                   </span>
                 </span>
-                <p className="text-[11px] text-gray-500 font-light">Shorts & Captions Generator</p>
+                <p className="text-[11px] text-[#909cac] font-light">Shorts &amp; Captions AI</p>
               </div>
             </Link>
 
             {/* Mobile close button */}
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="p-2 text-gray-400 hover:text-white rounded-lg lg:hidden"
+              className="p-2 text-[#909cac] hover:text-white rounded-lg lg:hidden"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -120,27 +120,27 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
                   onClick={() => setIsMobileOpen(false)}
                   className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all group ${
                     isActive
-                      ? 'bg-indigo-600/15 border border-indigo-500/30 text-white shadow-lg shadow-indigo-500/5 font-semibold'
-                      : 'text-gray-400 hover:text-gray-200 hover:bg-white/5 border border-transparent'
+                      ? 'bg-[#dd2222]/15 border border-[#dd2222]/40 text-white shadow-lg shadow-red-600/10 font-semibold'
+                      : 'text-[#909cac] hover:text-white hover:bg-white/5 border border-transparent'
                   }`}
                 >
                   <div
                     className={`p-2 rounded-xl transition-colors ${
                       isActive
-                        ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/30'
-                        : 'bg-white/5 text-gray-400 group-hover:text-white group-hover:bg-white/10'
+                        ? 'bg-[#dd2222] text-white shadow-md shadow-red-600/40'
+                        : 'bg-white/5 text-[#909cac] group-hover:text-white group-hover:bg-white/10'
                     }`}
                   >
                     {item.icon}
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-sm block">{item.name}</span>
-                    <span className="text-[11px] text-gray-500 font-light block group-hover:text-gray-400">
+                    <span className="text-[11px] text-[#6e7d91] font-light block group-hover:text-[#909cac]">
                       {item.description}
                     </span>
                   </div>
                   {isActive && (
-                    <div className="w-1.5 h-6 rounded-full bg-indigo-500 animate-pulse"></div>
+                    <div className="w-1.5 h-6 rounded-full bg-[#dd2222] animate-pulse"></div>
                   )}
                 </Link>
               );
@@ -149,42 +149,42 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
         </div>
 
         {/* Bottom System Health & Configuration Status */}
-        <div className="p-4 border-t border-white/5">
-          <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-2.5">
+        <div className="p-4 border-t border-white/8">
+          <div className="p-3.5 rounded-2xl bg-[#15181b]/80 border border-white/8 space-y-2.5 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Local Engine</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Local Engine</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium">
                 Client Only
               </span>
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <div className="flex items-center justify-between text-gray-400 font-light">
+              <div className="flex items-center justify-between text-[#909cac] font-light">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-                  AI Provider
+                  <span className="w-2 h-2 rounded-full bg-[#dd2222]"></span>
+                  AI Engine
                 </span>
                 <span className="font-semibold text-white uppercase text-[11px]">
                   {activeProvider}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-gray-400 font-light">
+              <div className="flex items-center justify-between text-[#909cac] font-light">
                 <span className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${hasKey ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+                  <span className={`w-2 h-2 rounded-full ${hasKey ? 'bg-emerald-400' : 'bg-[#f59e0b]'}`}></span>
                   API Key
                 </span>
-                <span className={`text-[11px] font-medium ${hasKey ? 'text-emerald-400' : 'text-amber-400'}`}>
+                <span className={`text-[11px] font-medium ${hasKey ? 'text-emerald-400' : 'text-[#f59e0b]'}`}>
                   {hasKey ? 'Configured' : 'Missing'}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-gray-400 font-light">
+              <div className="flex items-center justify-between text-[#909cac] font-light">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span className="w-2 h-2 rounded-full bg-[#2cb7d3]"></span>
                   Storage
                 </span>
-                <span className="text-gray-300 font-mono text-[11px]">
+                <span className="text-[#d7dbe0] font-mono text-[11px]">
                   localStorage
                 </span>
               </div>
@@ -193,7 +193,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
             <Link
               href="/settings"
               onClick={() => setIsMobileOpen(false)}
-              className="w-full mt-2 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/5 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all text-center"
+              className="w-full mt-2 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-[#d7dbe0] hover:text-white border border-white/5 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all text-center"
             >
               <span>⚙️ Manage Settings</span>
             </Link>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
-import { apiFetch, getStoredSettings } from '@/lib/settings-client';
+import { apiFetch, getStoredSettings, isAppConfigured } from '@/lib/settings-client';
 
 export default function HomeDashboard() {
   const router = useRouter();
@@ -46,6 +46,11 @@ export default function HomeDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!url.trim()) return;
+
+    if (!isAppConfigured(settings)) {
+      setError('Please configure your MongoDB URI and at least one AI API key first.');
+      return;
+    }
 
     setIsLoading(true);
     setError('');
@@ -124,53 +129,26 @@ export default function HomeDashboard() {
   };
 
   const activeProvider = settings?.active_ai_provider || 'groq';
-  const hasConfiguredKey = settings && (
-    (activeProvider === 'groq' && settings.groq_api_key) ||
-    (activeProvider === 'gemini' && settings.gemini_api_key) ||
-    (activeProvider === 'mistral' && settings.mistral_api_key) ||
-    (activeProvider === 'openai' && settings.openai_api_key)
-  );
 
   return (
     <DashboardLayout>
       <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 flex flex-col space-y-10">
         
-        {/* Missing API Key Callout Banner */}
-        {!hasConfiguredKey && (
-          <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-200 text-xs sm:text-sm font-medium flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-indigo-500/5 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">⚡</span>
-              <div>
-                <p className="font-semibold text-white">Configure your AI API key for optimal viral clipping</p>
-                <p className="text-gray-400 text-xs font-light">
-                  Add your Groq, Gemini, Mistral, or OpenAI key in Settings. All settings stay 100% in your browser&apos;s localStorage.
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/settings"
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs tracking-wide transition-all shrink-0 text-center"
-            >
-              Configure in Settings →
-            </Link>
-          </div>
-        )}
-
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto space-y-4 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/5 text-indigo-300 text-xs font-semibold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider">
             🚀 Studio AI Clipper &amp; Subtitles
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white">
             Turn Long YouTube Videos Into <span className="gradient-text">Viral Shorts</span>
           </h1>
-          <p className="text-gray-400 text-base sm:text-lg font-light leading-relaxed">
+          <p className="text-[#909cac] text-base sm:text-lg font-light leading-relaxed">
             Paste any YouTube URL. AI extracts top conversational moments (&lt;30s), converts Hindi to Hinglish, crops to 9:16 vertical, and generates animated Alex Hormozi captions.
           </p>
         </div>
 
         {/* Input Panel */}
-        <div className="w-full max-w-3xl mx-auto glass-panel rounded-3xl p-6 md:p-8 shadow-2xl border border-white/10">
+        <div className="w-full max-w-3xl mx-auto glass-panel rounded-3xl p-6 md:p-8 shadow-2xl border border-white/8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <input
@@ -180,11 +158,11 @@ export default function HomeDashboard() {
                 placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=...)"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full px-5 py-4 md:py-5 bg-black/50 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all font-light text-sm md:text-base"
+                className="w-full px-5 py-4 md:py-5 bg-[#15181b]/90 border border-white/10 rounded-2xl text-white placeholder-[#6e7d91] focus:outline-none focus:ring-2 focus:ring-[#dd2222]/50 focus:border-[#dd2222]/60 transition-all font-light text-sm md:text-base"
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-4">
                 {isLoading && (
-                  <svg className="animate-spin h-6 w-6 text-indigo-500" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-6 w-6 text-[#dd2222]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -204,7 +182,7 @@ export default function HomeDashboard() {
             <button
               type="submit"
               disabled={isLoading || !url.trim()}
-              className="w-full py-4 md:py-5 gradient-button rounded-2xl text-white font-semibold text-base md:text-lg hover:shadow-indigo-500/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-4 md:py-5 gradient-button rounded-2xl text-white font-semibold text-base md:text-lg hover:shadow-red-600/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -228,28 +206,28 @@ export default function HomeDashboard() {
 
         {/* Dashboard Metric Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="glass-panel rounded-2xl p-5 border border-white/5 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Total Workspaces</span>
+          <div className="glass-panel rounded-2xl p-5 border border-white/8 space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Total Workspaces</span>
             <div className="text-2xl font-bold text-white">{projects.length}</div>
-            <p className="text-[11px] text-gray-500 font-light">Saved video projects</p>
+            <p className="text-[11px] text-[#6e7d91] font-light">Saved video projects</p>
           </div>
 
-          <div className="glass-panel rounded-2xl p-5 border border-white/5 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Active AI Model</span>
-            <div className="text-2xl font-bold text-indigo-400 uppercase">{activeProvider}</div>
-            <p className="text-[11px] text-gray-500 font-light">{hasConfiguredKey ? 'Key Connected' : 'Default / Fallback'}</p>
+          <div className="glass-panel rounded-2xl p-5 border border-white/8 space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Active AI Engine</span>
+            <div className="text-2xl font-bold text-[#ef9595] uppercase">{activeProvider}</div>
+            <p className="text-[11px] text-[#6e7d91] font-light">Llama 3.3 / Gemini / GPT</p>
           </div>
 
-          <div className="glass-panel rounded-2xl p-5 border border-white/5 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Caption Styles</span>
-            <div className="text-2xl font-bold text-purple-400">3 Types</div>
-            <p className="text-[11px] text-gray-500 font-light">Hormozi, Minimalist, Classic</p>
+          <div className="glass-panel rounded-2xl p-5 border border-white/8 space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Caption Styles</span>
+            <div className="text-2xl font-bold text-[#5ccae1]">3 Types</div>
+            <p className="text-[11px] text-[#6e7d91] font-light">Hormozi, Minimalist, Classic</p>
           </div>
 
-          <div className="glass-panel rounded-2xl p-5 border border-white/5 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Config Storage</span>
+          <div className="glass-panel rounded-2xl p-5 border border-white/8 space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Config Storage</span>
             <div className="text-2xl font-bold text-emerald-400">Local Only</div>
-            <p className="text-[11px] text-gray-500 font-light">Zero server credentials</p>
+            <p className="text-[11px] text-[#6e7d91] font-light">Zero server credentials</p>
           </div>
         </div>
 
@@ -257,7 +235,7 @@ export default function HomeDashboard() {
         <div className="space-y-6 pt-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#dd2222]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Recent Workspaces
@@ -265,7 +243,7 @@ export default function HomeDashboard() {
 
             <Link
               href="/workspaces"
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 transition-all"
+              className="text-xs text-[#ef9595] hover:text-white font-medium flex items-center gap-1 transition-all"
             >
               <span>View all workspaces</span>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -277,30 +255,30 @@ export default function HomeDashboard() {
           {isFetchingProjects ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((n) => (
-                <div key={n} className="glass-card rounded-2xl h-[320px] animate-pulse flex flex-col justify-between p-4">
-                  <div className="bg-white/5 rounded-xl aspect-video w-full mb-4"></div>
+                <div key={n} className="glass-card rounded-3xl h-[320px] animate-pulse flex flex-col justify-between p-4">
+                  <div className="bg-white/5 rounded-2xl aspect-video w-full mb-4"></div>
                   <div className="space-y-2 flex-grow">
                     <div className="h-4 bg-white/5 rounded w-3/4"></div>
                     <div className="h-3 bg-white/5 rounded w-1/2"></div>
                   </div>
-                  <div className="h-10 bg-white/5 rounded-xl w-full mt-4"></div>
+                  <div className="h-10 bg-white/5 rounded-2xl w-full mt-4"></div>
                 </div>
               ))}
             </div>
           ) : projects.length === 0 ? (
             <div className="glass-panel rounded-3xl p-12 text-center max-w-md mx-auto space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mx-auto text-gray-400">
+              <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mx-auto text-[#909cac]">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
                 </svg>
               </div>
-              <h3 className="text-base font-semibold text-gray-200">No workspaces initialized yet</h3>
-              <p className="text-gray-500 text-xs font-light">Paste a YouTube link above to create your first shorts workspace.</p>
+              <h3 className="text-base font-semibold text-[#d7dbe0]">No workspaces initialized yet</h3>
+              <p className="text-[#6e7d91] text-xs font-light">Paste a YouTube link above to create your first shorts workspace.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.slice(0, 6).map((project) => (
-                <div key={project._id} className="glass-card rounded-3xl overflow-hidden flex flex-col justify-between group relative border border-white/5 hover:border-indigo-500/30 transition-all">
+                <div key={project._id} className="glass-card rounded-3xl overflow-hidden flex flex-col justify-between group relative border border-white/8 hover:border-[#dd2222]/40 transition-all">
                   <div className="relative aspect-video w-full overflow-hidden bg-black/40">
                     <img
                       src={project.thumbnail}
@@ -314,7 +292,7 @@ export default function HomeDashboard() {
                         e.stopPropagation();
                         handleDeleteProject(project._id);
                       }}
-                      className="absolute top-2 right-2 p-2 rounded-xl bg-black/70 hover:bg-red-500/80 text-white/80 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer z-20"
+                      className="absolute top-2 right-2 p-2 rounded-xl bg-black/70 hover:bg-red-600 text-white/80 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer z-20"
                       title="Delete Workspace"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -329,11 +307,11 @@ export default function HomeDashboard() {
 
                   <div className="p-5 flex-grow flex flex-col justify-between space-y-3">
                     <div>
-                      <h3 className="text-white font-bold text-sm line-clamp-2 leading-snug group-hover:text-indigo-300 transition-colors mb-1">
+                      <h3 className="text-white font-bold text-sm line-clamp-2 leading-snug group-hover:text-[#ef9595] transition-colors mb-1">
                         {project.title}
                       </h3>
-                      <p className="text-gray-400 text-xs flex items-center gap-1 font-light">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                      <p className="text-[#909cac] text-xs flex items-center gap-1 font-light">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#dd2222]"></span>
                         <span>{project.channel}</span>
                       </p>
                     </div>

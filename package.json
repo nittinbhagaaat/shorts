@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "node scripts/ensure-ytdlp.js"
   },
   "dependencies": {
     "googleapis": "^176.0.0",

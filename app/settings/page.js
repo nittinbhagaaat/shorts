@@ -22,12 +22,18 @@ export default function SettingsPage() {
   }, []);
 
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
     setSaveSuccess(false);
   };
 
   const toggleShowKey = (provider) => {
-    setShowKeys((prev) => ({ ...prev, [provider]: !prev[provider] }));
+    setShowKeys((prev) => ({
+      ...prev,
+      [provider]: !prev[provider],
+    }));
   };
 
   const handleSave = (e) => {
@@ -35,29 +41,27 @@ export default function SettingsPage() {
     try {
       saveStoredSettings(formData);
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3500);
+      setTimeout(() => setSaveSuccess(false), 4000);
     } catch (err) {
-      alert('Failed to save settings to localStorage: ' + err.message);
+      alert('Failed to save settings: ' + err.message);
     }
   };
 
   const handleResetDefaults = () => {
-    if (confirm('Are you sure you want to reset all settings to defaults? Your entered API keys will be cleared from localStorage.')) {
+    if (confirm('Are you sure you want to reset all settings to defaults? Your entered API keys and custom paths will be cleared.')) {
       setFormData({ ...DEFAULT_SETTINGS });
       saveStoredSettings({ ...DEFAULT_SETTINGS });
-      setTestResults(null);
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setTestResults(null);
+      setTimeout(() => setSaveSuccess(false), 4000);
     }
   };
 
   const handleRunDiagnostics = async () => {
     setIsTesting(true);
     setTestResults(null);
-    try {
-      // Auto-save settings first
-      saveStoredSettings(formData);
 
+    try {
       const res = await fetch('/api/test-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -65,13 +69,11 @@ export default function SettingsPage() {
       });
 
       const data = await res.json();
-      if (res.ok) {
-        setTestResults(data.results);
-      } else {
-        alert('Diagnostic test failed: ' + (data.error || res.statusText));
-      }
+      setTestResults(data.results || data);
     } catch (err) {
-      alert('Error running diagnostics: ' + err.message);
+      setTestResults({
+        error: 'Failed to run diagnostics: ' + err.message,
+      });
     } finally {
       setIsTesting(false);
     }
@@ -81,9 +83,9 @@ export default function SettingsPage() {
     {
       id: 'groq',
       name: 'Groq',
-      badge: 'Ultra Fast',
+      badge: 'Ultra Fast / Free',
       model: 'llama-3.3-70b-versatile',
-      color: 'from-orange-500/20 to-amber-500/10 border-orange-500/30 text-orange-300',
+      color: 'from-[#dd2222]/20 to-[#971717]/10 border-[#dd2222]/40 text-[#ef9595]',
       keyField: 'groq_api_key',
       docUrl: 'https://console.groq.com/keys',
       description: 'Llama 3.3 70B with near-instant sub-second inference.',
@@ -91,22 +93,22 @@ export default function SettingsPage() {
     {
       id: 'gemini',
       name: 'Google Gemini',
-      badge: 'Multimodal',
+      badge: 'Free Tier',
       model: 'gemini-1.5-flash',
-      color: 'from-blue-500/20 to-indigo-500/10 border-blue-500/30 text-blue-300',
+      color: 'from-[#2cb7d3]/20 to-[#1e7d8f]/10 border-[#2cb7d3]/40 text-[#9adcea]',
       keyField: 'gemini_api_key',
       docUrl: 'https://aistudio.google.com/app/apikey',
-      description: 'High-accuracy transcript analysis and Hinglish conversion.',
+      description: 'Google Gemini 1.5 Flash with deep context understanding.',
     },
     {
       id: 'mistral',
       name: 'Mistral AI',
-      badge: 'Reasoning',
-      model: 'mistral-large-latest',
-      color: 'from-amber-500/20 to-yellow-500/10 border-amber-500/30 text-amber-300',
+      badge: 'Free Tier',
+      model: 'mistral-small-latest',
+      color: 'from-[#f59e0b]/20 to-[#731111]/10 border-[#f59e0b]/40 text-[#f59e0b]',
       keyField: 'mistral_api_key',
       docUrl: 'https://console.mistral.ai/api-keys/',
-      description: 'Mistral Large model for precise conversational punchlines.',
+      description: 'Mistral Small free model for fast conversational punchlines.',
     },
     {
       id: 'openai',
@@ -125,16 +127,16 @@ export default function SettingsPage() {
       <div className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 space-y-8">
         
         {/* Header Title */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/5 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/8 pb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/5 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider mb-2">
               ⚙️ Client-Side Storage
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
-              System Settings & Configuration
+              System Settings &amp; Configuration
             </h1>
-            <p className="text-gray-400 text-sm font-light mt-1">
-              Configure your AI API keys, tool paths, and MongoDB database. All values are securely stored in your browser&apos;s <span className="text-indigo-300 font-mono">localStorage</span>.
+            <p className="text-[#909cac] text-sm font-light mt-1">
+              Configure your AI API keys and MongoDB database. All values are securely stored in your browser&apos;s <span className="text-[#ef9595] font-mono">localStorage</span>.
             </p>
           </div>
 
@@ -146,7 +148,7 @@ export default function SettingsPage() {
             >
               {isTesting ? (
                 <>
-                  <svg className="animate-spin h-3.5 w-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-3.5 w-3.5 text-[#ef9595]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -154,7 +156,7 @@ export default function SettingsPage() {
                 </>
               ) : (
                 <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#ef9595]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>Test Diagnostics</span>
@@ -164,7 +166,7 @@ export default function SettingsPage() {
 
             <button
               onClick={handleSave}
-              className="px-5 py-2.5 gradient-button rounded-xl text-white font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer hover:shadow-indigo-500/20"
+              className="px-5 py-2.5 gradient-button rounded-xl text-white font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer hover:shadow-red-600/30"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -178,71 +180,83 @@ export default function SettingsPage() {
         {saveSuccess && (
           <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-medium flex items-center justify-between animate-fade-in shadow-lg shadow-emerald-500/5">
             <div className="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span>Settings successfully saved to <strong>localStorage</strong>! No data is sent or stored on .env files.</span>
+              <span className="text-xl">✅</span>
+              <div>
+                <p className="font-semibold text-white">Settings saved successfully!</p>
+                <p className="text-emerald-400/80 text-xs font-light">
+                  All configuration is saved in your browser&apos;s localStorage and attached to your API requests.
+                </p>
+              </div>
             </div>
-            <span className="text-xs text-emerald-400/80 font-mono">Ready</span>
+            <button
+              onClick={() => setSaveSuccess(false)}
+              className="text-emerald-400 hover:text-white text-xs px-2 py-1"
+            >
+              Dismiss
+            </button>
           </div>
         )}
 
-        {/* Diagnostics Results Panel */}
+        {/* Diagnostics Results Banner */}
         {testResults && (
-          <div className="glass-panel rounded-3xl p-6 border border-white/10 space-y-4 animate-fade-in">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Diagnostic Verification Results
-            </h3>
+          <div className="glass-panel rounded-3xl p-6 space-y-4 border border-white/10 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>🔍 Diagnostic Health Check Results</span>
+              </h3>
+              <span className="text-[11px] text-[#909cac]">Tested on Live Environment</span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* AI Key Test */}
-              <div className={`p-3.5 rounded-2xl border ${testResults.ai?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-white uppercase">{testResults.ai?.provider} AI</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${testResults.ai?.ok ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {testResults.ai?.ok ? 'Active & Valid' : 'Failed'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-300 font-light truncate">{testResults.ai?.message}</p>
-              </div>
-
-              {/* MongoDB Test */}
+              {/* MongoDB Status */}
               <div className={`p-3.5 rounded-2xl border ${testResults.mongodb?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-white">MongoDB URI</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${testResults.mongodb?.ok ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {testResults.mongodb?.ok ? 'Connected' : 'Failed'}
+                  <span className="text-xs font-bold text-white">MongoDB</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${testResults.mongodb?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                    {testResults.mongodb?.ok ? 'ACTIVE' : 'FAILED'}
                   </span>
                 </div>
-                <p className="text-[11px] text-gray-300 font-light truncate">{testResults.mongodb?.message}</p>
-              </div>
-
-              {/* FFmpeg Test */}
-              <div className={`p-3.5 rounded-2xl border ${testResults.ffmpeg?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-white">FFmpeg Binary</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${testResults.ffmpeg?.ok ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {testResults.ffmpeg?.ok ? 'Found' : 'Missing'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-300 font-light truncate font-mono">
-                  {testResults.ffmpeg?.ok ? (testResults.ffmpeg?.version || 'Executable OK') : testResults.ffmpeg?.message}
+                <p className="text-[11px] text-[#909cac] line-clamp-2">
+                  {testResults.mongodb?.message || 'Not checked'}
                 </p>
               </div>
 
-              {/* yt-dlp Test */}
-              <div className={`p-3.5 rounded-2xl border ${testResults.yt_dlp?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+              {/* Active AI Status */}
+              <div className={`p-3.5 rounded-2xl border ${testResults.ai?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-white">yt-dlp Binary</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${testResults.yt_dlp?.ok ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {testResults.yt_dlp?.ok ? 'Found' : 'Missing'}
+                  <span className="text-xs font-bold text-white">AI ({testResults.ai?.provider || formData.active_ai_provider})</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${testResults.ai?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                    {testResults.ai?.ok ? 'VALID' : 'INVALID'}
                   </span>
                 </div>
-                <p className="text-[11px] text-gray-300 font-light truncate font-mono">
-                  {testResults.yt_dlp?.ok ? (testResults.yt_dlp?.version || 'Executable OK') : testResults.yt_dlp?.message}
+                <p className="text-[11px] text-[#909cac] line-clamp-2">
+                  {testResults.ai?.message || 'No key provided'}
+                </p>
+              </div>
+
+              {/* FFmpeg Status */}
+              <div className={`p-3.5 rounded-2xl border ${testResults.ffmpeg?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-white">FFmpeg Binary</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${testResults.ffmpeg?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                    {testResults.ffmpeg?.ok ? 'FOUND' : 'MISSING'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#909cac] line-clamp-2 font-mono">
+                  {testResults.ffmpeg?.version || testResults.ffmpeg?.message || 'No executable found'}
+                </p>
+              </div>
+
+              {/* yt-dlp Status */}
+              <div className={`p-3.5 rounded-2xl border ${testResults.yt_dlp?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-white">yt-dlp Binary</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${testResults.yt_dlp?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                    {testResults.yt_dlp?.ok ? 'FOUND' : 'MISSING'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#909cac] line-clamp-2 font-mono">
+                  {testResults.yt_dlp?.version || testResults.yt_dlp?.message || 'No executable found'}
                 </p>
               </div>
             </div>
@@ -250,110 +264,100 @@ export default function SettingsPage() {
         )}
 
         <form onSubmit={handleSave} className="space-y-8">
-          {/* SECTION 1: AI Provider Selector & Keys */}
-          <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6">
-            <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <span className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-mono text-sm border border-indigo-500/30">
-                  1
-                </span>
-                AI Engines & API Keys
-              </h2>
-              <p className="text-gray-400 text-xs font-light mt-1">
-                Select your preferred active AI provider and supply API keys. The app will prioritize your active choice and fallback to available keys if needed.
-              </p>
-            </div>
-
-            {/* Provider Grid Selector */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
-                Active AI Engine Preference
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {aiProviders.map((provider) => {
-                  const isSelected = formData.active_ai_provider === provider.id;
-                  return (
-                    <div
-                      key={provider.id}
-                      onClick={() => handleChange('active_ai_provider', provider.id)}
-                      className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
-                        isSelected
-                          ? `bg-gradient-to-br ${provider.color} shadow-lg shadow-indigo-500/10`
-                          : 'bg-white/2 border-white/5 hover:bg-white/5 text-gray-400'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>
-                            {provider.name}
-                          </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/40 text-gray-300 font-mono">
-                            {provider.badge}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-400 font-light leading-relaxed mb-3">
-                          {provider.description}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[11px]">
-                        <span className="font-mono text-[10px] text-gray-500">{provider.model}</span>
-                        {isSelected && (
-                          <span className="flex items-center gap-1 text-indigo-400 font-semibold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
-                            Active
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+          
+          {/* SECTION 1: AI Provider Selection & Keys */}
+          <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6 border border-white/8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-[#dd2222]/20 text-[#ef9595] flex items-center justify-center font-mono text-sm border border-[#dd2222]/30">
+                    1
+                  </span>
+                  AI Generation Engine
+                </h2>
+                <p className="text-[#909cac] text-xs font-light mt-1">
+                  Select your primary AI provider for extracting viral moments and Hinglish transcript transliteration.
+                </p>
               </div>
+
+              <span className="text-[11px] font-mono text-[#ef9595] bg-[#dd2222]/10 px-3 py-1 rounded-full border border-[#dd2222]/20 w-fit">
+                Active: {formData.active_ai_provider.toUpperCase()}
+              </span>
             </div>
 
-            {/* API Key Inputs */}
-            <div className="space-y-4 pt-4 border-t border-white/5">
+            {/* Provider Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {aiProviders.map((provider) => {
-                const keyVal = formData[provider.keyField] || '';
-                const isShowing = showKeys[provider.id];
                 const isActive = formData.active_ai_provider === provider.id;
+                const keyVal = formData[provider.keyField] || '';
+                const isKeyPresent = Boolean(keyVal.trim());
 
                 return (
-                  <div key={provider.id} className="p-4 rounded-2xl bg-black/30 border border-white/5 space-y-2">
+                  <div
+                    key={provider.id}
+                    className={`glass-card rounded-2xl p-5 space-y-4 border transition-all cursor-pointer relative ${
+                      isActive
+                        ? 'border-[#dd2222]/60 bg-[#dd2222]/10 shadow-lg shadow-red-600/10'
+                        : 'border-white/5 hover:border-white/10'
+                    }`}
+                    onClick={() => handleChange('active_ai_provider', provider.id)}
+                  >
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-white flex items-center gap-2">
-                        <span>{provider.name} API Key</span>
-                        {isActive && (
-                          <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase">
-                            Primary
-                          </span>
-                        )}
-                      </label>
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="radio"
+                          name="active_ai_provider"
+                          checked={isActive}
+                          onChange={() => handleChange('active_ai_provider', provider.id)}
+                          className="text-[#dd2222] focus:ring-[#dd2222]"
+                        />
+                        <span className="text-sm font-bold text-white">{provider.name}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-[#909cac] border border-white/5">
+                          {provider.badge}
+                        </span>
+                      </div>
+
                       <a
                         href={provider.docUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[11px] text-indigo-400 hover:text-indigo-300 underline font-light"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[10px] text-[#2cb7d3] hover:text-[#5ccae1] underline font-light"
                       >
-                        Get API Key →
+                        Get Key →
                       </a>
                     </div>
 
-                    <div className="relative">
-                      <input
-                        type={isShowing ? 'text' : 'password'}
-                        value={keyVal}
-                        onChange={(e) => handleChange(provider.keyField, e.target.value)}
-                        placeholder={`Paste your ${provider.name} API key here (e.g. gsk_..., AIzaSy..., or sk-...)`}
-                        className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/40 pr-24"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => toggleShowKey(provider.id)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] font-medium transition-all"
-                      >
-                        {isShowing ? 'Hide' : 'Show'}
-                      </button>
+                    <p className="text-xs text-[#909cac] font-light leading-relaxed">
+                      {provider.description}
+                    </p>
+
+                    <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-[#d7dbe0]">
+                          API Key
+                        </label>
+                        <span className={`text-[10px] font-mono ${isKeyPresent ? 'text-emerald-400' : 'text-[#f59e0b]'}`}>
+                          {isKeyPresent ? '● Configured' : '○ Not set'}
+                        </span>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type={showKeys[provider.id] ? 'text' : 'password'}
+                          value={formData[provider.keyField]}
+                          onChange={(e) => handleChange(provider.keyField, e.target.value)}
+                          placeholder={`Enter ${provider.name} API Key`}
+                          className="w-full px-3.5 py-2.5 bg-[#15181b]/90 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/60 pr-16"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleShowKey(provider.id)}
+                          className="absolute right-2 top-2 px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-[#909cac] hover:text-white text-[10px] transition-all"
+                        >
+                          {showKeys[provider.id] ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -361,17 +365,17 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* SECTION 2: System Tool Paths (Server-Managed) */}
-          <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6">
+          {/* SECTION 2: System Binaries (Server-Managed) */}
+          <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6 border border-white/8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-mono text-sm border border-purple-500/30">
+                  <span className="w-8 h-8 rounded-xl bg-[#2cb7d3]/20 text-[#2cb7d3] flex items-center justify-center font-mono text-sm border border-[#2cb7d3]/30">
                     2
                   </span>
                   System Binaries (FFmpeg &amp; yt-dlp)
                 </h2>
-                <p className="text-gray-400 text-xs font-light mt-1">
+                <p className="text-[#909cac] text-xs font-light mt-1">
                   Provided and executed directly by the hosting server (Render / Docker container).
                 </p>
               </div>
@@ -384,39 +388,39 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* FFmpeg Path */}
-              <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+              <div className="p-4 rounded-2xl bg-[#15181b]/70 border border-white/8 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-white">
                     FFmpeg Binary
                   </label>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-gray-400 font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[#909cac] font-mono">
                     Auto-Resolved
                   </span>
                 </div>
-                <div className="px-4 py-3 bg-black/60 border border-white/5 rounded-xl text-gray-300 font-mono text-xs flex items-center justify-between">
+                <div className="px-4 py-3 bg-[#1d2125]/90 border border-white/5 rounded-xl text-[#d7dbe0] font-mono text-xs flex items-center justify-between">
                   <span>/usr/bin/ffmpeg</span>
                   <span className="text-emerald-400 text-[11px] font-sans font-semibold">libass included</span>
                 </div>
-                <p className="text-[11px] text-gray-500 font-light">
+                <p className="text-[11px] text-[#6e7d91] font-light">
                   Pre-installed in production container for rendering 9:16 vertical video &amp; subtitles.
                 </p>
               </div>
 
               {/* yt-dlp Path */}
-              <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+              <div className="p-4 rounded-2xl bg-[#15181b]/70 border border-white/8 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-white">
                     yt-dlp Binary
                   </label>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-gray-400 font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[#909cac] font-mono">
                     Auto-Resolved
                   </span>
                 </div>
-                <div className="px-4 py-3 bg-black/60 border border-white/5 rounded-xl text-gray-300 font-mono text-xs flex items-center justify-between">
+                <div className="px-4 py-3 bg-[#1d2125]/90 border border-white/5 rounded-xl text-[#d7dbe0] font-mono text-xs flex items-center justify-between">
                   <span>/usr/local/bin/yt-dlp</span>
                   <span className="text-emerald-400 text-[11px] font-sans font-semibold">Stream clipper</span>
                 </div>
-                <p className="text-[11px] text-gray-500 font-light">
+                <p className="text-[11px] text-[#6e7d91] font-light">
                   Pre-installed in production container to extract 20-30s video streams from YouTube.
                 </p>
               </div>
@@ -424,47 +428,47 @@ export default function SettingsPage() {
           </div>
 
           {/* SECTION 3: Database Connection */}
-          <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6">
+          <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6 border border-white/8">
             <div>
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono text-sm border border-emerald-500/30">
                   3
                 </span>
-                Database Configuration
+                MongoDB Database Storage
               </h2>
-              <p className="text-gray-400 text-xs font-light mt-1">
-                MongoDB database connection URI for saving projects, clip transcripts, and timings.
+              <p className="text-[#909cac] text-xs font-light mt-1">
+                Enter your connection string to persist your workspaces, extracted hooks, and custom subtitle changes.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-black/30 border border-white/5 space-y-2">
+            <div className="p-4 rounded-2xl bg-[#15181b]/70 border border-white/8 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-white">
-                  MongoDB Connection URI (<span className="font-mono text-gray-400">mongodb_uri</span>)
+                  MongoDB Connection URI (<span className="font-mono text-[#909cac]">mongodb_uri</span>)
                 </label>
                 <button
                   type="button"
                   onClick={() => handleChange('mongodb_uri', 'mongodb://localhost:27017/shorts')}
-                  className="text-[11px] text-indigo-400 hover:text-indigo-300 font-light"
+                  className="text-[11px] text-[#2cb7d3] hover:text-[#5ccae1] font-light"
                 >
-                  Reset to Localhost:27017
+                  Use Localhost:27017
                 </button>
               </div>
               <input
                 type="text"
                 value={formData.mongodb_uri}
                 onChange={(e) => handleChange('mongodb_uri', e.target.value)}
-                placeholder="mongodb://localhost:27017/shorts"
-                className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-indigo-500/60"
+                placeholder="mongodb+srv://user:password@cluster0.xxx.mongodb.net/shorts or mongodb://localhost:27017/shorts"
+                className="w-full px-4 py-3 bg-[#1d2125]/90 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/60"
               />
-              <p className="text-[11px] text-gray-500 font-light">
-                Supports local instances (`mongodb://localhost:27017/...`) or MongoDB Atlas clusters (`mongodb+srv://...`).
+              <p className="text-[11px] text-[#6e7d91] font-light">
+                Supports MongoDB Atlas clusters (`mongodb+srv://...`) or local instances (`mongodb://localhost:27017/...`).
               </p>
             </div>
           </div>
 
           {/* Bottom Action Controls */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/5">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/8">
             <button
               type="button"
               onClick={handleResetDefaults}
@@ -485,7 +489,7 @@ export default function SettingsPage() {
 
               <button
                 type="submit"
-                className="flex-1 sm:flex-none px-7 py-3 gradient-button rounded-2xl text-white font-semibold text-sm transition-all cursor-pointer hover:shadow-indigo-500/20 active:scale-95"
+                className="flex-1 sm:flex-none px-7 py-3 gradient-button rounded-2xl text-white font-semibold text-sm transition-all cursor-pointer hover:shadow-red-600/30 active:scale-95"
               >
                 Save Settings
               </button>

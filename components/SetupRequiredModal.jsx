@@ -22,7 +22,6 @@ export default function SetupRequiredModal() {
     setIsOpen(!configured);
 
     if (!configured) {
-      // Pre-fill whatever exists
       setSelectedProvider(loaded.active_ai_provider || 'groq');
       setMongoUri(loaded.mongodb_uri || '');
       const keyMap = {
@@ -63,7 +62,7 @@ export default function SetupRequiredModal() {
     const cleanKey = apiKey.trim();
 
     if (!cleanMongo) {
-      setErrorMessage('Please enter a valid MongoDB Connection URI (e.g. mongodb+srv://... or mongodb://localhost:27017/shorts)');
+      setErrorMessage('Please enter your MongoDB Connection URI (e.g. mongodb+srv://... or mongodb://localhost:27017/shorts)');
       return;
     }
 
@@ -116,8 +115,8 @@ export default function SetupRequiredModal() {
     {
       id: 'mistral',
       name: 'Mistral AI',
-      badge: 'Reasoning',
-      model: 'Mistral Large',
+      badge: 'Free Tier',
+      model: 'Mistral Small',
       docUrl: 'https://console.mistral.ai/api-keys/',
       placeholder: '...',
     },
@@ -135,23 +134,23 @@ export default function SetupRequiredModal() {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-xl glass-panel rounded-3xl p-6 sm:p-8 border border-indigo-500/30 shadow-2xl shadow-indigo-500/10 space-y-6 my-8">
+      <div className="relative w-full max-w-xl glass-panel rounded-3xl p-6 sm:p-8 border border-[#dd2222]/30 shadow-2xl shadow-red-600/10 space-y-6 my-8">
         
-        {/* Header with non-dismissable badge */}
+        {/* Header with badge */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+            <span className="px-3 py-1 rounded-full bg-[#dd2222]/15 border border-[#dd2222]/35 text-[#ef9595] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#dd2222] animate-ping"></span>
               Setup Required
             </span>
-            <span className="text-[11px] text-gray-400 font-mono">100% Client-Side</span>
+            <span className="text-[11px] text-[#909cac] font-mono">100% Client-Side</span>
           </div>
 
           <h2 className="text-2xl font-extrabold text-white tracking-tight">
             Connect AI &amp; Database to Start
           </h2>
-          <p className="text-gray-400 text-xs font-light leading-relaxed">
-            Please enter your MongoDB URI and at least one AI API key. All credentials are saved strictly in your browser&apos;s <span className="text-indigo-300 font-mono font-semibold">localStorage</span>.
+          <p className="text-[#909cac] text-xs font-light leading-relaxed">
+            Please enter your MongoDB URI and at least one AI API key. All credentials are saved strictly in your browser&apos;s <span className="text-[#f3c4c4] font-mono font-semibold">localStorage</span>.
           </p>
         </div>
 
@@ -166,10 +165,10 @@ export default function SetupRequiredModal() {
 
         <form onSubmit={handleSave} className="space-y-5">
           {/* 1. MongoDB URI */}
-          <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+          <div className="p-4 rounded-2xl bg-[#15181b]/70 border border-white/8 space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-white flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono text-[10px] border border-emerald-500/30">
+                <span className="w-5 h-5 rounded-lg bg-[#dd2222]/20 text-[#ef9595] flex items-center justify-center font-mono text-[10px] border border-[#dd2222]/30">
                   1
                 </span>
                 MongoDB Connection URI
@@ -177,7 +176,7 @@ export default function SetupRequiredModal() {
               <button
                 type="button"
                 onClick={() => setMongoUri('mongodb://localhost:27017/shorts')}
-                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-light"
+                className="text-[10px] text-[#2cb7d3] hover:text-[#5ccae1] font-light"
               >
                 Use Localhost:27017
               </button>
@@ -189,15 +188,15 @@ export default function SetupRequiredModal() {
               value={mongoUri}
               onChange={(e) => setMongoUri(e.target.value)}
               placeholder="mongodb+srv://user:pass@cluster0.xxx.mongodb.net/shorts or mongodb://localhost:27017/shorts"
-              className="w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-indigo-500/60"
+              className="w-full px-3.5 py-2.5 bg-[#1d2125]/90 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/70 focus:ring-1 focus:ring-[#dd2222]/40"
             />
           </div>
 
           {/* 2. AI Engine Selector & Key */}
-          <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
+          <div className="p-4 rounded-2xl bg-[#15181b]/70 border border-white/8 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-white flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-mono text-[10px] border border-indigo-500/30">
+                <span className="w-5 h-5 rounded-lg bg-[#2cb7d3]/20 text-[#2cb7d3] flex items-center justify-center font-mono text-[10px] border border-[#2cb7d3]/30">
                   2
                 </span>
                 Choose AI Engine &amp; API Key
@@ -206,7 +205,7 @@ export default function SetupRequiredModal() {
                 href={activeProviderObj.docUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-indigo-400 hover:text-indigo-300 underline font-light"
+                className="text-[10px] text-[#2cb7d3] hover:text-[#5ccae1] underline font-light"
               >
                 Get Free {activeProviderObj.name} Key →
               </a>
@@ -223,12 +222,12 @@ export default function SetupRequiredModal() {
                     onClick={() => handleProviderChange(p.id)}
                     className={`py-2 px-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
                       isSel
-                        ? 'bg-indigo-600/20 border-indigo-500/60 text-white font-semibold shadow-md shadow-indigo-500/10'
-                        : 'bg-white/2 border-white/5 hover:bg-white/5 text-gray-400'
+                        ? 'bg-[#dd2222]/20 border-[#dd2222]/60 text-white font-semibold shadow-md shadow-red-600/10'
+                        : 'bg-white/2 border-white/5 hover:bg-white/5 text-[#909cac]'
                     }`}
                   >
                     <span className="text-xs">{p.id.toUpperCase()}</span>
-                    <span className="text-[9px] text-gray-500 font-light">{p.model}</span>
+                    <span className="text-[9px] text-[#6e7d91] font-light">{p.model}</span>
                   </button>
                 );
               })}
@@ -242,12 +241,12 @@ export default function SetupRequiredModal() {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder={`Paste your ${activeProviderObj.name} API Key (${activeProviderObj.placeholder})`}
-                className="w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-indigo-500/60 pr-16"
+                className="w-full px-3.5 py-2.5 bg-[#1d2125]/90 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/70 focus:ring-1 focus:ring-[#dd2222]/40 pr-16"
               />
               <button
                 type="button"
                 onClick={() => setShowKey(!showKey)}
-                className="absolute right-2 top-[13px] px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[10px] transition-all"
+                className="absolute right-2 top-[13px] px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-[#909cac] hover:text-white text-[10px] transition-all"
               >
                 {showKey ? 'Hide' : 'Show'}
               </button>
@@ -255,19 +254,19 @@ export default function SetupRequiredModal() {
           </div>
 
           {/* Server Managed Binaries Notice */}
-          <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-emerald-400 text-[11px] flex items-center justify-between font-light">
+          <div className="p-3 rounded-xl bg-[#2cb7d3]/10 border border-[#2cb7d3]/20 text-[#5ccae1] text-[11px] flex items-center justify-between font-light">
             <span className="flex items-center gap-1.5">
               <span>⚡</span>
               <span>FFmpeg &amp; yt-dlp: Pre-installed &amp; managed by Hosting Server</span>
             </span>
-            <span className="font-mono text-[10px] font-semibold">Active</span>
+            <span className="font-mono text-[10px] font-semibold text-emerald-400">Active</span>
           </div>
 
           {/* Submit Action */}
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full py-3.5 gradient-button rounded-2xl text-white font-bold text-sm hover:shadow-indigo-500/30 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full py-3.5 gradient-button rounded-2xl text-white font-bold text-sm hover:shadow-red-600/30 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             {isSaving ? (
               <span>Saving...</span>

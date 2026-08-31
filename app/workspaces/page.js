@@ -11,7 +11,6 @@ export default function WorkspacesPage() {
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterMode, setFilterMode] = useState('all'); // all, recent
   const [error, setError] = useState('');
 
   const fetchWorkspaces = async () => {
@@ -87,15 +86,15 @@ export default function WorkspacesPage() {
       <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 space-y-8">
         
         {/* Top Header & Search Bar */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/5 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/8 pb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/5 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider mb-2">
               📁 Workspace Manager
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
               Workspaces ({projects.length})
             </h1>
-            <p className="text-gray-400 text-sm font-light mt-1">
+            <p className="text-[#909cac] text-sm font-light mt-1">
               Browse, manage, edit, and export your AI-extracted shorts projects.
             </p>
           </div>
@@ -103,7 +102,7 @@ export default function WorkspacesPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="px-5 py-2.5 gradient-button rounded-xl text-white font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer hover:shadow-indigo-500/20"
+              className="px-5 py-2.5 gradient-button rounded-xl text-white font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer hover:shadow-red-600/30"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -121,11 +120,11 @@ export default function WorkspacesPage() {
               placeholder="Search by title, channel..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 text-xs font-light"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#15181b]/90 border border-white/10 rounded-2xl text-white placeholder-[#6e7d91] focus:outline-none focus:border-[#dd2222]/60 text-xs font-light"
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              className="h-4 w-4 text-[#909cac] absolute left-3.5 top-1/2 -translate-y-1/2"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -137,7 +136,7 @@ export default function WorkspacesPage() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={fetchWorkspaces}
-              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/5 transition-all text-xs flex items-center gap-1.5"
+              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#d7dbe0] hover:text-white border border-white/5 transition-all text-xs flex items-center gap-1.5 cursor-pointer"
               title="Refresh list"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -173,8 +172,8 @@ export default function WorkspacesPage() {
             ))}
           </div>
         ) : filteredProjects.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-12 md:p-16 text-center max-w-md mx-auto space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto text-indigo-400">
+          <div className="glass-panel rounded-3xl p-12 md:p-16 text-center max-w-md mx-auto space-y-4 border border-white/8">
+            <div className="w-16 h-16 rounded-3xl bg-[#dd2222]/10 border border-[#dd2222]/20 flex items-center justify-center mx-auto text-[#ef9595]">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
@@ -183,7 +182,7 @@ export default function WorkspacesPage() {
               <h3 className="text-lg font-bold text-white mb-1">
                 {searchQuery ? 'No matching workspaces found' : 'No workspaces yet'}
               </h3>
-              <p className="text-gray-400 text-xs font-light">
+              <p className="text-[#909cac] text-xs font-light">
                 {searchQuery
                   ? 'Try searching with a different keyword or clear the search query.'
                   : 'Start by pasting any long YouTube video URL from the Home dashboard.'}
@@ -203,7 +202,7 @@ export default function WorkspacesPage() {
             {filteredProjects.map((project) => (
               <div
                 key={project._id}
-                className="glass-card rounded-3xl overflow-hidden flex flex-col justify-between group relative border border-white/5 hover:border-indigo-500/30 transition-all"
+                className="glass-card rounded-3xl overflow-hidden flex flex-col justify-between group relative border border-white/8 hover:border-[#dd2222]/40 transition-all"
               >
                 {/* Thumbnail Header */}
                 <div className="relative aspect-video w-full overflow-hidden bg-black/40">
@@ -215,7 +214,7 @@ export default function WorkspacesPage() {
 
                   {/* Top Bar Actions */}
                   <div className="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none">
-                    <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-mono font-bold text-indigo-300 border border-white/10 uppercase">
+                    <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-mono font-bold text-[#ef9595] border border-white/10 uppercase">
                       ID: {project._id}
                     </span>
 
@@ -224,7 +223,7 @@ export default function WorkspacesPage() {
                         e.stopPropagation();
                         handleDeleteProject(project._id, project.title);
                       }}
-                      className="p-2 rounded-xl bg-black/70 hover:bg-red-500/80 text-white/80 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer pointer-events-auto"
+                      className="p-2 rounded-xl bg-black/70 hover:bg-[#dd2222] text-white/80 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer pointer-events-auto"
                       title="Delete Workspace"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -242,18 +241,18 @@ export default function WorkspacesPage() {
                 {/* Content Details */}
                 <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
                   <div>
-                    <h3 className="text-white font-bold text-sm line-clamp-2 leading-snug group-hover:text-indigo-300 transition-colors mb-2">
+                    <h3 className="text-white font-bold text-sm line-clamp-2 leading-snug group-hover:text-[#ef9595] transition-colors mb-2">
                       {project.title}
                     </h3>
-                    <p className="text-gray-400 text-xs flex items-center gap-1.5 font-light">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                    <p className="text-[#909cac] text-xs flex items-center gap-1.5 font-light">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#dd2222]"></span>
                       <span>{project.channel}</span>
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500 font-light">
-                      {project.transcript ? `${project.transcript.length} transcript lines` : 'Ready'}
+                  <div className="pt-2 border-t border-white/8 flex items-center justify-between">
+                    <span className="text-[11px] text-[#6e7d91] font-light">
+                      {project.transcript ? `${project.transcript.length} lines` : 'Ready'}
                     </span>
 
                     <button

@@ -389,13 +389,13 @@ export default function ProjectWorkspace({ params }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#030014] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#15181b] text-white flex items-center justify-center font-sans">
         <div className="text-center space-y-4">
-          <svg className="animate-spin h-10 w-10 text-indigo-500 mx-auto" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-10 w-10 text-[#dd2222] mx-auto" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
-          <p className="text-gray-400 font-light text-sm">Loading workspace environment...</p>
+          <p className="text-[#909cac] font-light text-sm">Loading workspace environment...</p>
         </div>
       </div>
     );
@@ -403,10 +403,10 @@ export default function ProjectWorkspace({ params }) {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-[#030014] text-white flex flex-col items-center justify-center p-4">
-        <div className="glass-panel rounded-3xl p-8 max-w-md text-center space-y-4">
-          <h2 className="text-2xl font-bold text-red-400">Workspace Not Found</h2>
-          <p className="text-gray-400 text-sm font-light">The workspace you are trying to access does not exist or was deleted.</p>
+      <div className="min-h-screen bg-[#15181b] text-white flex flex-col items-center justify-center p-4 font-sans">
+        <div className="glass-panel rounded-3xl p-8 max-w-md text-center space-y-4 border border-white/8">
+          <h2 className="text-2xl font-bold text-[#e95353]">Workspace Not Found</h2>
+          <p className="text-[#909cac] text-sm font-light">The workspace you are trying to access does not exist or was deleted.</p>
           <Link href="/workspaces" className="inline-flex px-5 py-2.5 gradient-button rounded-xl font-medium text-xs">
             Back to Workspaces
           </Link>
@@ -416,28 +416,28 @@ export default function ProjectWorkspace({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#030014] flex flex-col text-white">
+    <div className="min-h-screen bg-[#15181b] flex flex-col text-white font-sans">
       {/* Mandatory First-Time Setup Modal */}
       <SetupRequiredModal />
 
       {/* Header Bar */}
-      <header className="border-b border-white/5 bg-black/60 backdrop-blur-xl px-6 py-4 relative z-20 flex items-center justify-between">
+      <header className="border-b border-white/8 bg-[#1d2125]/90 backdrop-blur-xl px-6 py-4 relative z-20 flex items-center justify-between">
         <div className="flex items-center gap-4 min-w-0">
-          <Link href="/workspaces" className="p-2 rounded-xl hover:bg-white/5 border border-white/5 hover:border-white/10 transition-all shrink-0 text-gray-400 hover:text-white" title="Back to Workspaces">
+          <Link href="/workspaces" className="p-2 rounded-xl hover:bg-white/5 border border-white/5 hover:border-white/10 transition-all shrink-0 text-[#909cac] hover:text-white" title="Back to Workspaces">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </Link>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-semibold">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#dd2222]/20 text-[#ef9595] font-mono font-semibold border border-[#dd2222]/30">
                 Workspace
               </span>
               <h1 className="text-base font-bold truncate pr-4 text-white">{project.title}</h1>
             </div>
-            <p className="text-xs text-gray-400 font-light flex items-center gap-1 mt-0.5">
+            <p className="text-xs text-[#909cac] font-light flex items-center gap-1 mt-0.5">
               <span>{project.channel}</span>
-              <span className="w-1 h-1 rounded-full bg-gray-600"></span>
+              <span className="w-1 h-1 rounded-full bg-[#4b5563]"></span>
               <span>{formatDuration(project.duration)}</span>
             </p>
           </div>
@@ -446,7 +446,7 @@ export default function ProjectWorkspace({ params }) {
         <div className="flex items-center gap-3 shrink-0">
           <Link
             href="/settings"
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-gray-400 hover:text-white text-xs transition-all flex items-center gap-1.5"
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-[#909cac] hover:text-white text-xs transition-all flex items-center gap-1.5"
             title="Settings"
           >
             <span>⚙️ Settings</span>
@@ -481,9 +481,9 @@ export default function ProjectWorkspace({ params }) {
       <div className="flex-grow flex flex-col md:flex-row min-h-0 overflow-hidden relative z-10">
         
         {/* Left Side: AI Clips List */}
-        <aside className="w-full md:w-96 border-b md:border-b-0 md:border-r border-white/5 flex flex-col overflow-y-auto max-h-[400px] md:max-h-none shrink-0 bg-black/20">
-          <div className="p-4 border-b border-white/5 sticky top-0 bg-[#060318]/95 backdrop-blur-md z-10 flex items-center justify-between">
-            <h2 className="font-semibold text-xs tracking-wider text-indigo-400 uppercase">AI-Curated Moments ({clips.length})</h2>
+        <aside className="w-full md:w-96 border-b md:border-b-0 md:border-r border-white/8 flex flex-col overflow-y-auto max-h-[400px] md:max-h-none shrink-0 bg-[#1d2125]/60">
+          <div className="p-4 border-b border-white/8 sticky top-0 bg-[#1d2125]/95 backdrop-blur-md z-10 flex items-center justify-between">
+            <h2 className="font-semibold text-xs tracking-wider text-[#ef9595] uppercase">AI-Curated Moments ({clips.length})</h2>
           </div>
           
           <div className="p-3 space-y-3">
@@ -495,12 +495,12 @@ export default function ProjectWorkspace({ params }) {
                   onClick={() => setSelectedClip(clip)}
                   className={`p-4 rounded-2xl cursor-pointer border transition-all ${
                     isSelected
-                      ? 'bg-indigo-500/15 border-indigo-500/50 shadow-lg shadow-indigo-500/5'
+                      ? 'bg-[#dd2222]/15 border-[#dd2222]/50 shadow-lg shadow-red-600/10'
                       : 'bg-white/2 border-white/5 hover:bg-white/5 hover:border-white/10'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className={`font-semibold text-sm line-clamp-1 leading-snug ${isSelected ? 'text-indigo-300' : 'text-white'}`}>
+                    <h3 className={`font-semibold text-sm line-clamp-1 leading-snug ${isSelected ? 'text-[#ef9595]' : 'text-white'}`}>
                       {clip.title}
                     </h3>
                     <span className="shrink-0 px-2 py-0.5 rounded bg-black/60 text-white font-mono text-[10px] font-semibold">
@@ -508,26 +508,26 @@ export default function ProjectWorkspace({ params }) {
                     </span>
                   </div>
                   
-                  <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed font-light mb-3">
+                  <p className="text-[#909cac] text-xs line-clamp-2 leading-relaxed font-light mb-3">
                     {clip.description}
                   </p>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-gray-500 font-mono">
+                    <span className="text-[10px] text-[#6e7d91] font-mono">
                       {formatDuration(clip.start)} - {formatDuration(clip.end)}
                     </span>
                     
                     {/* Status Badge */}
                     <div className="flex items-center gap-1.5 text-xs font-semibold">
                       {clip.status === 'pending' && (
-                        <span className="text-gray-500 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                        <span className="text-[#909cac] flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#6e7d91]"></span>
                           Ready to Render
                         </span>
                       )}
                       {clip.status === 'rendering' && (
-                        <span className="text-yellow-400 flex items-center gap-1 animate-pulse">
-                          <svg className="animate-spin h-3.5 w-3.5 text-yellow-400" fill="none" viewBox="0 0 24 24">
+                        <span className="text-[#f59e0b] flex items-center gap-1 animate-pulse">
+                          <svg className="animate-spin h-3.5 w-3.5 text-[#f59e0b]" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                           </svg>
@@ -587,34 +587,34 @@ export default function ProjectWorkspace({ params }) {
 
             return !selectedClip ? (
               <div className="flex-grow flex flex-col items-center justify-center text-center p-12 glass-panel rounded-3xl h-full border border-dashed border-white/10">
-                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4 text-indigo-400">
+                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4 text-[#ef9595]">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold mb-1">Editor Workspace</h3>
-                <p className="text-gray-400 text-sm max-w-sm font-light">Select any AI-generated clip from the sidebar on the left to start framing, editing captions, and rendering.</p>
+                <h3 className="text-xl font-bold mb-1 text-white">Editor Workspace</h3>
+                <p className="text-[#909cac] text-sm max-w-sm font-light">Select any AI-generated clip from the sidebar on the left to start framing, editing captions, and rendering.</p>
               </div>
             ) : (
             <>
               {/* Left Column: Player Column */}
               <div className="w-full lg:w-[420px] flex flex-col shrink-0 gap-4">
-                <div className="glass-panel rounded-3xl p-5 flex flex-col items-center">
-                  <h3 className="text-xs font-semibold text-indigo-300 uppercase self-start mb-3">Live Video Preview</h3>
+                <div className="glass-panel rounded-3xl p-5 flex flex-col items-center border border-white/8">
+                  <h3 className="text-xs font-semibold text-[#ef9595] uppercase self-start mb-3">Live Video Preview</h3>
                   
-                  {/* Preview Tab Selector (Shown if Both selected or both rendered) */}
+                  {/* Preview Tab Selector */}
                   {(() => {
                     const hasBothRendered = selectedClip && selectedClip.status === 'completed' && selectedClip.videoPathVertical && selectedClip.videoPathHorizontal;
                     const showToggle = renderFormat === 'both' || hasBothRendered;
                     
                     return showToggle && (
-                      <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 mb-3 w-full max-w-[280px]">
+                      <div className="flex bg-black/40 p-1 rounded-xl border border-white/8 mb-3 w-full max-w-[280px]">
                         <button
                           onClick={() => setPreviewActiveTab('vertical')}
                           className={`flex-1 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
                             previewActiveTab === 'vertical'
-                              ? 'bg-indigo-600 text-white shadow shadow-indigo-600/30'
-                              : 'text-gray-400 hover:text-gray-200'
+                              ? 'gradient-button text-white shadow'
+                              : 'text-[#909cac] hover:text-white'
                           }`}
                         >
                           Vertical (9:16)
@@ -623,8 +623,8 @@ export default function ProjectWorkspace({ params }) {
                           onClick={() => setPreviewActiveTab('horizontal')}
                           className={`flex-1 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
                             previewActiveTab === 'horizontal'
-                              ? 'bg-indigo-600 text-white shadow shadow-indigo-600/30'
-                              : 'text-gray-400 hover:text-gray-200'
+                              ? 'gradient-button text-white shadow'
+                              : 'text-[#909cac] hover:text-white'
                           }`}
                         >
                           Horizontal (16:9)
@@ -665,7 +665,7 @@ export default function ProjectWorkspace({ params }) {
                       />
                     )}
 
-                    {/* Live HTML dynamic subtitles overlay (pending previews) */}
+                    {/* Live HTML dynamic subtitles overlay */}
                     {selectedClip.status !== 'completed' && activeSubtitle && (
                       <div 
                         className="absolute inset-x-0 pointer-events-none z-10 flex items-center justify-center px-4"
@@ -728,7 +728,7 @@ export default function ProjectWorkspace({ params }) {
                       <button
                         onClick={handleStartRender}
                         disabled={isRendering}
-                        className="w-full py-4 gradient-button rounded-xl text-white font-semibold text-xs uppercase tracking-wider hover:shadow-indigo-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full py-4 gradient-button rounded-xl text-white font-semibold text-xs uppercase tracking-wider hover:shadow-red-600/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {isRendering ? (
                           <span className="flex items-center gap-2">
@@ -751,7 +751,7 @@ export default function ProjectWorkspace({ params }) {
 
                     {isRendering && (
                       <div className="mt-3 text-left p-3.5 rounded-2xl bg-white/5 border border-white/5 animate-pulse">
-                        <p className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider mb-1">Rendering Logs</p>
+                        <p className="text-[10px] text-[#ef9595] font-semibold uppercase tracking-wider mb-1">Rendering Logs</p>
                         <p className="text-xs text-gray-300 font-light">{renderProgressText}</p>
                       </div>
                     )}
@@ -769,13 +769,13 @@ export default function ProjectWorkspace({ params }) {
               <div className="flex-grow flex flex-col gap-6">
                 
                 {/* Style & Alignment Panel */}
-                <div className="glass-panel rounded-3xl p-6 space-y-6">
-                  <h3 className="text-xs font-semibold tracking-wider text-indigo-300 uppercase">Short Framing &amp; Typography</h3>
+                <div className="glass-panel rounded-3xl p-6 space-y-6 border border-white/8">
+                  <h3 className="text-xs font-semibold tracking-wider text-[#ef9595] uppercase">Short Framing &amp; Typography</h3>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {/* Caption Style Picker */}
                     <div>
-                      <label className="block text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Caption Typography Style</label>
+                      <label className="block text-xs text-[#909cac] font-medium uppercase tracking-wider mb-2">Caption Typography Style</label>
                       <div className="grid grid-cols-3 gap-2">
                         {[
                           { 
@@ -812,8 +812,8 @@ export default function ProjectWorkspace({ params }) {
                             disabled={isRendering}
                             className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between h-24 ${
                               captionStyle === style.id
-                                ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-300 font-semibold'
-                                : 'bg-white/2 border-white/5 hover:bg-white/5 text-gray-400'
+                                ? 'bg-[#dd2222]/15 border-[#dd2222]/50 text-[#ef9595] font-semibold'
+                                : 'bg-white/2 border-white/5 hover:bg-white/5 text-[#909cac]'
                             }`}
                           >
                             <span className="block text-xs font-semibold">{style.label}</span>
@@ -825,7 +825,7 @@ export default function ProjectWorkspace({ params }) {
 
                     {/* Crop focus Picker */}
                     <div>
-                      <label className="block text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Aspect Crop Focus (9:16)</label>
+                      <label className="block text-xs text-[#909cac] font-medium uppercase tracking-wider mb-2">Aspect Crop Focus (9:16)</label>
                       <div className="grid grid-cols-3 gap-2">
                         {[
                           { id: 'left', label: 'Left' },
@@ -838,8 +838,8 @@ export default function ProjectWorkspace({ params }) {
                             disabled={isRendering}
                             className={`py-3 px-3 rounded-2xl border text-center transition-all cursor-pointer ${
                               cropFocus === focus.id
-                                ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-300 font-semibold'
-                                : 'bg-white/2 border-white/5 hover:bg-white/5 text-gray-400'
+                                ? 'bg-[#dd2222]/15 border-[#dd2222]/50 text-[#ef9595] font-semibold'
+                                : 'bg-white/2 border-white/5 hover:bg-white/5 text-[#909cac]'
                             }`}
                           >
                             <span className="block text-xs">{focus.label} Frame</span>
@@ -850,8 +850,8 @@ export default function ProjectWorkspace({ params }) {
 
                     {/* Subtitles Script language toggle */}
                     {hasHinglishOption && (
-                      <div className="col-span-1 sm:col-span-2 pt-4 border-t border-white/5">
-                        <label className="block text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Subtitles Script (Hindi Video Detected)</label>
+                      <div className="col-span-1 sm:col-span-2 pt-4 border-t border-white/8">
+                        <label className="block text-xs text-[#909cac] font-medium uppercase tracking-wider mb-2">Subtitles Script (Hindi Video Detected)</label>
                         <div className="flex gap-3">
                           {[
                             { id: 'original', label: 'Original Hindi (Devanagari)', preview: 'नमस्ते दोस्तों' },
@@ -863,16 +863,16 @@ export default function ProjectWorkspace({ params }) {
                               disabled={isRendering}
                               className={`flex-grow py-3 px-4 rounded-2xl border text-left transition-all cursor-pointer flex justify-between items-center ${
                                 captionLanguage === lang.id
-                                  ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-300 font-semibold shadow-lg shadow-indigo-500/5'
-                                  : 'bg-white/2 border-white/5 hover:bg-white/5 text-gray-400'
+                                  ? 'bg-[#dd2222]/15 border-[#dd2222]/50 text-[#ef9595] font-semibold shadow-lg shadow-red-600/10'
+                                  : 'bg-white/2 border-white/5 hover:bg-white/5 text-[#909cac]'
                               }`}
                             >
                               <div>
                                 <span className="block text-xs">{lang.label}</span>
-                                <span className="block text-[10px] text-gray-500 font-light mt-0.5">{lang.preview}</span>
+                                <span className="block text-[10px] text-[#6e7d91] font-light mt-0.5">{lang.preview}</span>
                               </div>
                               {captionLanguage === lang.id && (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#dd2222]" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                 </svg>
                               )}
@@ -883,8 +883,8 @@ export default function ProjectWorkspace({ params }) {
                     )}
 
                     {/* Output Layout Picker */}
-                    <div className="col-span-1 sm:col-span-2 pt-4 border-t border-white/5">
-                      <label className="block text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Output Video Layout</label>
+                    <div className="col-span-1 sm:col-span-2 pt-4 border-t border-white/8">
+                      <label className="block text-xs text-[#909cac] font-medium uppercase tracking-wider mb-2">Output Video Layout</label>
                       <div className="grid grid-cols-3 gap-2">
                         {[
                           { id: 'vertical', label: 'Vertical (9:16)', desc: 'TikTok/Shorts ratio' },
@@ -897,12 +897,12 @@ export default function ProjectWorkspace({ params }) {
                             disabled={isRendering}
                             className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                               renderFormat === fmt.id
-                                ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-300 font-semibold'
-                                : 'bg-white/2 border-white/5 hover:bg-white/5 text-gray-400'
+                                ? 'bg-[#dd2222]/15 border-[#dd2222]/50 text-[#ef9595] font-semibold'
+                                : 'bg-white/2 border-white/5 hover:bg-white/5 text-[#909cac]'
                             }`}
                           >
                             <span className="block text-xs font-semibold">{fmt.label}</span>
-                            <span className="block text-[10px] text-gray-500 mt-1 leading-normal font-light">{fmt.desc}</span>
+                            <span className="block text-[10px] text-[#6e7d91] mt-1 leading-normal font-light">{fmt.desc}</span>
                           </button>
                         ))}
                       </div>
@@ -911,26 +911,26 @@ export default function ProjectWorkspace({ params }) {
                 </div>
 
                 {/* Subtitle / Caption Text Editor */}
-                <div className="glass-panel rounded-3xl p-6 flex flex-col gap-4">
+                <div className="glass-panel rounded-3xl p-6 flex flex-col gap-4 border border-white/8">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-xs font-semibold tracking-wider text-indigo-300 uppercase">Subtitles Transcription Editor</h3>
-                      <p className="text-[11px] text-gray-400 font-light mt-0.5">Edit lines below to correct spelling errors before rendering.</p>
+                      <h3 className="text-xs font-semibold tracking-wider text-[#ef9595] uppercase">Subtitles Transcription Editor</h3>
+                      <p className="text-[11px] text-[#909cac] font-light mt-0.5">Edit lines below to correct spelling errors before rendering.</p>
                     </div>
-                    <span className="text-[10px] px-2.5 py-1 rounded-full bg-white/5 border border-white/5 text-gray-400 font-mono">
+                    <span className="text-[10px] px-2.5 py-1 rounded-full bg-white/5 border border-white/5 text-[#909cac] font-mono">
                       {editableTranscript.length} lines
                     </span>
                   </div>
 
                   <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-2">
                     {editableTranscript.length === 0 ? (
-                      <div className="text-center py-10 text-gray-500 font-light text-sm">
+                      <div className="text-center py-10 text-[#6e7d91] font-light text-sm">
                         No captions segment available for this range.
                       </div>
                     ) : (
                       editableTranscript.map((segment, idx) => (
                         <div key={idx} className="flex gap-3 items-center">
-                          <span className="shrink-0 text-[10px] font-mono text-gray-500 w-12 text-right">
+                          <span className="shrink-0 text-[10px] font-mono text-[#6e7d91] w-12 text-right">
                             {formatDuration(segment.start)}
                           </span>
                           <input
@@ -938,7 +938,7 @@ export default function ProjectWorkspace({ params }) {
                             disabled={isRendering}
                             value={segment.text}
                             onChange={(e) => handleTranscriptChange(idx, e.target.value)}
-                            className="flex-grow px-3.5 py-2.5 bg-black/40 border border-white/5 rounded-xl text-xs focus:outline-none focus:border-indigo-500/50 text-white font-light"
+                            className="flex-grow px-3.5 py-2.5 bg-[#15181b]/90 border border-white/8 rounded-xl text-xs focus:outline-none focus:border-[#dd2222]/60 text-white font-light"
                           />
                         </div>
                       ))
