@@ -365,7 +365,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* SECTION 2: System Binaries (Server-Managed) */}
+          {/* SECTION 2: Local System Binaries */}
           <div className="glass-panel rounded-2xl p-6 md:p-8 space-y-6 border border-white/8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
@@ -373,16 +373,16 @@ export default function SettingsPage() {
                   <span className="w-8 h-8 rounded-[10px] bg-[#2cb7d3]/20 text-[#2cb7d3] flex items-center justify-center font-mono text-sm border border-[#2cb7d3]/30">
                     2
                   </span>
-                  System Binaries (FFmpeg &amp; yt-dlp)
+                  Local System Binaries (FFmpeg &amp; yt-dlp)
                 </h2>
                 <p className="text-[#909cac] text-xs font-light mt-1">
-                  Provided and executed directly by the hosting server (Render / Docker container).
+                  Runs directly on your machine. Leave as default CLI names or enter custom paths.
                 </p>
               </div>
 
-              <span className="px-3 py-1 rounded-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-semibold flex items-center gap-1.5 w-fit">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                Server Managed (Fixed)
+              <span className="px-3 py-1 rounded-[10px] bg-[#2cb7d3]/10 text-[#2cb7d3] border border-[#2cb7d3]/20 text-xs font-mono font-semibold flex items-center gap-1.5 w-fit">
+                <span className="w-2 h-2 rounded-full bg-[#2cb7d3]"></span>
+                Local Machine
               </span>
             </div>
 
@@ -391,18 +391,25 @@ export default function SettingsPage() {
               <div className="p-4 rounded-[10px] bg-[#15181b] border border-white/8 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-white">
-                    FFmpeg Binary
+                    FFmpeg Binary Path
                   </label>
-                  <span className="text-[10px] px-2 py-0.5 rounded-[10px] bg-white/5 text-[#909cac] font-mono">
-                    Auto-Resolved
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleChange('ffmpeg_path', 'ffmpeg')}
+                    className="text-[10px] text-[#2cb7d3] hover:text-[#5ccae1] cursor-pointer"
+                  >
+                    Reset to "ffmpeg"
+                  </button>
                 </div>
-                <div className="px-4 py-3 bg-[#1d2125] border border-white/5 rounded-[10px] text-[#d7dbe0] font-mono text-xs flex items-center justify-between">
-                  <span>/usr/bin/ffmpeg</span>
-                  <span className="text-emerald-400 text-[11px] font-sans font-semibold">libass included</span>
-                </div>
+                <input
+                  type="text"
+                  value={formData.ffmpeg_path || 'ffmpeg'}
+                  onChange={(e) => handleChange('ffmpeg_path', e.target.value)}
+                  placeholder="ffmpeg or /opt/homebrew/bin/ffmpeg"
+                  className="w-full px-3.5 py-2.5 bg-[#1d2125] border border-white/10 rounded-[10px] text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/60"
+                />
                 <p className="text-[11px] text-[#6e7d91] font-light">
-                  Pre-installed in production container for rendering 9:16 vertical video &amp; subtitles.
+                  Required for video framing, subtitle burning, and rendering (install via `brew install ffmpeg`).
                 </p>
               </div>
 
@@ -410,18 +417,25 @@ export default function SettingsPage() {
               <div className="p-4 rounded-[10px] bg-[#15181b] border border-white/8 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-white">
-                    yt-dlp Binary
+                    yt-dlp Binary Path
                   </label>
-                  <span className="text-[10px] px-2 py-0.5 rounded-[10px] bg-white/5 text-[#909cac] font-mono">
-                    Auto-Resolved
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleChange('yt_dlp_path', 'yt-dlp')}
+                    className="text-[10px] text-[#2cb7d3] hover:text-[#5ccae1] cursor-pointer"
+                  >
+                    Reset to "yt-dlp"
+                  </button>
                 </div>
-                <div className="px-4 py-3 bg-[#1d2125] border border-white/5 rounded-[10px] text-[#d7dbe0] font-mono text-xs flex items-center justify-between">
-                  <span>/usr/local/bin/yt-dlp</span>
-                  <span className="text-emerald-400 text-[11px] font-sans font-semibold">Stream clipper</span>
-                </div>
+                <input
+                  type="text"
+                  value={formData.yt_dlp_path || 'yt-dlp'}
+                  onChange={(e) => handleChange('yt_dlp_path', e.target.value)}
+                  placeholder="yt-dlp or /opt/homebrew/bin/yt-dlp"
+                  className="w-full px-3.5 py-2.5 bg-[#1d2125] border border-white/10 rounded-[10px] text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/60"
+                />
                 <p className="text-[11px] text-[#6e7d91] font-light">
-                  Pre-installed in production container to extract 20-30s video streams from YouTube.
+                  Required for fast video segment downloads (install via `brew install yt-dlp` or `pip install yt-dlp`).
                 </p>
               </div>
             </div>

@@ -68,8 +68,8 @@ export async function POST(req, { params }) {
     const horizontalPath = path.join(outputsDir, horizontalFileName);
 
     console.log(`RENDER API: Starting video clip download for ${id} (${clip.start}s to ${clip.end}s)...`);
-    // Step 1: Download clip section using direct stream resolution or yt-dlp
-    await downloadVideoClip(project.url, clip.start, clip.end, tempVideoPath, settings.yt_dlp_path, settings.ffmpeg_path, settings.youtube_cookies);
+    // Step 1: Download clip section using local yt-dlp + ffmpeg
+    await downloadVideoClip(project.url, clip.start, clip.end, tempVideoPath, settings.yt_dlp_path, settings.ffmpeg_path);
 
     // Retrieve active transcript
     const activeTranscript = clip.captionLanguage === 'hinglish' && clip.hinglishTranscript && clip.hinglishTranscript.length > 0
