@@ -11,11 +11,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Download and install latest standalone yt-dlp binary with symlinks
+# 2. Download and install latest standalone yt-dlp binary with symlinks and ensure node is in PATH for n-challenge solving
 RUN pip3 install --no-cache-dir --break-system-packages yt-dlp || true \
     && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp \
-    && ln -sf /usr/local/bin/yt-dlp /usr/bin/yt-dlp
+    && ln -sf /usr/local/bin/yt-dlp /usr/bin/yt-dlp \
+    && ln -sf /usr/local/bin/node /usr/bin/node \
+    && ln -sf /usr/local/bin/node /usr/bin/nodejs
 
 WORKDIR /app
 
