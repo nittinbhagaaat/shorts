@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --font-outfit: 'Outfit', sans-serif;
+  --font-space: 'Space Grotesk', sans-serif;
+}
+
+body {
+  background-color: #030014;
+  color: #f3f4f6;
+  font-family: var(--font-outfit);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(13, 10, 36, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.15);
+  transform: translateY(-4px);
+}
+
+/* Custom Gradients */
+.gradient-text {
+  background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-glow {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(3, 0, 20, 0) 70%);
+}
+
+.gradient-glow-purple {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, rgba(3, 0, 20, 0) 70%);
+}
+
+.gradient-button {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+  transition: all 0.2s ease-in-out;
+}
+
+.gradient-button:hover {
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.5);
+  transform: scale(1.02);
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.08);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 8s infinite ease-in-out;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #030014;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4);
+}
