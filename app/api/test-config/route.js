@@ -76,86 +76,47 @@ async function testAIKey(provider, key) {
 
   try {
     if (provider === 'groq') {
-      const callGroq = async (model) => {
-        return fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${key}`
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'user', content: 'Say OK' }],
-            max_tokens: 5
-          })
-        });
-      };
-
-      let res = await callGroq('llama-3.3-70b-versatile');
-      if (!res.ok) {
-        res = await callGroq('llama-3.1-8b-instant');
-      }
-
+      const res = await fetch('https://api.groq.com/openai/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${key}`
+        }
+      });
       if (res.ok) return { ok: true, message: 'Groq API Key valid! (Free tier active)' };
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       return { ok: false, message: err.error?.message || res.statusText };
     }
 
     if (provider === 'gemini') {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Say OK' }] }]
-        })
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`, {
+        method: 'GET',
       });
       if (res.ok) return { ok: true, message: 'Gemini API Key valid!' };
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       return { ok: false, message: err.error?.message || res.statusText };
     }
 
     if (provider === 'mistral') {
-      const callMistral = async (model) => {
-        return fetch('https://api.mistral.ai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${key}`
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'user', content: 'Say OK' }],
-            max_tokens: 5
-          })
-        });
-      };
-
-      // Try free-tier mistral-small-latest first, then open-mistral-7b
-      let res = await callMistral('mistral-small-latest');
-      if (!res.ok) {
-        res = await callMistral('open-mistral-7b');
-      }
-
-      if (res.ok) return { ok: true, message: 'Mistral API Key valid! (Free Tier model: mistral-small)' };
-      const err = await res.json();
+      const res = await fetch('https://api.mistral.ai/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${key}`
+        }
+      });
+      if (res.ok) return { ok: true, message: 'Mistral API Key valid! (Free Tier active)' };
+      const err = await res.json().catch(() => ({}));
       return { ok: false, message: err.message || err.error?.message || res.statusText };
     }
 
     if (provider === 'openai') {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
+      const res = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${key}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: 'Say OK' }],
-          max_tokens: 5
-        })
+        }
       });
       if (res.ok) return { ok: true, message: 'OpenAI API Key valid!' };
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       return { ok: false, message: err.error?.message || res.statusText };
     }
 

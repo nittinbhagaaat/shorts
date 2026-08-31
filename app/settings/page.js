@@ -88,7 +88,7 @@ export default function SettingsPage() {
       color: 'from-[#dd2222]/20 to-[#971717]/10 border-[#dd2222]/40 text-[#ef9595]',
       keyField: 'groq_api_key',
       docUrl: 'https://console.groq.com/keys',
-      description: 'Llama 3.3 70B with near-instant sub-second inference.',
+      description: 'Llama 3.3 70B & Qwen models with instant sub-second inference.',
     },
     {
       id: 'gemini',
@@ -129,7 +129,7 @@ export default function SettingsPage() {
         {/* Header Title */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/8 pb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[10px] border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider mb-2">
               ⚙️ Client-Side Storage
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
@@ -144,7 +144,7 @@ export default function SettingsPage() {
             <button
               onClick={handleRunDiagnostics}
               disabled={isTesting}
-              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              className="px-4 py-2.5 rounded-[10px] bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
             >
               {isTesting ? (
                 <>
@@ -166,7 +166,7 @@ export default function SettingsPage() {
 
             <button
               onClick={handleSave}
-              className="px-5 py-2.5 gradient-button rounded-xl text-white font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer hover:shadow-red-600/30"
+              className="px-5 py-2.5 bg-[#dd2222] hover:bg-[#b91c1c] rounded-[10px] text-white font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -178,7 +178,7 @@ export default function SettingsPage() {
 
         {/* Success Toast / Notification */}
         {saveSuccess && (
-          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-medium flex items-center justify-between animate-fade-in shadow-lg shadow-emerald-500/5">
+          <div className="p-4 rounded-[10px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-medium flex items-center justify-between animate-fade-in">
             <div className="flex items-center gap-3">
               <span className="text-xl">✅</span>
               <div>
@@ -190,7 +190,7 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={() => setSaveSuccess(false)}
-              className="text-emerald-400 hover:text-white text-xs px-2 py-1"
+              className="text-emerald-400 hover:text-white text-xs px-2 py-1 cursor-pointer"
             >
               Dismiss
             </button>
@@ -199,7 +199,7 @@ export default function SettingsPage() {
 
         {/* Diagnostics Results Banner */}
         {testResults && (
-          <div className="glass-panel rounded-3xl p-6 space-y-4 border border-white/10 animate-fade-in">
+          <div className="glass-panel rounded-2xl p-6 space-y-4 border border-white/10">
             <div className="flex items-center justify-between border-b border-white/5 pb-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>🔍 Diagnostic Health Check Results</span>
@@ -209,10 +209,10 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* MongoDB Status */}
-              <div className={`p-3.5 rounded-2xl border ${testResults.mongodb?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+              <div className={`p-3.5 rounded-[10px] border ${testResults.mongodb?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold text-white">MongoDB</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${testResults.mongodb?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-[10px] font-mono font-bold ${testResults.mongodb?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
                     {testResults.mongodb?.ok ? 'ACTIVE' : 'FAILED'}
                   </span>
                 </div>
@@ -222,10 +222,10 @@ export default function SettingsPage() {
               </div>
 
               {/* Active AI Status */}
-              <div className={`p-3.5 rounded-2xl border ${testResults.ai?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
+              <div className={`p-3.5 rounded-[10px] border ${testResults.ai?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold text-white">AI ({testResults.ai?.provider || formData.active_ai_provider})</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${testResults.ai?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-[10px] font-mono font-bold ${testResults.ai?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
                     {testResults.ai?.ok ? 'VALID' : 'INVALID'}
                   </span>
                 </div>
@@ -235,10 +235,10 @@ export default function SettingsPage() {
               </div>
 
               {/* FFmpeg Status */}
-              <div className={`p-3.5 rounded-2xl border ${testResults.ffmpeg?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+              <div className={`p-3.5 rounded-[10px] border ${testResults.ffmpeg?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold text-white">FFmpeg Binary</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${testResults.ffmpeg?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-[10px] font-mono font-bold ${testResults.ffmpeg?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
                     {testResults.ffmpeg?.ok ? 'FOUND' : 'MISSING'}
                   </span>
                 </div>
@@ -248,10 +248,10 @@ export default function SettingsPage() {
               </div>
 
               {/* yt-dlp Status */}
-              <div className={`p-3.5 rounded-2xl border ${testResults.yt_dlp?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+              <div className={`p-3.5 rounded-[10px] border ${testResults.yt_dlp?.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold text-white">yt-dlp Binary</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${testResults.yt_dlp?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-[10px] font-mono font-bold ${testResults.yt_dlp?.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
                     {testResults.yt_dlp?.ok ? 'FOUND' : 'MISSING'}
                   </span>
                 </div>
@@ -266,11 +266,11 @@ export default function SettingsPage() {
         <form onSubmit={handleSave} className="space-y-8">
           
           {/* SECTION 1: AI Provider Selection & Keys */}
-          <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6 border border-white/8">
+          <div className="glass-panel rounded-2xl p-6 md:p-8 space-y-6 border border-white/8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-xl bg-[#dd2222]/20 text-[#ef9595] flex items-center justify-center font-mono text-sm border border-[#dd2222]/30">
+                  <span className="w-8 h-8 rounded-[10px] bg-[#dd2222]/20 text-[#ef9595] flex items-center justify-center font-mono text-sm border border-[#dd2222]/30">
                     1
                   </span>
                   AI Generation Engine
@@ -280,7 +280,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <span className="text-[11px] font-mono text-[#ef9595] bg-[#dd2222]/10 px-3 py-1 rounded-full border border-[#dd2222]/20 w-fit">
+              <span className="text-[11px] font-mono text-[#ef9595] bg-[#dd2222]/10 px-3 py-1 rounded-[10px] border border-[#dd2222]/20 w-fit">
                 Active: {formData.active_ai_provider.toUpperCase()}
               </span>
             </div>
@@ -295,9 +295,9 @@ export default function SettingsPage() {
                 return (
                   <div
                     key={provider.id}
-                    className={`glass-card rounded-2xl p-5 space-y-4 border transition-all cursor-pointer relative ${
+                    className={`glass-card rounded-[10px] p-5 space-y-4 border transition-colors cursor-pointer relative ${
                       isActive
-                        ? 'border-[#dd2222]/60 bg-[#dd2222]/10 shadow-lg shadow-red-600/10'
+                        ? 'border-[#dd2222]/60 bg-[#dd2222]/10'
                         : 'border-white/5 hover:border-white/10'
                     }`}
                     onClick={() => handleChange('active_ai_provider', provider.id)}
@@ -312,7 +312,7 @@ export default function SettingsPage() {
                           className="text-[#dd2222] focus:ring-[#dd2222]"
                         />
                         <span className="text-sm font-bold text-white">{provider.name}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-[#909cac] border border-white/5">
+                        <span className="text-[10px] px-2 py-0.5 rounded-[10px] bg-white/5 text-[#909cac] border border-white/5">
                           {provider.badge}
                         </span>
                       </div>
@@ -348,12 +348,12 @@ export default function SettingsPage() {
                           value={formData[provider.keyField]}
                           onChange={(e) => handleChange(provider.keyField, e.target.value)}
                           placeholder={`Enter ${provider.name} API Key`}
-                          className="w-full px-3.5 py-2.5 bg-[#15181b]/90 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/60 pr-16"
+                          className="w-full px-3.5 py-2.5 bg-[#15181b] border border-white/10 rounded-[10px] text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/60 pr-16"
                         />
                         <button
                           type="button"
                           onClick={() => toggleShowKey(provider.id)}
-                          className="absolute right-2 top-2 px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-[#909cac] hover:text-white text-[10px] transition-all"
+                          className="absolute right-2 top-2 px-2 py-0.5 rounded-[10px] bg-white/5 hover:bg-white/10 text-[#909cac] hover:text-white text-[10px] transition-colors cursor-pointer"
                         >
                           {showKeys[provider.id] ? 'Hide' : 'Show'}
                         </button>
@@ -366,11 +366,11 @@ export default function SettingsPage() {
           </div>
 
           {/* SECTION 2: System Binaries (Server-Managed) */}
-          <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6 border border-white/8">
+          <div className="glass-panel rounded-2xl p-6 md:p-8 space-y-6 border border-white/8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-xl bg-[#2cb7d3]/20 text-[#2cb7d3] flex items-center justify-center font-mono text-sm border border-[#2cb7d3]/30">
+                  <span className="w-8 h-8 rounded-[10px] bg-[#2cb7d3]/20 text-[#2cb7d3] flex items-center justify-center font-mono text-sm border border-[#2cb7d3]/30">
                     2
                   </span>
                   System Binaries (FFmpeg &amp; yt-dlp)
@@ -380,7 +380,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-semibold flex items-center gap-1.5 w-fit">
+              <span className="px-3 py-1 rounded-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-semibold flex items-center gap-1.5 w-fit">
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
                 Server Managed (Fixed)
               </span>
@@ -388,16 +388,16 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* FFmpeg Path */}
-              <div className="p-4 rounded-2xl bg-[#15181b]/70 border border-white/8 space-y-2">
+              <div className="p-4 rounded-[10px] bg-[#15181b] border border-white/8 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-white">
                     FFmpeg Binary
                   </label>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[#909cac] font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded-[10px] bg-white/5 text-[#909cac] font-mono">
                     Auto-Resolved
                   </span>
                 </div>
-                <div className="px-4 py-3 bg-[#1d2125]/90 border border-white/5 rounded-xl text-[#d7dbe0] font-mono text-xs flex items-center justify-between">
+                <div className="px-4 py-3 bg-[#1d2125] border border-white/5 rounded-[10px] text-[#d7dbe0] font-mono text-xs flex items-center justify-between">
                   <span>/usr/bin/ffmpeg</span>
                   <span className="text-emerald-400 text-[11px] font-sans font-semibold">libass included</span>
                 </div>
@@ -407,16 +407,16 @@ export default function SettingsPage() {
               </div>
 
               {/* yt-dlp Path */}
-              <div className="p-4 rounded-2xl bg-[#15181b]/70 border border-white/8 space-y-2">
+              <div className="p-4 rounded-[10px] bg-[#15181b] border border-white/8 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-white">
                     yt-dlp Binary
                   </label>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[#909cac] font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded-[10px] bg-white/5 text-[#909cac] font-mono">
                     Auto-Resolved
                   </span>
                 </div>
-                <div className="px-4 py-3 bg-[#1d2125]/90 border border-white/5 rounded-xl text-[#d7dbe0] font-mono text-xs flex items-center justify-between">
+                <div className="px-4 py-3 bg-[#1d2125] border border-white/5 rounded-[10px] text-[#d7dbe0] font-mono text-xs flex items-center justify-between">
                   <span>/usr/local/bin/yt-dlp</span>
                   <span className="text-emerald-400 text-[11px] font-sans font-semibold">Stream clipper</span>
                 </div>
@@ -428,10 +428,10 @@ export default function SettingsPage() {
           </div>
 
           {/* SECTION 3: Database Connection */}
-          <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6 border border-white/8">
+          <div className="glass-panel rounded-2xl p-6 md:p-8 space-y-6 border border-white/8">
             <div>
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono text-sm border border-emerald-500/30">
+                <span className="w-8 h-8 rounded-[10px] bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono text-sm border border-emerald-500/30">
                   3
                 </span>
                 MongoDB Database Storage
@@ -441,7 +441,7 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#15181b]/70 border border-white/8 space-y-2">
+            <div className="p-4 rounded-[10px] bg-[#15181b] border border-white/8 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-white">
                   MongoDB Connection URI (<span className="font-mono text-[#909cac]">mongodb_uri</span>)
@@ -449,7 +449,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => handleChange('mongodb_uri', 'mongodb://localhost:27017/shorts')}
-                  className="text-[11px] text-[#2cb7d3] hover:text-[#5ccae1] font-light"
+                  className="text-[11px] text-[#2cb7d3] hover:text-[#5ccae1] font-light cursor-pointer"
                 >
                   Use Localhost:27017
                 </button>
@@ -459,7 +459,7 @@ export default function SettingsPage() {
                 value={formData.mongodb_uri}
                 onChange={(e) => handleChange('mongodb_uri', e.target.value)}
                 placeholder="mongodb+srv://user:password@cluster0.xxx.mongodb.net/shorts or mongodb://localhost:27017/shorts"
-                className="w-full px-4 py-3 bg-[#1d2125]/90 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/60"
+                className="w-full px-4 py-3 bg-[#1d2125] border border-white/10 rounded-[10px] text-white font-mono text-xs focus:outline-none focus:border-[#dd2222]/60"
               />
               <p className="text-[11px] text-[#6e7d91] font-light">
                 Supports MongoDB Atlas clusters (`mongodb+srv://...`) or local instances (`mongodb://localhost:27017/...`).
@@ -472,7 +472,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={handleResetDefaults}
-              className="text-xs text-red-400 hover:text-red-300 hover:underline transition-all cursor-pointer"
+              className="text-xs text-red-400 hover:text-red-300 hover:underline transition-colors cursor-pointer"
             >
               Reset all settings to default values
             </button>
@@ -482,14 +482,14 @@ export default function SettingsPage() {
                 type="button"
                 onClick={handleRunDiagnostics}
                 disabled={isTesting}
-                className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs transition-all cursor-pointer"
+                className="flex-1 sm:flex-none px-5 py-3 rounded-[10px] bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs transition-colors cursor-pointer"
               >
                 Test Configuration
               </button>
 
               <button
                 type="submit"
-                className="flex-1 sm:flex-none px-7 py-3 gradient-button rounded-2xl text-white font-semibold text-sm transition-all cursor-pointer hover:shadow-red-600/30 active:scale-95"
+                className="flex-1 sm:flex-none px-7 py-3 bg-[#dd2222] hover:bg-[#b91c1c] rounded-[10px] text-white font-semibold text-sm transition-colors cursor-pointer active:scale-95"
               >
                 Save Settings
               </button>

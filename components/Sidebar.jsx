@@ -68,13 +68,13 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
       {isMobileOpen && (
         <div
           onClick={() => setIsMobileOpen(false)}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 lg:hidden"
         />
       )}
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-[#1d2125]/95 backdrop-blur-2xl border-r border-white/8 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-[#1d2125] border-r border-white/8 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -82,7 +82,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
         <div>
           <div className="p-6 border-b border-white/8 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-2xl gradient-button flex items-center justify-center shadow-lg shadow-red-600/30 group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-[10px] bg-[#dd2222] flex items-center justify-center transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                 </svg>
@@ -90,7 +90,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
               <div>
                 <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5 font-sans">
                   ViralClips
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#dd2222]/20 text-[#ef9595] font-semibold border border-[#dd2222]/30 uppercase tracking-wide">
+                  <span className="text-[10px] px-2 py-0.5 rounded-[10px] bg-[#dd2222]/20 text-[#ef9595] font-semibold border border-[#dd2222]/30 uppercase tracking-wide">
                     Studio
                   </span>
                 </span>
@@ -101,7 +101,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
             {/* Mobile close button */}
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="p-2 text-[#909cac] hover:text-white rounded-lg lg:hidden"
+              className="p-2 text-[#909cac] hover:text-white rounded-[10px] lg:hidden cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -118,16 +118,16 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
                   key={item.name}
                   href={item.href}
                   onClick={() => setIsMobileOpen(false)}
-                  className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all group ${
+                  className={`flex items-center gap-3.5 px-4 py-3 rounded-[10px] transition-colors group ${
                     isActive
-                      ? 'bg-[#dd2222]/15 border border-[#dd2222]/40 text-white shadow-lg shadow-red-600/10 font-semibold'
+                      ? 'bg-[#dd2222]/15 border border-[#dd2222]/40 text-white font-semibold'
                       : 'text-[#909cac] hover:text-white hover:bg-white/5 border border-transparent'
                   }`}
                 >
                   <div
-                    className={`p-2 rounded-xl transition-colors ${
+                    className={`p-2 rounded-[10px] transition-colors ${
                       isActive
-                        ? 'bg-[#dd2222] text-white shadow-md shadow-red-600/40'
+                        ? 'bg-[#dd2222] text-white'
                         : 'bg-white/5 text-[#909cac] group-hover:text-white group-hover:bg-white/10'
                     }`}
                   >
@@ -140,7 +140,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
                     </span>
                   </div>
                   {isActive && (
-                    <div className="w-1.5 h-6 rounded-full bg-[#dd2222] animate-pulse"></div>
+                    <div className="w-1.5 h-6 rounded-[10px] bg-[#dd2222]"></div>
                   )}
                 </Link>
               );
@@ -150,10 +150,10 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
 
         {/* Bottom System Health & Configuration Status */}
         <div className="p-4 border-t border-white/8">
-          <div className="p-3.5 rounded-2xl bg-[#15181b]/80 border border-white/8 space-y-2.5 shadow-sm">
+          <div className="p-3.5 rounded-[10px] bg-[#15181b] border border-white/8 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Local Engine</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium">
+              <span className="text-[10px] px-2 py-0.5 rounded-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium">
                 Client Only
               </span>
             </div>
@@ -193,7 +193,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
             <Link
               href="/settings"
               onClick={() => setIsMobileOpen(false)}
-              className="w-full mt-2 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-[#d7dbe0] hover:text-white border border-white/5 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all text-center"
+              className="w-full mt-2 py-2 px-3 rounded-[10px] bg-white/5 hover:bg-white/10 text-[#d7dbe0] hover:text-white border border-white/5 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors text-center"
             >
               <span>⚙️ Manage Settings</span>
             </Link>

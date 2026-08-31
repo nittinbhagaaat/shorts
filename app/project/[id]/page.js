@@ -446,7 +446,7 @@ export default function ProjectWorkspace({ params }) {
         <div className="flex items-center gap-3 shrink-0">
           <Link
             href="/settings"
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-[#909cac] hover:text-white text-xs transition-all flex items-center gap-1.5"
+            className="p-2 rounded-[10px] bg-white/5 hover:bg-white/10 border border-white/5 text-[#909cac] hover:text-white text-xs transition-colors flex items-center gap-1.5"
             title="Settings"
           >
             <span>⚙️ Settings</span>
@@ -455,7 +455,7 @@ export default function ProjectWorkspace({ params }) {
           <button
             onClick={handleDeleteWorkspace}
             disabled={isDeleting}
-            className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-medium transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+            className="px-3 py-1.5 rounded-[10px] bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1"
           >
             {isDeleting ? (
               <>
@@ -482,7 +482,7 @@ export default function ProjectWorkspace({ params }) {
         
         {/* Left Side: AI Clips List */}
         <aside className="w-full md:w-96 border-b md:border-b-0 md:border-r border-white/8 flex flex-col overflow-y-auto max-h-[400px] md:max-h-none shrink-0 bg-[#1d2125]/60">
-          <div className="p-4 border-b border-white/8 sticky top-0 bg-[#1d2125]/95 backdrop-blur-md z-10 flex items-center justify-between">
+          <div className="p-4 border-b border-white/8 sticky top-0 bg-[#1d2125] z-10 flex items-center justify-between">
             <h2 className="font-semibold text-xs tracking-wider text-[#ef9595] uppercase">AI-Curated Moments ({clips.length})</h2>
           </div>
           
@@ -493,9 +493,9 @@ export default function ProjectWorkspace({ params }) {
                 <div
                   key={clip._id}
                   onClick={() => setSelectedClip(clip)}
-                  className={`p-4 rounded-2xl cursor-pointer border transition-all ${
+                  className={`p-4 rounded-[10px] cursor-pointer border transition-colors ${
                     isSelected
-                      ? 'bg-[#dd2222]/15 border-[#dd2222]/50 shadow-lg shadow-red-600/10'
+                      ? 'bg-[#dd2222]/15 border-[#dd2222]/50'
                       : 'bg-white/2 border-white/5 hover:bg-white/5 hover:border-white/10'
                   }`}
                 >
@@ -503,7 +503,7 @@ export default function ProjectWorkspace({ params }) {
                     <h3 className={`font-semibold text-sm line-clamp-1 leading-snug ${isSelected ? 'text-[#ef9595]' : 'text-white'}`}>
                       {clip.title}
                     </h3>
-                    <span className="shrink-0 px-2 py-0.5 rounded bg-black/60 text-white font-mono text-[10px] font-semibold">
+                    <span className="shrink-0 px-2 py-0.5 rounded-[10px] bg-black/60 text-white font-mono text-[10px] font-semibold">
                       {formatDuration(clip.duration)}s
                     </span>
                   </div>
@@ -611,9 +611,9 @@ export default function ProjectWorkspace({ params }) {
                       <div className="flex bg-black/40 p-1 rounded-xl border border-white/8 mb-3 w-full max-w-[280px]">
                         <button
                           onClick={() => setPreviewActiveTab('vertical')}
-                          className={`flex-1 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                          className={`flex-1 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-[10px] transition-colors cursor-pointer ${
                             previewActiveTab === 'vertical'
-                              ? 'gradient-button text-white shadow'
+                              ? 'bg-[#dd2222] text-white'
                               : 'text-[#909cac] hover:text-white'
                           }`}
                         >
@@ -621,9 +621,9 @@ export default function ProjectWorkspace({ params }) {
                         </button>
                         <button
                           onClick={() => setPreviewActiveTab('horizontal')}
-                          className={`flex-1 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                          className={`flex-1 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-[10px] transition-colors cursor-pointer ${
                             previewActiveTab === 'horizontal'
-                              ? 'gradient-button text-white shadow'
+                              ? 'bg-[#dd2222] text-white'
                               : 'text-[#909cac] hover:text-white'
                           }`}
                         >
@@ -635,7 +635,7 @@ export default function ProjectWorkspace({ params }) {
 
                   {/* Video Box Container */}
                   <div 
-                    className={`relative bg-black rounded-2xl overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center transition-all duration-300 ${
+                    className={`relative bg-black rounded-2xl overflow-hidden border border-white/10 flex items-center justify-center transition-all duration-300 ${
                       previewActiveTab === 'horizontal' 
                         ? 'aspect-[16/9] w-full max-w-[340px]' 
                         : 'aspect-[9/16] w-full max-w-[280px]'
@@ -682,7 +682,7 @@ export default function ProjectWorkspace({ params }) {
                          {((selectedClip.renderFormat || 'vertical') === 'vertical' || selectedClip.renderFormat === 'both') && (
                           <a
                             href={`/api/clip/${selectedClip._id}/download?format=vertical`}
-                            className="w-full py-3.5 gradient-button rounded-xl text-white font-semibold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="w-full py-3.5 bg-[#dd2222] hover:bg-[#b91c1c] rounded-[10px] text-white font-semibold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -693,7 +693,7 @@ export default function ProjectWorkspace({ params }) {
                         {(selectedClip.renderFormat === 'horizontal' || selectedClip.renderFormat === 'both') && (
                           <a
                             href={`/api/clip/${selectedClip._id}/download?format=horizontal`}
-                            className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 rounded-xl text-white font-semibold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 rounded-[10px] text-white font-semibold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -704,7 +704,7 @@ export default function ProjectWorkspace({ params }) {
                         <button
                           onClick={handleResetRender}
                           disabled={isResetting}
-                          className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 rounded-xl text-red-400 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2 disabled:opacity-50"
+                          className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 rounded-[10px] text-red-400 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-2 disabled:opacity-50"
                         >
                           {isResetting ? (
                             <>
@@ -728,7 +728,7 @@ export default function ProjectWorkspace({ params }) {
                       <button
                         onClick={handleStartRender}
                         disabled={isRendering}
-                        className="w-full py-4 gradient-button rounded-xl text-white font-semibold text-xs uppercase tracking-wider hover:shadow-red-600/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full py-4 bg-[#dd2222] hover:bg-[#b91c1c] rounded-[10px] text-white font-semibold text-xs uppercase tracking-wider active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {isRendering ? (
                           <span className="flex items-center gap-2">
@@ -861,9 +861,9 @@ export default function ProjectWorkspace({ params }) {
                               key={lang.id}
                               onClick={() => handleToggleLanguage(lang.id)}
                               disabled={isRendering}
-                              className={`flex-grow py-3 px-4 rounded-2xl border text-left transition-all cursor-pointer flex justify-between items-center ${
+                              className={`flex-grow py-3 px-4 rounded-[10px] border text-left transition-colors cursor-pointer flex justify-between items-center ${
                                 captionLanguage === lang.id
-                                  ? 'bg-[#dd2222]/15 border-[#dd2222]/50 text-[#ef9595] font-semibold shadow-lg shadow-red-600/10'
+                                  ? 'bg-[#dd2222]/15 border-[#dd2222]/50 text-[#ef9595] font-semibold'
                                   : 'bg-white/2 border-white/5 hover:bg-white/5 text-[#909cac]'
                               }`}
                             >
@@ -895,7 +895,7 @@ export default function ProjectWorkspace({ params }) {
                             key={fmt.id}
                             onClick={() => setRenderFormat(fmt.id)}
                             disabled={isRendering}
-                            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            className={`p-3 rounded-[10px] border text-left transition-colors cursor-pointer flex flex-col justify-between ${
                               renderFormat === fmt.id
                                 ? 'bg-[#dd2222]/15 border-[#dd2222]/50 text-[#ef9595] font-semibold'
                                 : 'bg-white/2 border-white/5 hover:bg-white/5 text-[#909cac]'

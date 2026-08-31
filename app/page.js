@@ -136,7 +136,7 @@ export default function HomeDashboard() {
         
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto space-y-4 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[10px] border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider">
             🚀 Studio AI Clipper &amp; Subtitles
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white">
@@ -148,7 +148,7 @@ export default function HomeDashboard() {
         </div>
 
         {/* Input Panel */}
-        <div className="w-full max-w-3xl mx-auto glass-panel rounded-3xl p-6 md:p-8 shadow-2xl border border-white/8">
+        <div className="w-full max-w-3xl mx-auto glass-panel rounded-2xl p-6 md:p-8 border border-white/8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <input
@@ -158,7 +158,7 @@ export default function HomeDashboard() {
                 placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=...)"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full px-5 py-4 md:py-5 bg-[#15181b]/90 border border-white/10 rounded-2xl text-white placeholder-[#6e7d91] focus:outline-none focus:ring-2 focus:ring-[#dd2222]/50 focus:border-[#dd2222]/60 transition-all font-light text-sm md:text-base"
+                className="w-full px-5 py-4 md:py-5 bg-[#15181b] border border-white/10 rounded-[10px] text-white placeholder-[#6e7d91] focus:outline-none focus:border-[#dd2222]/60 transition-colors font-light text-sm md:text-base"
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-4">
                 {isLoading && (
@@ -171,7 +171,7 @@ export default function HomeDashboard() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-3 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-300 rounded-xl text-xs sm:text-sm font-medium animate-shake">
+              <div className="flex items-center gap-3 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-300 rounded-[10px] text-xs sm:text-sm font-medium">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
@@ -182,7 +182,7 @@ export default function HomeDashboard() {
             <button
               type="submit"
               disabled={isLoading || !url.trim()}
-              className="w-full py-4 md:py-5 gradient-button rounded-2xl text-white font-semibold text-base md:text-lg hover:shadow-red-600/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-4 md:py-5 bg-[#dd2222] hover:bg-[#b91c1c] rounded-[10px] text-white font-semibold text-base md:text-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -243,7 +243,7 @@ export default function HomeDashboard() {
 
             <Link
               href="/workspaces"
-              className="text-xs text-[#ef9595] hover:text-white font-medium flex items-center gap-1 transition-all"
+              className="text-xs text-[#ef9595] hover:text-white font-medium flex items-center gap-1 transition-colors"
             >
               <span>View all workspaces</span>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -255,19 +255,19 @@ export default function HomeDashboard() {
           {isFetchingProjects ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((n) => (
-                <div key={n} className="glass-card rounded-3xl h-[320px] animate-pulse flex flex-col justify-between p-4">
-                  <div className="bg-white/5 rounded-2xl aspect-video w-full mb-4"></div>
+                <div key={n} className="glass-card rounded-2xl h-[320px] animate-pulse flex flex-col justify-between p-4">
+                  <div className="bg-white/5 rounded-[10px] aspect-video w-full mb-4"></div>
                   <div className="space-y-2 flex-grow">
-                    <div className="h-4 bg-white/5 rounded w-3/4"></div>
-                    <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                    <div className="h-4 bg-white/5 rounded-[10px] w-3/4"></div>
+                    <div className="h-3 bg-white/5 rounded-[10px] w-1/2"></div>
                   </div>
-                  <div className="h-10 bg-white/5 rounded-2xl w-full mt-4"></div>
+                  <div className="h-10 bg-white/5 rounded-[10px] w-full mt-4"></div>
                 </div>
               ))}
             </div>
           ) : projects.length === 0 ? (
-            <div className="glass-panel rounded-3xl p-12 text-center max-w-md mx-auto space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mx-auto text-[#909cac]">
+            <div className="glass-panel rounded-2xl p-12 text-center max-w-md mx-auto space-y-3">
+              <div className="w-14 h-14 rounded-[10px] bg-white/5 flex items-center justify-center mx-auto text-[#909cac]">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
                 </svg>
@@ -278,7 +278,7 @@ export default function HomeDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.slice(0, 6).map((project) => (
-                <div key={project._id} className="glass-card rounded-3xl overflow-hidden flex flex-col justify-between group relative border border-white/8 hover:border-[#dd2222]/40 transition-all">
+                <div key={project._id} className="glass-card rounded-2xl overflow-hidden flex flex-col justify-between group relative border border-white/8 hover:border-[#dd2222]/40 transition-colors">
                   <div className="relative aspect-video w-full overflow-hidden bg-black/40">
                     <img
                       src={project.thumbnail}
@@ -292,7 +292,7 @@ export default function HomeDashboard() {
                         e.stopPropagation();
                         handleDeleteProject(project._id);
                       }}
-                      className="absolute top-2 right-2 p-2 rounded-xl bg-black/70 hover:bg-red-600 text-white/80 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer z-20"
+                      className="absolute top-2 right-2 p-2 rounded-[10px] bg-black/70 hover:bg-red-600 text-white/80 hover:text-white border border-white/10 transition-colors cursor-pointer z-20"
                       title="Delete Workspace"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -300,7 +300,7 @@ export default function HomeDashboard() {
                       </svg>
                     </button>
 
-                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-lg bg-black/80 text-white text-[11px] font-semibold font-mono border border-white/10">
+                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-[10px] bg-black/80 text-white text-[11px] font-semibold font-mono border border-white/10">
                       {formatDuration(project.duration)}
                     </div>
                   </div>
@@ -318,7 +318,7 @@ export default function HomeDashboard() {
 
                     <button
                       onClick={() => router.push(`/project/${project._id}`)}
-                      className="w-full py-2.5 rounded-xl gradient-button text-white font-semibold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      className="w-full py-2.5 rounded-[10px] bg-[#dd2222] hover:bg-[#b91c1c] text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
                     >
                       <span>Open Workspace</span>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

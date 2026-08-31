@@ -88,7 +88,7 @@ export default function WorkspacesPage() {
         {/* Top Header & Search Bar */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/8 pb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[10px] border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider mb-2">
               📁 Workspace Manager
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
@@ -102,7 +102,7 @@ export default function WorkspacesPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="px-5 py-2.5 gradient-button rounded-xl text-white font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer hover:shadow-red-600/30"
+              className="px-5 py-2.5 bg-[#dd2222] hover:bg-[#b91c1c] rounded-[10px] text-white font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -120,7 +120,7 @@ export default function WorkspacesPage() {
               placeholder="Search by title, channel..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[#15181b]/90 border border-white/10 rounded-2xl text-white placeholder-[#6e7d91] focus:outline-none focus:border-[#dd2222]/60 text-xs font-light"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#15181b] border border-white/10 rounded-[10px] text-white placeholder-[#6e7d91] focus:outline-none focus:border-[#dd2222]/60 text-xs font-light transition-colors"
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -136,7 +136,7 @@ export default function WorkspacesPage() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={fetchWorkspaces}
-              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#d7dbe0] hover:text-white border border-white/5 transition-all text-xs flex items-center gap-1.5 cursor-pointer"
+              className="p-2.5 rounded-[10px] bg-white/5 hover:bg-white/10 text-[#d7dbe0] hover:text-white border border-white/5 transition-colors text-xs flex items-center gap-1.5 cursor-pointer"
               title="Refresh list"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -149,7 +149,7 @@ export default function WorkspacesPage() {
 
         {/* Error Notification */}
         {error && (
-          <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm font-medium flex items-center gap-3">
+          <div className="p-4 rounded-[10px] bg-red-500/10 border border-red-500/20 text-red-300 text-sm font-medium flex items-center gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
@@ -161,19 +161,19 @@ export default function WorkspacesPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="glass-card rounded-3xl h-[340px] animate-pulse flex flex-col justify-between p-5">
-                <div className="bg-white/5 rounded-2xl aspect-video w-full mb-4"></div>
+              <div key={n} className="glass-card rounded-2xl h-[340px] animate-pulse flex flex-col justify-between p-5">
+                <div className="bg-white/5 rounded-[10px] aspect-video w-full mb-4"></div>
                 <div className="space-y-3 flex-grow">
-                  <div className="h-4 bg-white/5 rounded w-3/4"></div>
-                  <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                  <div className="h-4 bg-white/5 rounded-[10px] w-3/4"></div>
+                  <div className="h-3 bg-white/5 rounded-[10px] w-1/2"></div>
                 </div>
-                <div className="h-10 bg-white/5 rounded-2xl w-full mt-4"></div>
+                <div className="h-10 bg-white/5 rounded-[10px] w-full mt-4"></div>
               </div>
             ))}
           </div>
         ) : filteredProjects.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-12 md:p-16 text-center max-w-md mx-auto space-y-4 border border-white/8">
-            <div className="w-16 h-16 rounded-3xl bg-[#dd2222]/10 border border-[#dd2222]/20 flex items-center justify-center mx-auto text-[#ef9595]">
+          <div className="glass-panel rounded-2xl p-12 md:p-16 text-center max-w-md mx-auto space-y-4 border border-white/8">
+            <div className="w-16 h-16 rounded-[10px] bg-[#dd2222]/10 border border-[#dd2222]/20 flex items-center justify-center mx-auto text-[#ef9595]">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
@@ -191,7 +191,7 @@ export default function WorkspacesPage() {
             {!searchQuery && (
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 px-5 py-2.5 gradient-button rounded-xl text-white font-semibold text-xs"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#dd2222] hover:bg-[#b91c1c] rounded-[10px] text-white font-semibold text-xs transition-colors"
               >
                 <span>🚀 Create First Workspace</span>
               </Link>
@@ -202,7 +202,7 @@ export default function WorkspacesPage() {
             {filteredProjects.map((project) => (
               <div
                 key={project._id}
-                className="glass-card rounded-3xl overflow-hidden flex flex-col justify-between group relative border border-white/8 hover:border-[#dd2222]/40 transition-all"
+                className="glass-card rounded-2xl overflow-hidden flex flex-col justify-between group relative border border-white/8 hover:border-[#dd2222]/40 transition-colors"
               >
                 {/* Thumbnail Header */}
                 <div className="relative aspect-video w-full overflow-hidden bg-black/40">
@@ -214,7 +214,7 @@ export default function WorkspacesPage() {
 
                   {/* Top Bar Actions */}
                   <div className="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none">
-                    <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-mono font-bold text-[#ef9595] border border-white/10 uppercase">
+                    <span className="px-2.5 py-1 rounded-[10px] bg-black/70 backdrop-blur-md text-[10px] font-mono font-bold text-[#ef9595] border border-white/10 uppercase">
                       ID: {project._id}
                     </span>
 
@@ -223,7 +223,7 @@ export default function WorkspacesPage() {
                         e.stopPropagation();
                         handleDeleteProject(project._id, project.title);
                       }}
-                      className="p-2 rounded-xl bg-black/70 hover:bg-[#dd2222] text-white/80 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer pointer-events-auto"
+                      className="p-2 rounded-[10px] bg-black/70 hover:bg-[#dd2222] text-white/80 hover:text-white border border-white/10 backdrop-blur-md transition-colors cursor-pointer pointer-events-auto"
                       title="Delete Workspace"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -233,7 +233,7 @@ export default function WorkspacesPage() {
                   </div>
 
                   {/* Duration Badge */}
-                  <div className="absolute bottom-3 right-3 px-2 py-0.5 rounded-lg bg-black/80 backdrop-blur-md text-white text-[11px] font-semibold font-mono border border-white/10">
+                  <div className="absolute bottom-3 right-3 px-2 py-0.5 rounded-[10px] bg-black/80 backdrop-blur-md text-white text-[11px] font-semibold font-mono border border-white/10">
                     {formatDuration(project.duration)}
                   </div>
                 </div>
@@ -257,7 +257,7 @@ export default function WorkspacesPage() {
 
                     <button
                       onClick={() => router.push(`/project/${project._id}`)}
-                      className="px-4 py-2 rounded-xl gradient-button text-white font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      className="px-4 py-2 rounded-[10px] bg-[#dd2222] hover:bg-[#b91c1c] text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <span>Open Workspace</span>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
