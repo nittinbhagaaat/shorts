@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/settings-client';
+import SetupRequiredModal from '@/components/SetupRequiredModal';
 
 export default function ProjectWorkspace({ params }) {
   const router = useRouter();
@@ -416,6 +417,9 @@ export default function ProjectWorkspace({ params }) {
 
   return (
     <div className="min-h-screen bg-[#030014] flex flex-col text-white">
+      {/* Mandatory First-Time Setup Modal */}
+      <SetupRequiredModal />
+
       {/* Header Bar */}
       <header className="border-b border-white/5 bg-black/60 backdrop-blur-xl px-6 py-4 relative z-20 flex items-center justify-between">
         <div className="flex items-center gap-4 min-w-0">

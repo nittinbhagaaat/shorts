@@ -3,17 +3,10 @@ import mongoose from 'mongoose';
 import { spawn } from 'child_process';
 import fs from 'fs';
 
-function runVersionCheck(executablePath, args = ['--version']) {
+function testCommand(command, args = ['--version']) {
   return new Promise((resolve) => {
-    if (!executablePath || !fs.existsSync(executablePath)) {
-      return resolve({
-        ok: false,
-        message: `File does not exist at path: ${executablePath}`
-      });
-    }
-
     try {
-      const proc = spawn(executablePath, args);
+      const proc = spawn(command, args);
       let output = '';
       let errorOutput = '';
 
@@ -29,7 +22,7 @@ function runVersionCheck(executablePath, args = ['--version']) {
         clearTimeout(timeout);
         if (code === 0 || output.length > 0) {
           const firstLine = (output || errorOutput).split('\n')[0].trim();
-          resolve({ ok: true, version: firstLine });
+          resolve({ ok: true, version: firstLine, resolvedPath: command });
         } else {
           resolve({ ok: false, message: errorOutput || `Exited with code ${code}` });
         }
@@ -43,6 +36,34 @@ function runVersionCheck(executablePath, args = ['--version']) {
       resolve({ ok: false, message: err.message });
     }
   });
+}
+
+async function resolveAndTestBinary(userPath, candidates, args = ['--version']) {
+  // 1. Try user path first if provided
+  if (userPath) {
+    const directResult = await testCommand(userPath.trim(), args);
+    if (directResult.ok) {
+      return directResult;
+    }
+  }
+
+  // 2. Try candidate fallback paths on the server
+  for (const candidate of candidates) {
+    if (candidate !== userPath) {
+      const fallbackResult = await testCommand(candidate, args);
+      if (fallbackResult.ok) {
+        return {
+          ...fallbackResult,
+          message: `Found at server location: ${candidate}`
+        };
+      }
+    }
+  }
+
+  return {
+    ok: false,
+    message: userPath ? `File does not exist at: ${userPath}` : 'Path not configured'
+  };
 }
 
 async function testAIKey(provider, key) {
@@ -150,21 +171,24 @@ export async function POST(req) {
       results.mongodb = { ok: false, message: 'MongoDB URI not provided' };
     }
 
-    // 2. Test FFmpeg
-    if (ffmpeg_path) {
-      const ffmpegCheck = await runVersionCheck(ffmpeg_path, ['-version']);
-      results.ffmpeg = ffmpegCheck;
-    } else {
-      results.ffmpeg = { ok: false, message: 'FFmpeg path not provided' };
-    }
+    // 2. Test FFmpeg with server candidates fallback
+    const ffmpegCandidates = [
+      '/usr/bin/ffmpeg',
+      '/usr/local/bin/ffmpeg',
+      'ffmpeg',
+      '/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg',
+      '/opt/homebrew/bin/ffmpeg'
+    ];
+    results.ffmpeg = await resolveAndTestBinary(ffmpeg_path, ffmpegCandidates, ['-version']);
 
-    // 3. Test yt-dlp
-    if (yt_dlp_path) {
-      const ytDlpCheck = await runVersionCheck(yt_dlp_path, ['--version']);
-      results.yt_dlp = ytDlpCheck;
-    } else {
-      results.yt_dlp = { ok: false, message: 'yt-dlp path not provided' };
-    }
+    // 3. Test yt-dlp with server candidates fallback
+    const ytDlpCandidates = [
+      '/usr/local/bin/yt-dlp',
+      '/usr/bin/yt-dlp',
+      'yt-dlp',
+      '/opt/homebrew/bin/yt-dlp'
+    ];
+    results.yt_dlp = await resolveAndTestBinary(yt_dlp_path, ytDlpCandidates, ['--version']);
 
     // 4. Test Active AI Key
     const keyMap = {

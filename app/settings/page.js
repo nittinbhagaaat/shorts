@@ -77,30 +77,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSetHomebrewPaths = () => {
-    setFormData((prev) => ({
-      ...prev,
-      ffmpeg_path: '/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg',
-      yt_dlp_path: '/opt/homebrew/bin/yt-dlp',
-    }));
-  };
-
-  const handleSetDockerPaths = () => {
-    setFormData((prev) => ({
-      ...prev,
-      ffmpeg_path: '/usr/bin/ffmpeg',
-      yt_dlp_path: '/usr/local/bin/yt-dlp',
-    }));
-  };
-
-  const handleSetSystemPaths = () => {
-    setFormData((prev) => ({
-      ...prev,
-      ffmpeg_path: '/usr/local/bin/ffmpeg',
-      yt_dlp_path: '/usr/local/bin/yt-dlp',
-    }));
-  };
-
   const aiProviders = [
     {
       id: 'groq',
@@ -385,7 +361,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* SECTION 2: System Tool Paths */}
+          {/* SECTION 2: System Tool Paths (Server-Managed) */}
           <div className="glass-panel rounded-3xl p-6 md:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
@@ -393,70 +369,55 @@ export default function SettingsPage() {
                   <span className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-mono text-sm border border-purple-500/30">
                     2
                   </span>
-                  System Binary Paths (FFmpeg &amp; yt-dlp)
+                  System Binaries (FFmpeg &amp; yt-dlp)
                 </h2>
                 <p className="text-gray-400 text-xs font-light mt-1">
-                  Specify the absolute paths to your local binaries used for section downloading and ASS subtitle burning.
+                  Provided and executed directly by the hosting server (Render / Docker container).
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleSetDockerPaths}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold transition-all"
-                >
-                  ⚡ Server Default (Render / Docker)
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSetHomebrewPaths}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-indigo-300 border border-white/10 text-[11px] font-medium transition-all"
-                >
-                  Homebrew (Mac)
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSetSystemPaths}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 text-[11px] font-medium transition-all"
-                >
-                  /usr/local/bin
-                </button>
-              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-semibold flex items-center gap-1.5 w-fit">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                Server Managed (Fixed)
+              </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* FFmpeg Path */}
-              <div className="p-4 rounded-2xl bg-black/30 border border-white/5 space-y-2">
-                <label className="block text-xs font-semibold text-white">
-                  FFmpeg Binary Path (<span className="font-mono text-gray-400">ffmpeg_path</span>)
-                </label>
-                <input
-                  type="text"
-                  value={formData.ffmpeg_path}
-                  onChange={(e) => handleChange('ffmpeg_path', e.target.value)}
-                  placeholder="/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg"
-                  className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-indigo-500/60"
-                />
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-white">
+                    FFmpeg Binary
+                  </label>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-gray-400 font-mono">
+                    Auto-Resolved
+                  </span>
+                </div>
+                <div className="px-4 py-3 bg-black/60 border border-white/5 rounded-xl text-gray-300 font-mono text-xs flex items-center justify-between">
+                  <span>/usr/bin/ffmpeg</span>
+                  <span className="text-emerald-400 text-[11px] font-sans font-semibold">libass included</span>
+                </div>
                 <p className="text-[11px] text-gray-500 font-light">
-                  Tip: Requires full filters (libass) support for burning styled ASS captions.
+                  Pre-installed in production container for rendering 9:16 vertical video &amp; subtitles.
                 </p>
               </div>
 
               {/* yt-dlp Path */}
-              <div className="p-4 rounded-2xl bg-black/30 border border-white/5 space-y-2">
-                <label className="block text-xs font-semibold text-white">
-                  yt-dlp Binary Path (<span className="font-mono text-gray-400">yt_dlp_path</span>)
-                </label>
-                <input
-                  type="text"
-                  value={formData.yt_dlp_path}
-                  onChange={(e) => handleChange('yt_dlp_path', e.target.value)}
-                  placeholder="/opt/homebrew/bin/yt-dlp"
-                  className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-indigo-500/60"
-                />
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-white">
+                    yt-dlp Binary
+                  </label>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-gray-400 font-mono">
+                    Auto-Resolved
+                  </span>
+                </div>
+                <div className="px-4 py-3 bg-black/60 border border-white/5 rounded-xl text-gray-300 font-mono text-xs flex items-center justify-between">
+                  <span>/usr/local/bin/yt-dlp</span>
+                  <span className="text-emerald-400 text-[11px] font-sans font-semibold">Stream clipper</span>
+                </div>
                 <p className="text-[11px] text-gray-500 font-light">
-                  Used to extract precise 20-30s video streams from YouTube in seconds.
+                  Pre-installed in production container to extract 20-30s video streams from YouTube.
                 </p>
               </div>
             </div>

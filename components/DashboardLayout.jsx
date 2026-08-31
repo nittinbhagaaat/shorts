@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Sidebar from './Sidebar';
+import SetupRequiredModal from './SetupRequiredModal';
 
 export default function DashboardLayout({ children }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -11,6 +12,9 @@ export default function DashboardLayout({ children }) {
       {/* Background Cosmic Glows */}
       <div className="fixed top-[-15%] left-[-10%] w-[650px] h-[650px] rounded-full gradient-glow animate-pulse-glow pointer-events-none z-0"></div>
       <div className="fixed bottom-[-15%] right-[-10%] w-[650px] h-[650px] rounded-full gradient-glow-purple animate-pulse-glow pointer-events-none z-0"></div>
+
+      {/* Mandatory First-Time Setup Modal */}
+      <SetupRequiredModal />
 
       {/* Sidebar Navigation */}
       <Sidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
