@@ -44,12 +44,14 @@ export default function ProjectWorkspace({ params }) {
       setProject(data.project);
       setClips(data.clips || []);
       
-      // Keep selected clip updated if it was selected
+      // Keep selected clip updated if it was selected, or auto-select first clip
       if (selectedClip) {
-        const updatedSelected = data.clips.find(c => c._id === selectedClip._id);
+        const updatedSelected = data.clips?.find(c => c._id === selectedClip._id);
         if (updatedSelected) {
           setSelectedClip(updatedSelected);
         }
+      } else if (data.clips && data.clips.length > 0) {
+        setSelectedClip(data.clips[0]);
       }
     } catch (err) {
       console.error('Error loading project details:', err);

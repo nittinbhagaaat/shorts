@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import Clip from '@/models/Clip';
+import { identifyViralClips } from '@/lib/ai';
 import { extractSettings } from '@/lib/settings';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
@@ -19,7 +20,37 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    const clips = await Clip.find({ projectId: id }).sort({ start: 1 });
+    let clips = await Clip.find({ projectId: id }).sort({ start: 1 });
+
+    // Auto-repair: If workspace was saved with 0 clips, generate them immediately
+    if (clips.length === 0) {
+      console.log(`[API PROJECT DETAIL] Project ${id} has 0 clips. Auto-generating clips...`);
+      const rawClips = await identifyViralClips(
+        project.hinglishTranscript || project.transcript || [],
+        project.duration || 180,
+        settings
+      );
+
+      clips = await Promise.all(rawClips.map(c => {
+        const transcript = project.transcript || [];
+        const hinglishTranscript = project.hinglishTranscript || [];
+        const clipSegments = transcript.filter(s => s.start >= c.start && s.start <= c.end);
+        const clipHinglishSegments = hinglishTranscript.filter(s => s.start >= c.start && s.start <= c.end);
+        
+        return Clip.create({
+          projectId: id,
+          title: c.title,
+          description: c.description,
+          start: c.start,
+          end: c.end,
+          duration: c.end - c.start,
+          status: 'pending',
+          transcript: clipSegments,
+          hinglishTranscript: clipHinglishSegments
+        });
+      }));
+    }
+
     return NextResponse.json({ project, clips });
   } catch (error) {
     console.error('API PROJECT DETAIL: Error:', error);
