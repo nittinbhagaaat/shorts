@@ -30,7 +30,7 @@
 
 1. [Prerequisites](#-1-prerequisites)
 2. [Installation](#-2-installation)
-3. [Installing Video Binaries (FFmpeg & yt-dlp)](#-3-installing-video-binaries-ffmpeg--yt-dlp)
+3. [Installing Video Binaries & Finding Paths (FFmpeg & yt-dlp)](#-3-installing-video-binaries-ffmpeg--yt-dlp)
 4. [Setting Up MongoDB](#-4-setting-up-mongodb)
 5. [Getting AI API Keys](#-5-getting-ai-api-keys)
 6. [Running the Application](#-6-running-the-application)
@@ -131,6 +131,82 @@ choco install yt-dlp
 ```bash
 pip install -U yt-dlp
 ```
+
+---
+
+### C. 🔍 How to Find Binary Paths on Your System (macOS, Windows, Linux)
+
+When configuring `clip.studio` in the **Settings** page (`/settings`), you can verify and paste the exact path to your local `ffmpeg` and `yt-dlp` executables. Here is how to find them on each operating system:
+
+#### 🍎 1. macOS (Terminal):
+Run the following commands in your Terminal:
+```bash
+# Find FFmpeg path
+which ffmpeg
+
+# Find all installed FFmpeg binaries (to locate ffmpeg-full)
+which -a ffmpeg
+
+# Find yt-dlp path
+which yt-dlp
+```
+
+**Common Paths on macOS:**
+- **Apple Silicon (M1 / M2 / M3 / M4)**:
+  - FFmpeg (`ffmpeg-full`): `/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg` or `/opt/homebrew/bin/ffmpeg`
+  - yt-dlp: `/opt/homebrew/bin/yt-dlp`
+- **Intel Mac**:
+  - FFmpeg (`ffmpeg-full`): `/usr/local/opt/ffmpeg-full/bin/ffmpeg` or `/usr/local/bin/ffmpeg`
+  - yt-dlp: `/usr/local/bin/yt-dlp`
+
+---
+
+#### 🪟 2. Windows (PowerShell / Command Prompt):
+Run either of these commands:
+
+- **In PowerShell**:
+  ```powershell
+  (Get-Command ffmpeg).Source
+  (Get-Command yt-dlp).Source
+  ```
+- **In Command Prompt (CMD)**:
+  ```cmd
+  where ffmpeg
+  where yt-dlp
+  ```
+
+**Common Paths on Windows:**
+- **Via Chocolatey**:
+  - FFmpeg: `C:\ProgramData\chocolatey\bin\ffmpeg.exe`
+  - yt-dlp: `C:\ProgramData\chocolatey\bin\yt-dlp.exe`
+- **Via Scoop**:
+  - FFmpeg: `C:\Users\<YourUsername>\scoop\apps\ffmpeg\current\bin\ffmpeg.exe`
+  - yt-dlp: `C:\Users\<YourUsername>\scoop\apps\yt-dlp\current\yt-dlp.exe`
+- **Via Winget / Manual Gyan.dev Download**:
+  - FFmpeg: `C:\ffmpeg\bin\ffmpeg.exe` or `C:\Program Files\ffmpeg\bin\ffmpeg.exe`
+  - yt-dlp: `C:\Users\<YourUsername>\AppData\Local\Microsoft\WinGet\Links\yt-dlp.exe`
+- **Via Python Pip**:
+  - yt-dlp: `C:\Users\<YourUsername>\AppData\Local\Programs\Python\Python311\Scripts\yt-dlp.exe`
+
+---
+
+#### 🐧 3. Linux (Ubuntu / Debian / Fedora / Arch):
+Run in your bash / zsh shell:
+```bash
+# Find FFmpeg path
+which ffmpeg
+# or
+whereis ffmpeg
+
+# Find yt-dlp path
+which yt-dlp
+# or
+whereis yt-dlp
+```
+
+**Common Paths on Linux:**
+- FFmpeg: `/usr/bin/ffmpeg` or `/usr/local/bin/ffmpeg`
+- yt-dlp: `/usr/local/bin/yt-dlp` or `/usr/bin/yt-dlp` or `~/.local/bin/yt-dlp`
 
 ---
 
