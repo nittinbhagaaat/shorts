@@ -288,5 +288,5 @@ This project is licensed under the **MIT License**. Feel free to use, modify, an
 ---
 
 <p align="center">
-  Made with ❤️ by the <strong>clip.studio</strong> open source community.
+  Made with ❤️ by the <strong>clip.studio</strong> community.
 </p>
