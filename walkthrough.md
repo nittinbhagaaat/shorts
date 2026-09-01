@@ -98,34 +98,3 @@ graph TD
    ```bash
    ✓ Compiled successfully in 12.1s
    ```
-
----
-
-## 🚀 How to Run the App
-
-1. **Configure OAuth Credentials in [`.env.local`](file:///Users/nitinbhagat/Everything/shorts/.env.local):**
-   Open the env file and input your Client Keys:
-   ```env
-   # AI Settings
-   GEMINI_API_KEY=your-gemini-key
-
-   # YouTube (Google OAuth) credentials
-   GOOGLE_CLIENT_ID=your-google-oauth-client-id
-   GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
-
-   # Instagram (Facebook/Meta OAuth) credentials
-   FACEBOOK_APP_ID=your-facebook-app-id
-   FACEBOOK_APP_SECRET=your-facebook-app-secret
-   
-   # Optional: Public url if exposing server via ngrok (e.g. for Meta container downloads)
-   # PUBLIC_APP_URL=https://xxxx.ngrok-free.app
-   ```
-
-2. **Start the Development Server:**
-   Run the following command in your terminal:
-   ```bash
-   npm run dev
-   ```
-
-3. **Open the Application:**
-   Navigate to [http://localhost:3000](http://localhost:3000) in your web browser. Paste a YouTube URL and enjoy creating clips!
