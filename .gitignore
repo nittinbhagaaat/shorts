@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated videos & temp render files
+public/outputs/*
+!public/outputs/.gitkeep
+public/temp/*
+!public/temp/.gitkeep
+temp/
+/temp
+
+

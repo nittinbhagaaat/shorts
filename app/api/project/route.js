@@ -3,22 +3,20 @@ import Project from '@/models/Project';
 import Clip from '@/models/Clip';
 import { getYouTubeVideoData, fetchTranscript } from '@/lib/youtube';
 import { identifyViralClips, transliterateHindiToHinglish } from '@/lib/ai';
-import { extractSettings } from '@/lib/settings';
+import { extractServerConfig } from '@/lib/serverConfig';
 import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const settings = extractSettings(req, body);
-    
-    await dbConnect(settings.mongodb_uri);
+    const { mongodbUri, aiConfig } = extractServerConfig(req);
+    await dbConnect(mongodbUri);
 
-    const { url } = body;
+    const { url } = await req.json();
     if (!url) {
       return NextResponse.json({ error: 'YouTube URL is required' }, { status: 400 });
     }
 
-    console.log('[API PROJECT] Fetching video details for:', url);
+    console.log('API PROJECT: Fetching video details for:', url);
     const videoData = await getYouTubeVideoData(url);
     const { videoId, title, channel, duration, thumbnail, captionTracks } = videoData;
 
@@ -27,20 +25,18 @@ export async function POST(req) {
     let clips = [];
 
     if (project) {
+      console.log('API PROJECT: Project already exists in DB. Returning cached clips.');
       clips = await Clip.find({ projectId: videoId }).sort({ start: 1 });
-      if (clips.length > 0) {
-        console.log(`[API PROJECT] Project already exists with ${clips.length} cached clips.`);
-        return NextResponse.json({ project, clips });
-      }
-      console.log('[API PROJECT] Existing project had 0 clips. Re-generating clips...');
+      return NextResponse.json({ project, clips });
     }
 
-    console.log('[API PROJECT] Fetching transcript...');
+    console.log('API PROJECT: Fetching transcript...');
     let transcript = [];
     try {
-      transcript = await fetchTranscript(captionTracks, videoId, duration);
+      transcript = await fetchTranscript(captionTracks, videoId);
     } catch (e) {
-      console.warn('[API PROJECT] Could not fetch transcript from YouTube:', e.message);
+      console.warn('Could not fetch transcript from YouTube:', e.message);
+      // Fallback clips will be generated
     }
 
     // Check if transcript contains Devanagari text (Hindi)
@@ -49,46 +45,43 @@ export async function POST(req) {
       const fullText = transcript.map(s => s.text).join(' ');
       const containsHindi = /[\u0900-\u097F]/.test(fullText);
       if (containsHindi) {
-        console.log('[API PROJECT] Hindi detected in transcript. Transliterating to Hinglish...');
+        console.log('API PROJECT: Hindi detected in transcript. Transliterating to Hinglish with AI...');
         try {
-          hinglishTranscript = await transliterateHindiToHinglish(transcript, settings);
-          console.log('[API PROJECT] Transliteration successful.');
+          hinglishTranscript = await transliterateHindiToHinglish(transcript, aiConfig);
+          console.log('API PROJECT: Transliteration successful.');
         } catch (translitErr) {
-          console.warn('[API PROJECT] Transliteration skipped:', translitErr.message);
+          console.error('API PROJECT: Hindi-to-Hinglish transliteration failed. Keeping original text.', translitErr.message);
           hinglishTranscript = [...transcript];
         }
       }
     }
 
-    // Upsert project
-    if (!project) {
-      project = await Project.create({
-        _id: videoId,
-        url,
-        title,
-        channel,
-        duration,
-        thumbnail,
-        transcript,
-        hinglishTranscript
-      });
-    } else {
-      project.title = title !== 'Viral Video Project' ? title : project.title;
-      project.channel = channel !== 'YouTube Creator' ? channel : project.channel;
-      project.duration = duration || project.duration || 180;
-      project.thumbnail = thumbnail || project.thumbnail;
-      project.transcript = transcript.length > 0 ? transcript : project.transcript;
-      project.hinglishTranscript = hinglishTranscript.length > 0 ? hinglishTranscript : project.hinglishTranscript;
-      await project.save();
-    }
+    // Save project metadata, transcript, and hinglish transcript
+    project = await Project.create({
+      _id: videoId,
+      url,
+      title,
+      channel,
+      duration,
+      thumbnail,
+      transcript,
+      hinglishTranscript
+    });
 
-    console.log('[API PROJECT] Calling AI to identify viral clips...');
-    const rawClips = await identifyViralClips(hinglishTranscript, duration, settings);
+    console.log(`API PROJECT: Calling AI (${aiConfig.provider}) to identify viral clips...`);
+    const rawClips = await identifyViralClips(hinglishTranscript, duration, aiConfig, { title, channel });
 
     // Save clips to DB
     clips = await Promise.all(rawClips.map(c => {
-      const clipSegments = transcript.filter(s => s.start >= c.start && s.start <= c.end);
-      const clipHinglishSegments = hinglishTranscript.filter(s => s.start >= c.start && s.start <= c.end);
+      // Find all segments overlapping with this clip's time range
+      const clipSegments = transcript.filter(s => {
+        const segEnd = (s.start || 0) + (s.duration || 2);
+        return segEnd >= c.start && s.start <= c.end;
+      });
+      const clipHinglishSegments = hinglishTranscript.filter(s => {
+        const segEnd = (s.start || 0) + (s.duration || 2);
+        return segEnd >= c.start && s.start <= c.end;
+      });
       
       return Clip.create({
         projectId: videoId,
@@ -103,26 +96,22 @@ export async function POST(req) {
       });
     }));
 
-    console.log(`[API PROJECT] Successfully created project with ${clips.length} clips.`);
+    console.log(`API PROJECT: Successfully created project with ${clips.length} clips.`);
     return NextResponse.json({ project, clips });
   } catch (error) {
-    console.error('[API PROJECT] Error processing video:', error);
+    console.error('API PROJECT: Error processing video:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
 export async function GET(req) {
   try {
-    const settings = extractSettings(req);
-    if (!settings.mongodb_uri || !settings.mongodb_uri.trim()) {
-      return NextResponse.json({ projects: [] });
-    }
-    await dbConnect(settings.mongodb_uri);
-    
+    const { mongodbUri } = extractServerConfig(req);
+    await dbConnect(mongodbUri);
     const projects = await Project.find({}).sort({ createdAt: -1 });
     return NextResponse.json({ projects });
   } catch (error) {
-    console.warn('[API PROJECT] MongoDB not connected yet:', error.message);
-    return NextResponse.json({ projects: [] });
+    console.error('API PROJECT: Error fetching projects:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

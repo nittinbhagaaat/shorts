@@ -1,12 +1,14 @@
 import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
+import { extractServerConfig } from '@/lib/serverConfig';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
 export async function GET(req, { params }) {
   try {
-    await dbConnect();
+    const { mongodbUri } = extractServerConfig(req);
+    await dbConnect(mongodbUri);
     const resolvedParams = await params;
     const { id } = resolvedParams;
 

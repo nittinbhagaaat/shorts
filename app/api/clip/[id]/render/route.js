@@ -2,20 +2,19 @@ import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
 import Project from '@/models/Project';
 import { downloadVideoClip, generateAssSubtitles, renderFinalShort } from '@/lib/video';
-import { extractSettings } from '@/lib/settings';
+import { extractServerConfig } from '@/lib/serverConfig';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
 export async function POST(req, { params }) {
   try {
-    const body = await req.json();
-    const settings = extractSettings(req, body);
-    await dbConnect(settings.mongodb_uri);
-
+    const { mongodbUri, ffmpegPath, ytDlpPath } = extractServerConfig(req);
+    await dbConnect(mongodbUri);
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
+    const body = await req.json();
     const { captionStyle, cropFocus, transcript, captionLanguage, renderFormat } = body;
 
     const clip = await Clip.findById(id);
@@ -67,9 +66,9 @@ export async function POST(req, { params }) {
     const verticalPath = path.join(outputsDir, verticalFileName);
     const horizontalPath = path.join(outputsDir, horizontalFileName);
 
-    console.log(`RENDER API: Starting video clip download for ${id} (${clip.start}s to ${clip.end}s)...`);
-    // Step 1: Download clip section using local yt-dlp + ffmpeg
-    await downloadVideoClip(project.url, clip.start, clip.end, tempVideoPath, settings.yt_dlp_path, settings.ffmpeg_path);
+    console.log(`RENDER API: Starting download section for clip ${id} (${clip.start}s to ${clip.end}s) using yt-dlp path: ${ytDlpPath}`);
+    // Step 1: Download clip section using yt-dlp
+    await downloadVideoClip(project.url, clip.start, clip.end, tempVideoPath, ytDlpPath, ffmpegPath);
 
     // Retrieve active transcript
     const activeTranscript = clip.captionLanguage === 'hinglish' && clip.hinglishTranscript && clip.hinglishTranscript.length > 0
@@ -78,19 +77,19 @@ export async function POST(req, { params }) {
 
     // Step 2: Render Vertical Layout if selected
     if (clip.renderFormat === 'vertical' || clip.renderFormat === 'both') {
-      console.log(`RENDER API: Rendering vertical layout with ffmpeg at ${settings.ffmpeg_path}...`);
+      console.log(`RENDER API: Rendering vertical layout with ffmpeg: ${ffmpegPath}...`);
       const assContentVertical = generateAssSubtitles(activeTranscript, clip.start, clip.captionStyle, false);
       fs.writeFileSync(tempAssPath, assContentVertical, 'utf8');
-      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, clip.captionStyle, verticalPath, false, settings.ffmpeg_path);
+      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, clip.captionStyle, verticalPath, false, ffmpegPath);
       clip.videoPathVertical = `/outputs/${verticalFileName}`;
     }
 
     // Step 3: Render Horizontal Layout if selected
     if (clip.renderFormat === 'horizontal' || clip.renderFormat === 'both') {
-      console.log(`RENDER API: Rendering horizontal layout with ffmpeg at ${settings.ffmpeg_path}...`);
+      console.log(`RENDER API: Rendering horizontal layout with ffmpeg: ${ffmpegPath}...`);
       const assContentHorizontal = generateAssSubtitles(activeTranscript, clip.start, clip.captionStyle, true);
       fs.writeFileSync(tempAssPath, assContentHorizontal, 'utf8');
-      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, clip.captionStyle, horizontalPath, true, settings.ffmpeg_path);
+      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, clip.captionStyle, horizontalPath, true, ffmpegPath);
       clip.videoPathHorizontal = `/outputs/${horizontalFileName}`;
     }
 
@@ -117,6 +116,8 @@ export async function POST(req, { params }) {
 
     // Revert status to failed in database
     try {
+      const { mongodbUri } = extractServerConfig(req);
+      await dbConnect(mongodbUri);
       const resolvedParams = await params;
       const { id } = resolvedParams;
       await Clip.findByIdAndUpdate(id, { status: 'failed' });
@@ -130,9 +131,8 @@ export async function POST(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    const settings = extractSettings(req);
-    await dbConnect(settings.mongodb_uri);
-
+    const { mongodbUri } = extractServerConfig(req);
+    await dbConnect(mongodbUri);
     const resolvedParams = await params;
     const { id } = resolvedParams;
 

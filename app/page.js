@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
-import { apiFetch, getStoredSettings, isAppConfigured } from '@/lib/settings-client';
+import { fetchWithSettings, getStoredSettings } from '@/lib/settings';
 
-export default function HomeDashboard() {
+export default function HomePage() {
   const router = useRouter();
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -20,15 +20,9 @@ export default function HomeDashboard() {
   useEffect(() => {
     setSettings(getStoredSettings());
 
-    const handleSettingsUpdate = (e) => {
-      setSettings(e.detail);
-    };
-
-    window.addEventListener('viralclips:settings_updated', handleSettingsUpdate);
-
     async function fetchProjects() {
       try {
-        const res = await apiFetch('/api/project');
+        const res = await fetchWithSettings('/api/project');
         if (!res.ok) throw new Error('Failed to fetch projects');
         const data = await res.json();
         setProjects(data.projects || []);
@@ -40,29 +34,25 @@ export default function HomeDashboard() {
     }
     fetchProjects();
 
-    return () => window.removeEventListener('viralclips:settings_updated', handleSettingsUpdate);
+    const handleSettingsUpdate = (e) => setSettings(e.detail);
+    window.addEventListener('shorts_settings_updated', handleSettingsUpdate);
+    return () => window.removeEventListener('shorts_settings_updated', handleSettingsUpdate);
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!url.trim()) return;
 
-    if (!isAppConfigured(settings)) {
-      setError('Please configure your MongoDB URI and at least one AI API key first.');
-      return;
-    }
-
     setIsLoading(true);
     setError('');
-    setStatusText('Analyzing YouTube video...');
+    setStatusText('Analyzing YouTube URL...');
 
-    // Progress updates simulator
     const steps = [
-      { delay: 1000, text: 'Fetching video metadata and caption tracks...' },
-      { delay: 3000, text: 'Extracting speech transcripts & checking Hindi/Hinglish...' },
-      { delay: 6000, text: `Invoking AI model (${settings?.active_ai_provider || 'groq'})...` },
-      { delay: 9000, text: 'Curating viral hooks and calculating optimal 20-30s timestamps...' },
-      { delay: 12000, text: 'Saving workspace and preparing editor...' },
+      { delay: 1000, text: 'Fetching video metadata from YouTube...' },
+      { delay: 3000, text: 'Downloading caption tracks and transcript...' },
+      { delay: 6000, text: `Running ${settings?.aiProvider?.toUpperCase() || 'AI'} analysis on transcript segments...` },
+      { delay: 9000, text: 'Curating viral hooks and extracting optimal timestamps...' },
+      { delay: 12000, text: 'Saving project and initializing workspace...' },
     ];
 
     const timeouts = steps.map((step) =>
@@ -70,10 +60,10 @@ export default function HomeDashboard() {
     );
 
     try {
-      const res = await apiFetch('/api/project', {
+      const res = await fetchWithSettings('/api/project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, settings }),
+        body: JSON.stringify({ url }),
       });
 
       timeouts.forEach((t) => clearTimeout(t));
@@ -88,7 +78,7 @@ export default function HomeDashboard() {
 
       setTimeout(() => {
         router.push(`/project/${data.project._id}`);
-      }, 500);
+      }, 400);
     } catch (err) {
       timeouts.forEach((t) => clearTimeout(t));
       setError(err.message || 'An error occurred during analysis');
@@ -102,12 +92,11 @@ export default function HomeDashboard() {
     }
 
     try {
-      const res = await apiFetch(`/api/project/${id}`, {
+      const res = await fetchWithSettings(`/api/project/${id}`, {
         method: 'DELETE',
       });
 
       if (!res.ok) throw new Error('Failed to delete workspace');
-
       setProjects((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
       console.error('Error deleting project:', err);
@@ -120,7 +109,7 @@ export default function HomeDashboard() {
     const mins = Math.floor(secs / 60);
     const hours = Math.floor(mins / 60);
     const rMins = mins % 60;
-    const rSecs = Math.floor(secs % 60);
+    const rSecs = secs % 60;
 
     if (hours > 0) {
       return `${hours}:${rMins.toString().padStart(2, '0')}:${rSecs.toString().padStart(2, '0')}`;
@@ -128,210 +117,237 @@ export default function HomeDashboard() {
     return `${mins}:${rSecs.toString().padStart(2, '0')}`;
   };
 
-  const activeProvider = settings?.active_ai_provider || 'groq';
+  const currentProvider = settings?.aiProvider || 'mistral';
+  const providerDisplay = {
+    mistral: 'Mistral AI',
+    gemini: 'Google Gemini',
+    openai: 'OpenAI GPT',
+    groq: 'Groq LPU',
+  };
 
   return (
     <DashboardLayout>
-      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 flex flex-col space-y-10">
-        
-        {/* Hero Section */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[10px] border border-[#dd2222]/30 bg-[#dd2222]/10 text-[#ef9595] text-xs font-semibold uppercase tracking-wider">
-            🚀 Studio AI Clipper &amp; Subtitles
-          </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white">
-            Turn Long YouTube Videos Into <span className="gradient-text">Viral Shorts</span>
-          </h1>
-          <p className="text-[#909cac] text-base sm:text-lg font-light leading-relaxed">
-            Paste any YouTube URL. AI extracts top conversational moments (&lt;30s), converts Hindi to Hinglish, crops to 9:16 vertical, and generates animated Alex Hormozi captions.
-          </p>
-        </div>
-
-        {/* Input Panel */}
-        <div className="w-full max-w-3xl mx-auto glass-panel rounded-2xl p-6 md:p-8 border border-white/8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <input
-                type="url"
-                required
-                disabled={isLoading}
-                placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=...)"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="w-full px-5 py-4 md:py-5 bg-[#15181b] border border-white/10 rounded-[10px] text-white placeholder-[#6e7d91] focus:outline-none focus:border-[#dd2222]/60 transition-colors font-light text-sm md:text-base"
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-                {isLoading && (
-                  <svg className="animate-spin h-6 w-6 text-[#dd2222]" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                )}
-              </div>
+      <div className="flex-1 flex flex-col justify-between">
+        {/* Main Content Area */}
+        <main className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col items-center">
+          
+          {/* Top Hero Banner */}
+          <div className="text-center mb-8 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[10px] border border-[#731111] bg-[#360c0c] text-[#fcf2f2] text-xs font-semibold uppercase tracking-wider mb-3">
+              <span className="w-2 h-2 rounded-full bg-[#dd2222]"></span>
+              Powered by {providerDisplay[currentProvider]} Engine
             </div>
 
-            {error && (
-              <div className="flex items-center gap-3 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-300 rounded-[10px] text-xs sm:text-sm font-medium">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-3 text-white">
+              Create Viral <span className="text-[#dd2222]">Shorts</span> in Seconds
+            </h1>
+
+            <p className="text-[#b9c0ca] text-sm sm:text-base font-normal leading-relaxed">
+              Paste any long-form YouTube video URL. clip.studio analyzes the transcript, extracts 35–40s complete scenes with full meaningful dialogue, cuts to 9:16 vertical layout, and burns in custom subtitles.
+            </p>
+          </div>
+
+          {/* Input Panel */}
+          <div className="w-full max-w-2xl app-panel p-5 sm:p-7 mb-12">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="relative">
+                <input
+                  type="url"
+                  required
+                  disabled={isLoading}
+                  placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=...)"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="w-full px-4 py-3.5 app-input text-sm font-normal"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3.5">
+                  {isLoading && (
+                    <svg className="animate-spin h-5 w-5 text-[#dd2222]" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-[#ef4444]/15 border border-[#ef4444]/30 text-[#fcf2f2] rounded-[10px] text-xs font-medium">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0 text-[#ef4444]" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading || !url.trim()}
+                className="w-full py-3.5 btn-primary text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>{statusText}</span>
+                  </span>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                    </svg>
+                    <span>Generate Viral Shorts</span>
+                  </>
+                )}
+              </button>
+
+              <div className="flex flex-wrap items-center justify-between text-xs text-[#909cac] pt-2 px-1 border-t border-[#39414b]">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+                  Engine: {providerDisplay[currentProvider]} ({settings?.aiProvider === 'groq' ? settings?.groqModel : settings?.aiProvider === 'mistral' ? settings?.mistralModel : settings?.aiProvider === 'gemini' ? settings?.geminiModel : settings?.openaiModel || 'default'})
+                </span>
+                <Link href="/settings" className="text-[#2cb7d3] hover:underline font-medium">
+                  Settings & Keys →
+                </Link>
+              </div>
+            </form>
+          </div>
+
+          {/* Feature Highlights Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-3xl mb-12">
+            <div className="p-3.5 rounded-[10px] bg-[#2d3239] border border-[#39414b] text-center">
+              <span className="text-base block mb-1">🎬</span>
+              <h4 className="text-white font-semibold text-xs">9:16 Vertical Cropping</h4>
+              <p className="text-[#909cac] text-[11px] font-normal mt-0.5">Left/Center/Right framing</p>
+            </div>
+            <div className="p-3.5 rounded-[10px] bg-[#2d3239] border border-[#39414b] text-center">
+              <span className="text-base block mb-1">🔥</span>
+              <h4 className="text-white font-semibold text-xs">Hormozi Subtitles</h4>
+              <p className="text-[#909cac] text-[11px] font-normal mt-0.5">Animated highlighted words</p>
+            </div>
+            <div className="p-3.5 rounded-[10px] bg-[#2d3239] border border-[#39414b] text-center">
+              <span className="text-base block mb-1">🌐</span>
+              <h4 className="text-white font-semibold text-xs">Hinglish Conversion</h4>
+              <p className="text-[#909cac] text-[11px] font-normal mt-0.5">Hindi to Roman script</p>
+            </div>
+            <div className="p-3.5 rounded-[10px] bg-[#2d3239] border border-[#39414b] text-center">
+              <span className="text-base block mb-1">⚡</span>
+              <h4 className="text-white font-semibold text-xs">4 AI Engines</h4>
+              <p className="text-[#909cac] text-[11px] font-normal mt-0.5">Groq, Mistral, Gemini, OpenAI</p>
+            </div>
+          </div>
+
+          {/* Recent Workspaces Preview */}
+          <div className="w-full">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#39414b]">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#dd2222]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{error}</span>
+                <span>Recent Workspaces</span>
+              </h2>
+
+              <Link
+                href="/workspaces"
+                className="text-xs text-[#2cb7d3] hover:underline font-semibold flex items-center gap-1"
+              >
+                <span>View All ({projects.length})</span>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            {isFetchingProjects ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="app-card h-[280px] p-3 flex flex-col justify-between">
+                    <div className="bg-[#39414b] rounded-[10px] aspect-video w-full mb-3"></div>
+                    <div className="space-y-2 flex-grow">
+                      <div className="h-3.5 bg-[#39414b] rounded-[10px] w-3/4"></div>
+                      <div className="h-3 bg-[#39414b] rounded-[10px] w-1/2"></div>
+                    </div>
+                    <div className="h-9 bg-[#39414b] rounded-[10px] w-full mt-3"></div>
+                  </div>
+                ))}
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="app-panel p-8 text-center max-w-md mx-auto">
+                <div className="w-12 h-12 rounded-[10px] bg-[#39414b] flex items-center justify-center mx-auto mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#909cac]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">No workspaces yet</h3>
+                <p className="text-[#909cac] text-xs">Paste a YouTube link above to initialize your first viral clips workspace.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {projects.slice(0, 3).map((project) => (
+                  <div key={project._id} className="app-card overflow-hidden flex flex-col justify-between group relative">
+                    <div className="relative aspect-video w-full overflow-hidden bg-black/40">
+                      <img 
+                        src={project.thumbnail} 
+                        alt={project.title}
+                        className="object-cover w-full h-full"
+                      />
+                      
+                      {/* Delete Workspace Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteProject(project._id);
+                        }}
+                        className="absolute top-2 right-2 p-1.5 rounded-[10px] bg-[#1d2125]/80 hover:bg-[#dd2222] text-white border border-[#39414b] transition-colors cursor-pointer z-20"
+                        title="Delete Workspace"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+
+                      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-[10px] bg-[#1d2125]/90 text-white text-[10px] font-bold font-mono border border-[#39414b]">
+                        {formatDuration(project.duration)}
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 flex-grow flex flex-col justify-between space-y-3">
+                      <div>
+                        <h3 className="text-white font-semibold text-sm line-clamp-2 leading-snug mb-1">
+                          {project.title}
+                        </h3>
+                        <p className="text-[#909cac] text-xs flex items-center gap-1 font-normal truncate">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-[#dd2222]" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                          </svg>
+                          {project.channel}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => router.push(`/project/${project._id}`)}
+                        className="w-full py-2.5 btn-secondary text-xs flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <span>Open Workspace</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-
-            <button
-              type="submit"
-              disabled={isLoading || !url.trim()}
-              className="w-full py-4 md:py-5 bg-[#dd2222] hover:bg-[#b91c1c] rounded-[10px] text-white font-semibold text-base md:text-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span className="text-sm md:text-base">{statusText}</span>
-                </span>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                  </svg>
-                  <span>Identify &amp; Create Shorts Workspace</span>
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Dashboard Metric Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="glass-panel rounded-2xl p-5 border border-white/8 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Total Workspaces</span>
-            <div className="text-2xl font-bold text-white">{projects.length}</div>
-            <p className="text-[11px] text-[#6e7d91] font-light">Saved video projects</p>
           </div>
+        </main>
 
-          <div className="glass-panel rounded-2xl p-5 border border-white/8 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Active AI Engine</span>
-            <div className="text-2xl font-bold text-[#ef9595] uppercase">{activeProvider}</div>
-            <p className="text-[11px] text-[#6e7d91] font-light">Llama 3.3 / Gemini / GPT</p>
-          </div>
-
-          <div className="glass-panel rounded-2xl p-5 border border-white/8 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Caption Styles</span>
-            <div className="text-2xl font-bold text-[#5ccae1]">3 Types</div>
-            <p className="text-[11px] text-[#6e7d91] font-light">Hormozi, Minimalist, Classic</p>
-          </div>
-
-          <div className="glass-panel rounded-2xl p-5 border border-white/8 space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#909cac]">Config Storage</span>
-            <div className="text-2xl font-bold text-emerald-400">Local Only</div>
-            <p className="text-[11px] text-[#6e7d91] font-light">Zero server credentials</p>
-          </div>
-        </div>
-
-        {/* Recent Workspaces Highlights */}
-        <div className="space-y-6 pt-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#dd2222]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Recent Workspaces
-            </h2>
-
-            <Link
-              href="/workspaces"
-              className="text-xs text-[#ef9595] hover:text-white font-medium flex items-center gap-1 transition-colors"
-            >
-              <span>View all workspaces</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-
-          {isFetchingProjects ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((n) => (
-                <div key={n} className="glass-card rounded-2xl h-[320px] animate-pulse flex flex-col justify-between p-4">
-                  <div className="bg-white/5 rounded-[10px] aspect-video w-full mb-4"></div>
-                  <div className="space-y-2 flex-grow">
-                    <div className="h-4 bg-white/5 rounded-[10px] w-3/4"></div>
-                    <div className="h-3 bg-white/5 rounded-[10px] w-1/2"></div>
-                  </div>
-                  <div className="h-10 bg-white/5 rounded-[10px] w-full mt-4"></div>
-                </div>
-              ))}
-            </div>
-          ) : projects.length === 0 ? (
-            <div className="glass-panel rounded-2xl p-12 text-center max-w-md mx-auto space-y-3">
-              <div className="w-14 h-14 rounded-[10px] bg-white/5 flex items-center justify-center mx-auto text-[#909cac]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-                </svg>
-              </div>
-              <h3 className="text-base font-semibold text-[#d7dbe0]">No workspaces initialized yet</h3>
-              <p className="text-[#6e7d91] text-xs font-light">Paste a YouTube link above to create your first shorts workspace.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.slice(0, 6).map((project) => (
-                <div key={project._id} className="glass-card rounded-2xl overflow-hidden flex flex-col justify-between group relative border border-white/8 hover:border-[#dd2222]/40 transition-colors">
-                  <div className="relative aspect-video w-full overflow-hidden bg-black/40">
-                    <img
-                      src={project.thumbnail}
-                      alt={project.title}
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-                    />
-
-                    {/* Delete button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteProject(project._id);
-                      }}
-                      className="absolute top-2 right-2 p-2 rounded-[10px] bg-black/70 hover:bg-red-600 text-white/80 hover:text-white border border-white/10 transition-colors cursor-pointer z-20"
-                      title="Delete Workspace"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-
-                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-[10px] bg-black/80 text-white text-[11px] font-semibold font-mono border border-white/10">
-                      {formatDuration(project.duration)}
-                    </div>
-                  </div>
-
-                  <div className="p-5 flex-grow flex flex-col justify-between space-y-3">
-                    <div>
-                      <h3 className="text-white font-bold text-sm line-clamp-2 leading-snug group-hover:text-[#ef9595] transition-colors mb-1">
-                        {project.title}
-                      </h3>
-                      <p className="text-[#909cac] text-xs flex items-center gap-1 font-light">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#dd2222]"></span>
-                        <span>{project.channel}</span>
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => router.push(`/project/${project._id}`)}
-                      className="w-full py-2.5 rounded-[10px] bg-[#dd2222] hover:bg-[#b91c1c] text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <span>Open Workspace</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
+        {/* Footer */}
+        <footer className="w-full text-center py-6 border-t border-[#39414b] mt-12 bg-[#2d3239]">
+          <p className="text-[#909cac] text-xs font-normal">
+            &copy; {new Date().getFullYear()} clip.studio • open source
+          </p>
+        </footer>
       </div>
     </DashboardLayout>
   );

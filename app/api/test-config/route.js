@@ -1,194 +1,162 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import { spawn } from 'child_process';
-import path from 'path';
-
-function testCommand(command, args = ['--version']) {
-  return new Promise((resolve) => {
-    try {
-      // If command contains spaces like "python3 -m yt_dlp", parse binary and args
-      const parts = command.split(' ');
-      const bin = parts[0];
-      const cmdArgs = parts.length > 1 ? [...parts.slice(1), ...args] : args;
-
-      const proc = spawn(bin, cmdArgs);
-      let output = '';
-      let errorOutput = '';
-
-      proc.stdout.on('data', (d) => { output += d.toString(); });
-      proc.stderr.on('data', (d) => { errorOutput += d.toString(); });
-
-      const timeout = setTimeout(() => {
-        try { proc.kill(); } catch (e) {}
-        resolve({ ok: false, message: 'Execution timed out' });
-      }, 4000);
-
-      proc.on('close', (code) => {
-        clearTimeout(timeout);
-        if (code === 0 || output.length > 0) {
-          const firstLine = (output || errorOutput).split('\n')[0].trim();
-          resolve({ ok: true, version: firstLine, resolvedPath: command });
-        } else {
-          resolve({ ok: false, message: errorOutput || `Exited with code ${code}` });
-        }
-      });
-
-      proc.on('error', (err) => {
-        clearTimeout(timeout);
-        resolve({ ok: false, message: err.message });
-      });
-    } catch (err) {
-      resolve({ ok: false, message: err.message });
-    }
-  });
-}
-
-async function resolveAndTestBinary(userPath, candidates, args = ['--version']) {
-  // 1. Try user path first if provided
-  if (userPath) {
-    const directResult = await testCommand(userPath.trim(), args);
-    if (directResult.ok) {
-      return directResult;
-    }
-  }
-
-  // 2. Try candidate fallback paths on the server
-  for (const candidate of candidates) {
-    if (candidate !== userPath) {
-      const fallbackResult = await testCommand(candidate, args);
-      if (fallbackResult.ok) {
-        return {
-          ...fallbackResult,
-          message: `Found at server location: ${candidate}`
-        };
-      }
-    }
-  }
-
-  return {
-    ok: false,
-    message: userPath ? `File does not exist at: ${userPath}` : 'Path not configured'
-  };
-}
-
-async function testAIKey(provider, key) {
-  if (!key) return { ok: false, message: 'No API key provided' };
-
-  try {
-    if (provider === 'groq') {
-      const res = await fetch('https://api.groq.com/openai/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${key}`
-        }
-      });
-      if (res.ok) return { ok: true, message: 'Groq API Key valid! (Free tier active)' };
-      const err = await res.json().catch(() => ({}));
-      return { ok: false, message: err.error?.message || res.statusText };
-    }
-
-    if (provider === 'gemini') {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`, {
-        method: 'GET',
-      });
-      if (res.ok) return { ok: true, message: 'Gemini API Key valid!' };
-      const err = await res.json().catch(() => ({}));
-      return { ok: false, message: err.error?.message || res.statusText };
-    }
-
-    if (provider === 'mistral') {
-      const res = await fetch('https://api.mistral.ai/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${key}`
-        }
-      });
-      if (res.ok) return { ok: true, message: 'Mistral API Key valid! (Free Tier active)' };
-      const err = await res.json().catch(() => ({}));
-      return { ok: false, message: err.message || err.error?.message || res.statusText };
-    }
-
-    if (provider === 'openai') {
-      const res = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${key}`
-        }
-      });
-      if (res.ok) return { ok: true, message: 'OpenAI API Key valid!' };
-      const err = await res.json().catch(() => ({}));
-      return { ok: false, message: err.error?.message || res.statusText };
-    }
-
-    return { ok: false, message: 'Unknown provider' };
-  } catch (err) {
-    return { ok: false, message: err.message };
-  }
-}
+import { runCommandLine } from '@/lib/video';
 
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { mongodb_uri, ffmpeg_path, yt_dlp_path, active_ai_provider, groq_api_key, gemini_api_key, mistral_api_key, openai_api_key } = body;
+    const { type, mongodbUri, ffmpegPath, ytDlpPath, aiConfig } = body;
 
-    const results = {
-      mongodb: { ok: false, message: '' },
-      ffmpeg: { ok: false, message: '', version: '' },
-      yt_dlp: { ok: false, message: '', version: '' },
-      ai: { ok: false, message: '', provider: active_ai_provider || 'groq' }
-    };
-
-    // 1. Test MongoDB
-    if (mongodb_uri) {
-      try {
-        const testConn = await mongoose.createConnection(mongodb_uri, {
-          serverSelectionTimeoutMS: 3000,
-          bufferCommands: false
-        }).asPromise();
-        await testConn.close();
-        results.mongodb = { ok: true, message: 'Connected successfully to MongoDB!' };
-      } catch (err) {
-        results.mongodb = { ok: false, message: err.message };
+    // 1. Test MongoDB Connection
+    if (type === 'mongodb') {
+      const uri = mongodbUri || process.env.MONGODB_URI || 'mongodb://localhost:27017/shorts';
+      if (!uri) {
+        return NextResponse.json({ success: false, error: 'No MongoDB URI provided' }, { status: 400 });
       }
-    } else {
-      results.mongodb = { ok: false, message: 'MongoDB URI not provided' };
+
+      // Create an isolated connection for testing
+      const testConn = await mongoose.createConnection(uri, {
+        serverSelectionTimeoutMS: 5000,
+      }).asPromise();
+
+      await testConn.close();
+      return NextResponse.json({
+        success: true,
+        message: 'Successfully connected to MongoDB database!'
+      });
     }
 
-    // 2. Test FFmpeg with server candidates fallback
-    const ffmpegCandidates = [
-      '/usr/bin/ffmpeg',
-      '/usr/local/bin/ffmpeg',
-      'ffmpeg',
-      '/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg',
-      '/opt/homebrew/bin/ffmpeg'
-    ];
-    results.ffmpeg = await resolveAndTestBinary(ffmpeg_path, ffmpegCandidates, ['-version']);
+    // 2. Test FFmpeg Path
+    if (type === 'ffmpeg') {
+      const targetPath = ffmpegPath || '/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg';
+      try {
+        const output = await runCommandLine(targetPath, ['-version']);
+        const firstLine = output.split('\n')[0];
+        return NextResponse.json({
+          success: true,
+          message: `FFmpeg verified: ${firstLine}`
+        });
+      } catch (err) {
+        return NextResponse.json({
+          success: false,
+          error: `FFmpeg executable not found or failed at path "${targetPath}": ${err.message}`
+        }, { status: 400 });
+      }
+    }
 
-    // 3. Test yt-dlp with bundled, system, pip, and candidate paths
-    const bundledYtDlp = path.join(process.cwd(), 'bin', 'yt-dlp');
-    const ytDlpCandidates = [
-      bundledYtDlp,
-      '/usr/local/bin/yt-dlp',
-      '/usr/bin/yt-dlp',
-      'yt-dlp',
-      'python3 -m yt_dlp',
-      '/opt/homebrew/bin/yt-dlp'
-    ];
-    results.yt_dlp = await resolveAndTestBinary(yt_dlp_path, ytDlpCandidates, ['--version']);
+    // 3. Test YT-DLP Path
+    if (type === 'yt_dlp') {
+      const targetPath = ytDlpPath || '/opt/homebrew/bin/yt-dlp';
+      try {
+        const output = await runCommandLine(targetPath, ['--version']);
+        return NextResponse.json({
+          success: true,
+          message: `yt-dlp verified (version: ${output.trim()})`
+        });
+      } catch (err) {
+        return NextResponse.json({
+          success: false,
+          error: `yt-dlp executable not found or failed at path "${targetPath}": ${err.message}`
+        }, { status: 400 });
+      }
+    }
 
-    // 4. Test Active AI Key
-    const keyMap = {
-      groq: groq_api_key,
-      gemini: gemini_api_key,
-      mistral: mistral_api_key,
-      openai: openai_api_key
-    };
-    const activeKey = keyMap[active_ai_provider || 'groq'];
-    results.ai = await testAIKey(active_ai_provider || 'groq', activeKey);
-    results.ai.provider = active_ai_provider || 'groq';
+    // 4. Test AI Provider
+    if (type === 'ai') {
+      const provider = aiConfig?.provider || 'mistral';
+      const key = aiConfig?.key;
+      const model = aiConfig?.model;
 
-    return NextResponse.json({ results });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+      if (!key) {
+        return NextResponse.json({ success: false, error: `Please enter an API key for ${provider}` }, { status: 400 });
+      }
+
+      if (provider === 'groq') {
+        const targetModel = model || 'openai/gpt-oss-120b';
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: targetModel,
+            messages: [{ role: 'user', content: 'Reply with "OK"' }],
+            max_tokens: 5
+          })
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          return NextResponse.json({ success: false, error: `Groq error (${res.status}): ${errText}` }, { status: 400 });
+        }
+        return NextResponse.json({ success: true, message: `Groq connected successfully (${targetModel})!` });
+      }
+
+      if (provider === 'mistral') {
+        const targetModel = model || 'mistral-small-latest';
+        const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: targetModel,
+            messages: [{ role: 'user', content: 'Reply with "OK"' }],
+            max_tokens: 5
+          })
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          return NextResponse.json({ success: false, error: `Mistral error (${res.status}): ${errText}` }, { status: 400 });
+        }
+        return NextResponse.json({ success: true, message: `Mistral connected successfully (${targetModel})!` });
+      }
+
+      if (provider === 'gemini') {
+        const targetModel = model || 'gemini-1.5-flash';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${key}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Reply with "OK"' }] }]
+          })
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          return NextResponse.json({ success: false, error: `Gemini error (${res.status}): ${errText}` }, { status: 400 });
+        }
+        return NextResponse.json({ success: true, message: `Gemini connected successfully (${targetModel})!` });
+      }
+
+      if (provider === 'openai') {
+        const targetModel = model || 'gpt-4o-mini';
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: targetModel,
+            messages: [{ role: 'user', content: 'Reply with "OK"' }],
+            max_tokens: 5
+          })
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          return NextResponse.json({ success: false, error: `OpenAI error (${res.status}): ${errText}` }, { status: 400 });
+        }
+        return NextResponse.json({ success: true, message: `OpenAI connected successfully (${targetModel})!` });
+      }
+
+      return NextResponse.json({ success: false, error: `Unknown provider: ${provider}` }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: false, error: 'Invalid test type specified' }, { status: 400 });
+  } catch (error) {
+    console.error('API TEST-CONFIG: Error:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Internal error' }, { status: 500 });
   }
 }

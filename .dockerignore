@@ -1,8 +1,0 @@
-node_modules
-.next
-.git
-.gitignore
-.env*
-public/temp/*
-public/outputs/*
-*.log

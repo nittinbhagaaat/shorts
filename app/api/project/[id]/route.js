@@ -1,20 +1,15 @@
 import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import Clip from '@/models/Clip';
-import { identifyViralClips } from '@/lib/ai';
-import { extractSettings } from '@/lib/settings';
+import { extractServerConfig } from '@/lib/serverConfig';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
 export async function GET(req, { params }) {
   try {
-    const settings = extractSettings(req);
-    if (!settings.mongodb_uri || !settings.mongodb_uri.trim()) {
-      return NextResponse.json({ error: 'MongoDB connection string is required' }, { status: 400 });
-    }
-    await dbConnect(settings.mongodb_uri);
-
+    const { mongodbUri } = extractServerConfig(req);
+    await dbConnect(mongodbUri);
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
@@ -23,37 +18,7 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    let clips = await Clip.find({ projectId: id }).sort({ start: 1 });
-
-    // Auto-repair: If workspace was saved with 0 clips, generate them immediately
-    if (clips.length === 0) {
-      console.log(`[API PROJECT DETAIL] Project ${id} has 0 clips. Auto-generating clips...`);
-      const rawClips = await identifyViralClips(
-        project.hinglishTranscript || project.transcript || [],
-        project.duration || 180,
-        settings
-      );
-
-      clips = await Promise.all(rawClips.map(c => {
-        const transcript = project.transcript || [];
-        const hinglishTranscript = project.hinglishTranscript || [];
-        const clipSegments = transcript.filter(s => s.start >= c.start && s.start <= c.end);
-        const clipHinglishSegments = hinglishTranscript.filter(s => s.start >= c.start && s.start <= c.end);
-        
-        return Clip.create({
-          projectId: id,
-          title: c.title,
-          description: c.description,
-          start: c.start,
-          end: c.end,
-          duration: c.end - c.start,
-          status: 'pending',
-          transcript: clipSegments,
-          hinglishTranscript: clipHinglishSegments
-        });
-      }));
-    }
-
+    const clips = await Clip.find({ projectId: id }).sort({ start: 1 });
     return NextResponse.json({ project, clips });
   } catch (error) {
     console.error('API PROJECT DETAIL: Error:', error);
@@ -63,9 +28,8 @@ export async function GET(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    const settings = extractSettings(req);
-    await dbConnect(settings.mongodb_uri);
-
+    const { mongodbUri } = extractServerConfig(req);
+    await dbConnect(mongodbUri);
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
@@ -82,10 +46,7 @@ export async function DELETE(req, { params }) {
       const filesToDelete = [
         clip.videoPath,
         clip.videoPathVertical,
-        clip.videoPathHorizontal,
-        `/outputs/${clip._id}-vertical.mp4`,
-        `/outputs/${clip._id}-horizontal.mp4`,
-        `/outputs/${clip._id}.mp4`
+        clip.videoPathHorizontal
       ].filter(Boolean);
 
       filesToDelete.forEach(relPath => {
