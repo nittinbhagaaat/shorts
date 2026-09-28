@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import Clip from '@/models/Clip';
+import { generateShortMetadata } from '@/lib/youtubeMetadata';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
@@ -19,6 +20,24 @@ export async function GET(req, { params }) {
     }
 
     const clips = await Clip.find({ projectId: id }).sort({ start: 1 });
+
+    // Auto-populate missing YouTube Shorts SEO metadata on existing clips
+    for (const clip of clips) {
+      if (!clip.youtubeTitle || !clip.youtubeDescription) {
+        const meta = generateShortMetadata(clip, {
+          title: project.title,
+          channel: project.channel,
+          url: project.url,
+        });
+        clip.youtubeTitle = meta.youtubeTitle;
+        clip.youtubeDescription = meta.youtubeDescription;
+        clip.tags = meta.tags;
+        clip.hashtags = meta.hashtags;
+        clip.seoKeywords = meta.seoKeywords;
+        await clip.save();
+      }
+    }
+
     return NextResponse.json({ project, clips });
   } catch (error) {
     console.error('API PROJECT DETAIL: Error:', error);

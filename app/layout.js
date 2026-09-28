@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         <link rel="shortcut icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/favicon.png" />
       </head>
-      <body className="min-h-full flex flex-col bg-[#1d2125] text-[#f6f7f8]">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#1d2125] text-[#f6f7f8]">
         {children}
       </body>
     </html>

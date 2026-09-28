@@ -1,100 +1,65 @@
 # YouTube Shorts Generator Walkthrough
 
-We have successfully built and verified the YouTube Shorts Generator application! The project compiles with zero warnings or errors. Here is a summary of the stack, implementation, and enhanced features.
+We have upgraded the YouTube Shorts Generator application with studio-grade video editing capabilities, AI active speaker camera tracking, 10 viral subtitle styles, custom overlay text with opacity control, and flexible Hinglish/English subtitles!
 
 ---
 
-## 🏗️ Architecture & Features
+## 🚀 Key Improvements & New Features
 
-```mermaid
-graph TD
-    A[User Paste YT URL] --> B[API: /api/project]
-    B --> C[Scrape Video Metadata]
-    B --> D[Fetch YouTube Transcripts]
-    D --> E{Contains Hindi?}
-    E -- Yes --> F[AI Transliteration: Devanagari to Hinglish]
-    E -- No --> G[Raw Transcript]
-    F --> H[Save Original & Hinglish transcripts side-by-side]
-    G --> H
-    H --> I[Call Conversational AI Clipper: Mistral/Gemini/OpenAI]
-    I --> J[Identify 10-20 Conversational Moments <30s]
-    J --> K[Save to MongoDB]
-    K --> L[Project Workspace UI]
-    L --> M[Caption Script Toggle: Hindi vs Hinglish]
-    M --> N[Select Output Layout: Vertical / Horizontal / Both]
-    N --> O[Select Caption Style & Crop focus]
-    O --> P[Interactive HTML Subtitle Overlay - Tracks Player Time]
-    P --> Q[Edit Transcript Lines]
-    Q --> R[API: /api/clip/id/render]
-    R --> S[yt-dlp: Download Segment]
-    S --> T{Selected Format?}
-    T -- Vertical/Both --> U[Generate Vertical Subtitles & Render Vertical MP4]
-    T -- Horizontal/Both --> V[Generate Horizontal Subtitles & Render Horizontal MP4]
-    U --> W[Save paths to DB]
-    V --> W
-    W --> X[Download vertical/horizontal/both videos]
-    
-    Y[Workspace UI] -- Delete Rendered Video --> Z[API: DELETE /api/clip/id/render]
-    Z --> AA[Unlink vertical & horizontal output MP4s from Disk]
-    Z --> AB[Reset status to pending & set videoPaths to null]
-    AB --> AC[Restore edit controls & Render button in Workspace]
-    
-    AD[Dashboard Card] -- Delete Workspace --> AE[API: DELETE /api/project/id]
-    AE --> AF[Delete MP4s from Disk]
-    AE --> AG[Delete Clips & Project from DB]
-    
-    AH[Workspace UI] -- Link Platforms --> AI[API Auth Endpoints]
-    AI -- Link YT --> AJ[API: /api/auth/google]
-    AI -- Link IG --> AK[API: /api/auth/facebook]
-    AJ --> AL[Save Channel Google Refresh Tokens]
-    AK --> AM[Save Business Meta Long-Lived Page Tokens]
-    AL --> AN[Direct Social Publishing Panel]
-    AM --> AN
-    AN -- Publish --> AO[API: /api/clip/id/publish]
-    AO -- Upload Stream --> AP[YouTube Shorts API]
-    AO -- Media Container --> AQ[Instagram Reels API]
-```
+### 1. 🎯 Improved Viral Clipping & Clip Count Selector (Max: 20)
+- **Strict Relevance Filter:** The AI clipping engine in `lib/ai.js` now strictly filters out video intros, sponsor plugs, subscribe prompts, and transition banter. It prioritizes moments with an irresistible 3-second hook, high informational or comedic value, and a complete conversational payoff (joke punchline, key takeaway, or debate conclusion).
+- **User Clip Count Selector:** When pasting a YouTube link on the homepage (`app/page.js`), users can choose exactly how many clips to generate (between 1 and 20 clips) using an interactive slider and quick preset chips (`1`, `3`, `5`, `10`, `15`, `20`).
+- **Viral Scoring:** Every clip is assigned a viral retention score (1-100) and ranked so only the highest-performing moments are generated.
 
-### 1. Conversational AI Clipper & Transliteration (`lib/ai.js`)
-- **Conversational Clipping Optimization:** The AI prompt is highly optimized to ensure clips capture complete, coherent, and highly relevant conversations (Q&As, explanations, jokes, arguments) under 30 seconds, preventing cut-offs.
-- **Hinglish Transliteration:** Automatically transliterates Hindi transcripts from Devanagari script to Hinglish (Latin letters) while strictly preserving start and duration timings.
-- **Dual Script Storage:** Retains both Devanagari script and Latin Hinglish transcripts side-by-side in MongoDB, letting the user toggle between them.
+### 2. 🎥 AI Active Speaker Auto-Framing (Camera Follows Person)
+- **Smart Camera Centering:** Implemented in `scripts/auto_framing.py` using PyAV and a mobile SSDLite neural detector running on PyTorch.
+- **Dynamic 9:16 Auto-Tracking:** Analyzes the horizontal position of the speaker/face across video frames, applies exponential moving average (EMA) smoothing to eliminate camera jitter, and constructs a cinematic FFmpeg camera panning filter to keep the speaking person centered in the 9:16 vertical crop.
+- **Framing Options:**
+  - `AI Active Speaker`: Smart camera that dynamically tracks the person.
+  - `Center Crop`: Fixed center 9:16 framing.
+  - `Left Focus`: Fixed left-third framing.
+  - `Right Focus`: Fixed right-third framing.
 
-### 2. Multi-Layout Rendering Pipeline (`lib/video.js` & `lib/youtube.js`)
-- **Vertical cropped layout (9:16):** Crops landscape 16:9 videos to 9:16 vertical ratio with adjustable alignments (Left, Center, Right) and burns in vertical styled subtitles.
-- **Horizontal widescreen layout (16:9):** Skips cropping, scaling subtitles and adjusting bottom margins to fit widescreen layouts natively, and burns them directly onto the landscape video.
-- **Fast Clip Downloads:** Uses `yt-dlp` section downloads (`--download-sections`) combined with `ffmpeg-full` to fetch only the required frames in seconds.
+### 3. ✨ 10 Diverse Viral Caption Typography Styles
+Available in both the interactive live video preview and the burned-in ASS subtitle rendering:
+1. **Hormozi Pop (`hormozi`):** Bold uppercase white text with electric bright yellow active word highlights and 5px black outline.
+2. **MrBeast Bouncy (`mrbeast`):** Ultra-bold yellow text with energetic lime-green active punch highlights and a 6px comic outline.
+3. **Cyberpunk Neon (`neon`):** Electric glowing cyan text with luminous magenta/purple drop aura.
+4. **Minimalist Clean (`minimalist`):** Elegant modern sans-serif inside a semi-transparent dark rounded pill backdrop.
+5. **Classic Subtitle (`classic`):** Timeless crisp white cinema/broadcast subtitles with clean drop shadow.
+6. **Karaoke Fire (`karaoke`):** Active word ignites into fiery flame-orange with glowing illumination.
+7. **Retro VHS 90s (`retro`):** Monospace CRT amber-yellow typography with authentic 90s video shadow.
+8. **Cinematic Serif (`cinematic`):** Sophisticated editorial Georgia/Playfair serif in soft ivory cream.
+9. **Red Badge (`bold_badge`):** High-urgency solid crimson red banner badge with bold white text.
+10. **Pop Comic (`comic`):** Playful banana-yellow comic display font with heavy 6px cartoon stroke.
 
-### 3. API Handlers (`app/api/`)
-- `POST /api/project`: Onboarding route. Detects Hindi, generates dual transcripts, clips, and returns JSON.
-- `GET /api/project/[id]`: Returns data.
-- `DELETE /api/project/[id]`: **Workspace Deletion.** Deletes clips, project records, and local rendered `.mp4` video files to reclaim disk space.
-- `POST /api/clip/[id]/render`: Triggers download, layout selection, runs FFmpeg render, and saves outputs.
-- `DELETE /api/clip/[id]/render`: **Delete Rendered Video (Reset).** Unlinks all rendered `.mp4` files (`outputs/[id]-vertical.mp4`, etc.) from disk and resets the status back to `'pending'` (Ready to Render) with all paths cleared.
-- `GET /api/clip/[id]/download`: Streams the rendered MP4 file based on the query parameter (e.g. `?format=vertical` or `?format=horizontal`).
-- `GET /api/auth/status`: Checks if YouTube and Instagram accounts are connected, returning names and token validity.
-- `POST /api/clip/[id]/publish`: Direct video publishing endpoint that uploads rendered `.mp4` video streams to YouTube Shorts (`googleapis`) and creates reels containers on Meta Graph API to upload Reels to connected Instagram Business Accounts.
+### 4. 📍 Full Caption Positioning & Alignment
+- **Vertical Presets & Slider:** Quick 1-click positioning for **Top** (15%), **Upper** (30%), **Center** (50%), **Lower Third** (72% - recommended for Shorts/Reels), and **Bottom** (86%), with a precision 10%–90% Y-axis slider.
+- **Horizontal Alignment:** Align subtitles to **Left**, **Center**, or **Right**.
+- **1:1 Preview Parity:** Live HTML preview and burned FFmpeg ASS subtitles use exact matching pixel margin coordinates.
 
-### 4. Interactive Cosmic UI (`app/page.js` & `app/project/[id]/page.js`)
-- **Dashboard Deletion:** Trash-can delete triggers with confirmation.
-- **Interactive Live Subtitle Preview:** Loads the YouTube Iframe API, polls playback time at 150ms intervals, and renders live HTML styled subtitle overlays. Capitalizes and highlights spoken words in yellow in real-time for the **Hormozi style**.
-- **Visual Style Cards:** Custom styled CSS previews for Hormozi, Minimalist, and Classic subtitles.
-- **Caption Script Selector:** Toggles between Original (Hindi) and Hinglish script options, instantly updating the subtitle editor and the live HTML overlay.
-- **Layout Format Selector:** Choose "Vertical (9:16)", "Horizontal (16:9)", or "Both layouts" before triggering the render. Once completed, separate download buttons will appear dynamically based on the rendered layouts.
-- **Reset Render & Edit Button:** If a clip is completed, a red **Delete Rendered Video (Reset Clip)** button appears. Clicking it clears the files, unlocks the subtitle editor, and restores the "Render Video Clip" button.
-- **Direct Social Publishing Panel:** If a clip is completed:
-  - Connect accounts easily with redirection triggers to Google & Meta OAuth pages.
-  - Show status indicators of connected profiles.
-  - Prefill custom title, descriptions, hashtags, and select YouTube privacy.
-  - Tap "Publish" to upload video files directly from your workspace!
+### 5. ✏️ Video Editor: Custom Text Overlay Studio
+- **Overlay Text Input:** Add hook titles, episode numbers, or social handles (e.g. `WAIT TILL THE END 😱`, `PART 1 🔥`, `@mychannel`).
+- **Text Opacity Control:** Adjustable transparency from 10% to 100% using native ASS alpha color mapping (`&HAA...&`).
+- **Vertical Position Slider:** Custom Y-positioning from 5% to 90%.
+- **Typography Sizing & Colors:** Choose from Small, Medium, Large, or Huge fonts across White, Yellow, Cyan, Red, Green, and Purple palettes with optional dark backdrop pill.
+
+### 6. 🌐 Hinglish, English & Original Captions
+- **Triple Script Support:**
+  - `Original Speech`: Verbatim speech transcription.
+  - `Hinglish (Roman Script)`: Modern conversational Romanized Hindi without Devanagari characters (e.g., `Namaste dosto, aaj main aapko bataunga...`).
+  - `English Subtitles`: Clean, concise English translated subtitles for global reach.
+- **Instant Toggle:** Switch between languages in the workspace; the live player overlay and editable transcript rows update immediately.
 
 ---
 
-## 🛠️ Verification Results
+## 🛠️ Verification & Build Results
 
-1. **System Tools:** Installed `ffmpeg-full` and `yt-dlp` via Homebrew.
-2. **Local Database:** Verified MongoDB running on port `27017` and successfully tested connections.
-3. **Next.js Production Build:** Completed successfully with zero compiler warnings/errors:
-   ```bash
-   ✓ Compiled successfully in 12.1s
-   ```
+- **Next.js Production Build:** Completed successfully with zero compiler errors:
+  ```bash
+  ✓ Compiled successfully in 1029ms
+  ✓ 9/9 pages statically generated
+  ```
+- **ESLint Validation:** Zero lint errors across all routes and components.
+- **PyTorch SSDLite Vision Model:** Initialized and cached locally for instant active speaker auto-framing.
+- **ASS Subtitle Generator:** All 10 styles, positioning margins, and custom text overlays verified via unit tests.

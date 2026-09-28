@@ -2,13 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { getStoredSettings, saveStoredSettings, DEFAULT_SETTINGS } from '@/lib/settings';
+import { getStoredSettings, saveStoredSettings, DEFAULT_SETTINGS, fetchWithSettings } from '@/lib/settings';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   
+  // YouTube integration state
+  const [ytAccount, setYtAccount] = useState(null);
+  const [isCheckingYt, setIsCheckingYt] = useState(true);
+  const [isDisconnectingYt, setIsDisconnectingYt] = useState(false);
+  const [ytUploads, setYtUploads] = useState([]);
+  const [isYtUploadsLoading, setIsYtUploadsLoading] = useState(false);
+  const [ytUploadsTab, setYtUploadsTab] = useState('all'); // 'all' | 'scheduled' | 'uploaded'
+  const [ytBanner, setYtBanner] = useState(null);
+  const [copiedRedirectUri, setCopiedRedirectUri] = useState(false);
+
   const [showKeys, setShowKeys] = useState({
     mistral: false,
     gemini: false,
@@ -26,10 +35,81 @@ export default function SettingsPage() {
     mongodb: { loading: false, result: null, error: null },
   });
 
+  const fetchYouTubeStatus = async () => {
+    try {
+      setIsCheckingYt(true);
+      const res = await fetchWithSettings('/api/youtube/status');
+      if (res.ok) {
+        const data = await res.json();
+        setYtAccount(data.connected ? data.account : null);
+      }
+    } catch (err) {
+      console.error('Failed to fetch YouTube status:', err);
+    } finally {
+      setIsCheckingYt(false);
+    }
+  };
+
+  const fetchYouTubeUploads = async () => {
+    try {
+      setIsYtUploadsLoading(true);
+      const res = await fetchWithSettings('/api/youtube/uploads');
+      if (res.ok) {
+        const data = await res.json();
+        setYtUploads(data.uploads || []);
+      }
+    } catch (err) {
+      console.error('Failed to load YouTube uploads in settings:', err);
+    } finally {
+      setIsYtUploadsLoading(false);
+    }
+  };
+
+  const handleDisconnectYouTube = async () => {
+    if (!confirm('Are you sure you want to disconnect this YouTube channel?')) return;
+    try {
+      setIsDisconnectingYt(true);
+      const res = await fetchWithSettings('/api/youtube/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'disconnect' }),
+      });
+      if (res.ok) {
+        setYtAccount(null);
+        setYtBanner({ type: 'success', message: 'YouTube channel disconnected.' });
+        setTimeout(() => setYtBanner(null), 4000);
+      }
+    } catch (err) {
+      console.error('Failed to disconnect YouTube:', err);
+      setYtBanner({ type: 'error', message: 'Failed to disconnect YouTube account.' });
+    } finally {
+      setIsDisconnectingYt(false);
+    }
+  };
+
   useEffect(() => {
     const loaded = getStoredSettings();
     setSettings(loaded);
-    setIsLoaded(true);
+    fetchYouTubeStatus();
+    fetchYouTubeUploads();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('youtube') === 'connected') {
+        const ch = params.get('channel');
+        setYtBanner({
+          type: 'success',
+          message: ch ? `Successfully connected YouTube channel "${ch}"!` : 'Successfully connected YouTube channel!',
+        });
+        setTimeout(() => setYtBanner(null), 5000);
+      } else if (params.get('youtube_error')) {
+        setYtBanner({
+          type: 'error',
+          message: `YouTube connection error: ${params.get('youtube_error')}`,
+        });
+        setTimeout(() => setYtBanner(null), 6000);
+      }
+    }
   }, []);
 
   const handleChange = (field, value) => {
@@ -207,22 +287,6 @@ export default function SettingsPage() {
     },
   ];
 
-  if (!isLoaded) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="flex items-center gap-2.5 text-[#909cac] text-xs font-normal">
-            <svg className="animate-spin h-4 w-4 text-[#dd2222]" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            <span>Loading settings from localStorage...</span>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 space-y-8">
@@ -253,6 +317,28 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
+
+        {/* YouTube Connection Status Banner */}
+        {ytBanner && (
+          <div
+            className={`flex items-center justify-between gap-3 p-3.5 rounded-[10px] text-xs font-medium border ${
+              ytBanner.type === 'success'
+                ? 'bg-[#22c55e]/15 border-[#22c55e]/30 text-[#86efac]'
+                : 'bg-[#ef4444]/15 border-[#ef4444]/30 text-[#fca5a5]'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-bold">{ytBanner.type === 'success' ? '✓' : '✕'}</span>
+              <span>{ytBanner.message}</span>
+            </div>
+            <button
+              onClick={() => setYtBanner(null)}
+              className="text-[#909cac] hover:text-white text-xs cursor-pointer font-bold px-1"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Save Feedback Banner */}
         {saveStatus === 'saved' && (
@@ -570,57 +656,12 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Section 3: Subtitles & Rendering Defaults */}
-        <section className="space-y-4 pt-2">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
-              3. Subtitles & Rendering Defaults
-            </h2>
-            <p className="text-[#909cac] text-xs font-normal mt-0.5">
-              Configure whether generated video shorts default to having animated captions or clean video rendering.
-            </p>
-          </div>
-
-          <div className="app-panel p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h4 className="font-bold text-white text-xs">Default Subtitle Mode</h4>
-              <p className="text-[#909cac] text-[11px] font-normal">Choose whether new video shorts default to burned-in styled subtitles or clean video.</p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleChange('enableSubtitlesDefault', true)}
-                className={`px-3 py-1.5 rounded-[10px] text-xs font-semibold border transition-colors cursor-pointer ${
-                  settings.enableSubtitlesDefault !== false
-                    ? 'bg-[#360c0c] border-[#dd2222] text-[#fcf2f2]'
-                    : 'bg-[#1d2125] border-[#39414b] text-[#909cac]'
-                }`}
-              >
-                💬 With Subtitles (Default)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleChange('enableSubtitlesDefault', false)}
-                className={`px-3 py-1.5 rounded-[10px] text-xs font-semibold border transition-colors cursor-pointer ${
-                  settings.enableSubtitlesDefault === false
-                    ? 'bg-[#360c0c] border-[#dd2222] text-[#fcf2f2]'
-                    : 'bg-[#1d2125] border-[#39414b] text-[#909cac]'
-                }`}
-              >
-                🚫 No Subtitles (Clean Video)
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 4: Database Connection */}
+        {/* Section 3: Database Connection */}
         <section className="space-y-4 pt-2">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#22c55e]"></span>
-              4. MongoDB Database Connection
+              3. MongoDB Database Connection
             </h2>
             <p className="text-[#909cac] text-xs font-normal mt-0.5">
               Workspaces and clip metadata are stored in your MongoDB instance.
@@ -669,7 +710,274 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Section 4: Data Management & Backup */}
+        {/* Section 4: YouTube Shorts Channel Integration & Publishing */}
+        <section className="space-y-4 pt-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#dd2222] flex items-center gap-1.5">
+              <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              <span>4. YouTube Shorts Channel Integration</span>
+            </h2>
+            <span className="text-[11px] text-[#909cac]">
+              Google OAuth2 · Direct Upload & Scheduled Publishing
+            </span>
+          </div>
+
+          <div className="app-panel p-4 space-y-4">
+            {/* Channel Connection Status Card */}
+            {isCheckingYt ? (
+              <div className="flex items-center gap-2 text-xs text-[#909cac] p-3 rounded-[10px] bg-[#1d2125] border border-[#39414b]">
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-[#dd2222] border-t-transparent animate-spin"></div>
+                <span>Checking YouTube channel status...</span>
+              </div>
+            ) : ytAccount ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 rounded-[12px] bg-[#1d2125] border border-[#22c55e]/40">
+                <div className="flex items-center gap-3 min-w-0">
+                  {ytAccount.channelThumbnail ? (
+                    <img
+                      src={ytAccount.channelThumbnail}
+                      alt={ytAccount.channelTitle}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-[#dd2222] shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-[#dd2222] flex items-center justify-center text-white font-bold text-sm shrink-0">
+                      YT
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-sm text-white truncate">{ytAccount.channelTitle}</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Connected
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#909cac] truncate">
+                      {ytAccount.channelHandle ? `@${ytAccount.channelHandle.replace(/^@/, '')}` : `ID: ${ytAccount.channelId}`}
+                      {ytAccount.subscriberCount && ` · ${Number(ytAccount.subscriberCount).toLocaleString()} subscribers`}
+                    </p>
+                    <p className="text-[10px] text-[#6e7d91]">
+                      Ready for direct Shorts upload and schedule publishing (max 90s vertical 9:16).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={settings.googleClientId ? `/api/youtube/auth?clientId=${encodeURIComponent(settings.googleClientId)}&clientSecret=${encodeURIComponent(settings.googleClientSecret || '')}` : '/api/youtube/auth'}
+                    className="px-3 py-1.5 rounded-[8px] bg-[#2d3239] hover:bg-[#39414b] text-[#eeeff2] border border-[#39414b] text-xs font-semibold transition-colors"
+                  >
+                    Switch Channel
+                  </a>
+                  <button
+                    onClick={handleDisconnectYouTube}
+                    disabled={isDisconnectingYt}
+                    className="px-3 py-1.5 rounded-[8px] bg-[#ef4444]/15 hover:bg-[#ef4444]/25 text-[#ef4444] border border-[#ef4444]/30 text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    {isDisconnectingYt ? 'Disconnecting...' : 'Disconnect'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[12px] bg-[#360c0c]/60 border border-[#731111]">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>No YouTube Channel Connected</span>
+                    <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 text-[10px] font-mono uppercase font-bold">
+                      Shorts Upload
+                    </span>
+                  </h3>
+                  <p className="text-xs text-[#909cac] max-w-xl leading-relaxed">
+                    Connect your YouTube channel using Google OAuth2 to publish your AI-generated vertical Shorts directly with auto-generated titles, tags, descriptions, and hashtags, or schedule them for future viral release.
+                  </p>
+                </div>
+                <a
+                  href={settings.googleClientId ? `/api/youtube/auth?clientId=${encodeURIComponent(settings.googleClientId)}&clientSecret=${encodeURIComponent(settings.googleClientSecret || '')}` : '/api/youtube/auth'}
+                  className="px-5 py-2.5 rounded-[10px] bg-[#dd2222] hover:bg-[#b91c1c] text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-900/40 flex items-center justify-center gap-2 transition-transform hover:scale-105 shrink-0"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  <span>Connect YouTube Channel</span>
+                </a>
+              </div>
+            )}
+
+            {/* Google OAuth Credentials Configuration */}
+            <div className="pt-3 border-t border-[#39414b] space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-white">Google OAuth Credentials & Redirect URI</h4>
+                  <p className="text-[11px] text-[#909cac]">
+                    Credentials can be stored here or via .env.local (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const redirect = `${window.location.origin}/api/youtube/callback`;
+                    navigator.clipboard.writeText(redirect);
+                    setCopiedRedirectUri(true);
+                    setTimeout(() => setCopiedRedirectUri(false), 2500);
+                  }}
+                  className="px-2.5 py-1 rounded-[6px] bg-[#2d3239] hover:bg-[#39414b] text-[10px] text-[#eeeff2] border border-[#39414b] transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  {copiedRedirectUri ? (
+                    <span className="text-[#22c55e]">✓ Copied URI</span>
+                  ) : (
+                    <span>📋 Copy Redirect URI</span>
+                  )}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#909cac] mb-1">
+                    Google Client ID
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.googleClientId}
+                    onChange={(e) => handleChange('googleClientId', e.target.value)}
+                    placeholder="79839125649-...apps.googleusercontent.com"
+                    className="w-full px-3 py-1.5 app-input font-mono text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#909cac] mb-1">
+                    Google Client Secret
+                  </label>
+                  <input
+                    type="password"
+                    value={settings.googleClientSecret}
+                    onChange={(e) => handleChange('googleClientSecret', e.target.value)}
+                    placeholder="GOCSPX-..."
+                    className="w-full px-3 py-1.5 app-input font-mono text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Scheduled & Uploaded Shorts Platform Overview */}
+            <div className="pt-3 border-t border-[#39414b] space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5 uppercase tracking-wider">
+                    <span>Platform Shorts History ({ytUploads.length})</span>
+                  </h4>
+                  <p className="text-[11px] text-[#909cac]">
+                    Live track of all scheduled and published YouTube Shorts created from this platform.
+                  </p>
+                </div>
+
+                <div className="flex bg-[#1d2125] p-0.5 rounded-[8px] border border-[#39414b]">
+                  {['all', 'scheduled', 'uploaded'].map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setYtUploadsTab(tab)}
+                      className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-[6px] capitalize transition-colors cursor-pointer ${
+                        ytUploadsTab === tab
+                          ? 'bg-[#dd2222] text-white'
+                          : 'text-[#909cac] hover:text-white'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {isYtUploadsLoading ? (
+                <div className="p-4 text-center text-xs text-[#909cac] flex items-center justify-center gap-2">
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-[#dd2222] border-t-transparent animate-spin"></div>
+                  <span>Loading YouTube Shorts history...</span>
+                </div>
+              ) : ytUploads.length === 0 ? (
+                <div className="p-4 text-center rounded-[10px] bg-[#1d2125] border border-[#39414b] text-xs text-[#909cac]">
+                  No Shorts uploaded or scheduled yet. Select any project, render a vertical 9:16 Short, and click &quot;Upload to YouTube Short&quot;!
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {ytUploads
+                    .filter((u) => {
+                      if (ytUploadsTab === 'scheduled') return u.isScheduled || u.status === 'scheduled';
+                      if (ytUploadsTab === 'uploaded') return !u.isScheduled && u.status === 'uploaded';
+                      return true;
+                    })
+                    .map((item) => {
+                      const isSched = item.isScheduled || item.status === 'scheduled';
+                      return (
+                        <div
+                          key={item._id}
+                          className="p-3 rounded-[10px] bg-[#1d2125] border border-[#39414b] hover:border-[#dd2222]/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shrink-0 ${
+                                  isSched
+                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                }`}
+                              >
+                                {isSched ? '🕒 Scheduled' : '🚀 Published Short'}
+                              </span>
+                              <span className="font-bold text-white truncate text-xs">{item.title}</span>
+                            </div>
+                            <p className="text-[11px] text-[#909cac] line-clamp-1">
+                              {item.description}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 text-[10px] text-[#6e7d91]">
+                              <span>Channel: {item.channelTitle || 'Connected Channel'}</span>
+                              <span>·</span>
+                              <span>
+                                {isSched && item.scheduledPublishTime
+                                  ? `Goes live: ${new Date(item.scheduledPublishTime).toLocaleString()}`
+                                  : `Published: ${new Date(item.uploadedAt).toLocaleString()}`}
+                              </span>
+                              {item.duration > 0 && (
+                                <>
+                                  <span>·</span>
+                                  <span>Duration: {item.duration}s</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {item.projectId && (
+                              <a
+                                href={`/project/${item.projectId}`}
+                                className="px-2.5 py-1 rounded-[6px] bg-[#2d3239] hover:bg-[#39414b] text-[#eeeff2] border border-[#39414b] text-[11px] transition-colors"
+                              >
+                                Studio
+                              </a>
+                            )}
+                            {item.youtubeVideoUrl && (
+                              <a
+                                href={item.youtubeVideoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1 rounded-[6px] bg-[#dd2222] hover:bg-[#b91c1c] text-white text-[11px] font-bold flex items-center gap-1 transition-colors"
+                              >
+                                <span>Watch Short</span>
+                                <span>↗</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+          </div>
+        </section>
+
+        {/* Section 6: Data Management & Backup */}
         <section className="pt-4 border-t border-[#39414b] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2.5">
             <button

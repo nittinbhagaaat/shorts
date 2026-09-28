@@ -23,6 +23,7 @@
 - **⚡ Multi-Model AI Engine**: Support for **Groq** (ultra-fast LLaMA & GPT-OSS), **Mistral AI**, **Google Gemini**, and **OpenAI**.
 - **🔒 Local-First Privacy**: All API keys, MongoDB connection strings, and binary paths are stored directly in your browser's `localStorage`. No credentials are leaked or saved on the server.
 - **📐 Dual Aspect Ratio Export**: Generate **9:16 Vertical** Shorts/Reels/TikToks (with Left, Center, or Right framing focus) or **16:9 Horizontal** widescreen videos.
+- **🚀 YouTube Shorts Direct Publishing & Scheduling**: Connect your YouTube channel via Google OAuth2 to publish or schedule viral Shorts directly from the platform with auto-generated titles, tags, descriptions, and hashtags. See [Google OAuth Setup Guide](GOOGLE_AUTH_SETUP.md).
 
 ---
 
@@ -33,9 +34,10 @@
 3. [Installing Video Binaries & Finding Paths (FFmpeg & yt-dlp)](#-3-installing-video-binaries-ffmpeg--yt-dlp)
 4. [Setting Up MongoDB](#-4-setting-up-mongodb)
 5. [Getting AI API Keys](#-5-getting-ai-api-keys)
-6. [Running the Application](#-6-running-the-application)
-7. [In-App Settings & Diagnostic Testing](#-7-in-app-settings--diagnostic-testing)
-8. [Troubleshooting & FAQ](#-8-troubleshooting--faq)
+6. [Configuring YouTube Shorts Uploads (Google OAuth)](#-6-configuring-youtube-shorts-uploads-google-oauth)
+7. [Running the Application](#-7-running-the-application)
+8. [In-App Settings & Diagnostic Testing](#-8-in-app-settings--diagnostic-testing)
+9. [Troubleshooting & FAQ](#-9-troubleshooting--faq)
 
 ---
 
@@ -302,7 +304,29 @@ You only need **at least one** AI provider to curate clips and generate Hinglish
 
 ---
 
-## 🏃 6. Running the Application
+## 📺 6. Configuring YouTube Shorts Uploads (Google OAuth)
+
+You can connect your YouTube channel and upload or schedule Shorts directly from the platform:
+
+1. **Configure OAuth in Google Cloud Console**:
+   - Create a Web Application OAuth Client ID with redirect URI `http://localhost:3000/api/youtube/callback`.
+   - Enable the **YouTube Data API v3**.
+   - Add your Google account as a **Test user**.
+   - Read the complete step-by-step walkthrough: 👉 **[GOOGLE_AUTH_SETUP.md](GOOGLE_AUTH_SETUP.md)**.
+2. **Add Credentials**:
+   - In `.env.local`:
+     ```env
+     GOOGLE_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
+     GOOGLE_CLIENT_SECRET=your_client_secret_here
+     ```
+   - Or paste them directly in the UI under **Settings** (`/settings`) > **Section 5: YouTube Shorts Channel Integration**.
+3. **Connect Your Channel**:
+   - Open `/settings` -> Click **Connect YouTube Channel** -> Authorize permissions.
+   - You can now publish or schedule any rendered 9:16 Short directly from the Project Studio!
+
+---
+
+## 🏃 7. Running the Application
 
 Start the local development server:
 
@@ -317,7 +341,7 @@ http://localhost:3000
 
 ---
 
-## ⚙️ 7. In-App Settings & Diagnostic Testing
+## ⚙️ 8. In-App Settings & Diagnostic Testing
 
 `clip.studio` features a dedicated **Settings Page** (`http://localhost:3000/settings`) where all configurations are managed client-side:
 
@@ -334,7 +358,7 @@ http://localhost:3000
 
 ---
 
-## ❓ 8. Troubleshooting & FAQ
+## ❓ 9. Troubleshooting & FAQ
 
 ### Q: Subtitles are not appearing on rendered videos
 - Make sure you are using **FFmpeg with `libass` enabled**.

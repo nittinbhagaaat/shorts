@@ -3,6 +3,7 @@ import Clip from '@/models/Clip';
 import Project from '@/models/Project';
 import { downloadVideoClip, generateAssSubtitles, renderFinalShort } from '@/lib/video';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { transliterateTranscript } from '@/lib/transliterate';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
@@ -15,7 +16,22 @@ export async function POST(req, { params }) {
     const { id } = resolvedParams;
 
     const body = await req.json();
-    const { captionStyle, cropFocus, transcript, captionLanguage, renderFormat } = body;
+    const {
+      enableSubtitles,
+      captionStyle,
+      cropFocus,
+      transcript,
+      captionLanguage,
+      renderFormat,
+      captionYPercent,
+      captionAlign,
+      overlayText,
+      overlayTextOpacity,
+      overlayTextYPercent,
+      overlayTextColor,
+      overlayTextSize,
+      overlayTextBg
+    } = body;
 
     const clip = await Clip.findById(id);
     if (!clip) {
@@ -27,16 +43,39 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: 'Parent project not found' }, { status: 404 });
     }
 
-    // Update status to rendering
+    // Update status to rendering and store editor customization settings
     clip.status = 'rendering';
-    clip.captionStyle = captionStyle || clip.captionStyle;
-    clip.cropFocus = cropFocus || clip.cropFocus;
+    if (typeof enableSubtitles === 'boolean') {
+      clip.enableSubtitles = enableSubtitles;
+    }
+    if (captionStyle) {
+      clip.captionStyle = captionStyle;
+      if (captionStyle === 'none') {
+        clip.enableSubtitles = false;
+      }
+    }
+    if (clip.enableSubtitles === false) {
+      clip.captionStyle = 'none';
+    }
+    clip.cropFocus = cropFocus || clip.cropFocus || 'auto';
     clip.captionLanguage = captionLanguage || clip.captionLanguage || 'original';
     clip.renderFormat = renderFormat || clip.renderFormat || 'vertical';
+
+    if (typeof captionYPercent === 'number') clip.captionYPercent = captionYPercent;
+    if (captionAlign) clip.captionAlign = captionAlign;
+
+    if (typeof overlayText === 'string') clip.overlayText = overlayText;
+    if (typeof overlayTextOpacity === 'number') clip.overlayTextOpacity = overlayTextOpacity;
+    if (typeof overlayTextYPercent === 'number') clip.overlayTextYPercent = overlayTextYPercent;
+    if (overlayTextColor) clip.overlayTextColor = overlayTextColor;
+    if (overlayTextSize) clip.overlayTextSize = overlayTextSize;
+    if (typeof overlayTextBg === 'boolean') clip.overlayTextBg = overlayTextBg;
     
     if (transcript) {
       if (clip.captionLanguage === 'hinglish') {
-        clip.hinglishTranscript = transcript;
+        clip.hinglishTranscript = transliterateTranscript(transcript);
+      } else if (clip.captionLanguage === 'english') {
+        clip.englishTranscript = transcript;
       } else {
         clip.transcript = transcript;
       }
@@ -70,26 +109,61 @@ export async function POST(req, { params }) {
     // Step 1: Download clip section using yt-dlp
     await downloadVideoClip(project.url, clip.start, clip.end, tempVideoPath, ytDlpPath, ffmpegPath);
 
-    // Retrieve active transcript
-    const activeTranscript = clip.captionLanguage === 'hinglish' && clip.hinglishTranscript && clip.hinglishTranscript.length > 0
-      ? clip.hinglishTranscript
-      : clip.transcript;
+    // Retrieve active transcript for captions
+    let activeTranscript = clip.transcript;
+    if (clip.captionLanguage === 'hinglish') {
+      const source = (clip.hinglishTranscript && clip.hinglishTranscript.length > 0)
+        ? clip.hinglishTranscript
+        : clip.transcript;
+      activeTranscript = transliterateTranscript(source);
+    } else if (clip.captionLanguage === 'english' && clip.englishTranscript && clip.englishTranscript.length > 0) {
+      activeTranscript = clip.englishTranscript;
+    }
 
-    // Step 2: Render Vertical Layout if selected
+    const isSubtitlesEnabled = clip.enableSubtitles !== false && clip.captionStyle !== 'none';
+    const effectiveCaptionStyle = isSubtitlesEnabled ? (clip.captionStyle || 'hormozi') : 'none';
+
+    const assOptions = {
+      enableSubtitles: isSubtitlesEnabled,
+      captionYPercent: clip.captionYPercent,
+      captionAlign: clip.captionAlign,
+      overlayText: clip.overlayText,
+      overlayTextOpacity: clip.overlayTextOpacity,
+      overlayTextYPercent: clip.overlayTextYPercent,
+      overlayTextColor: clip.overlayTextColor,
+      overlayTextSize: clip.overlayTextSize,
+      overlayTextBg: clip.overlayTextBg
+    };
+
+    // Step 2: Render Vertical Layout if selected (with auto speaker tracking)
     if (clip.renderFormat === 'vertical' || clip.renderFormat === 'both') {
-      console.log(`RENDER API: Rendering vertical layout with ffmpeg: ${ffmpegPath}...`);
-      const assContentVertical = generateAssSubtitles(activeTranscript, clip.start, clip.captionStyle, false);
+      console.log(`RENDER API: Rendering vertical layout with cropFocus=${clip.cropFocus}, enableSubtitles=${isSubtitlesEnabled}...`);
+      const assContentVertical = generateAssSubtitles(
+        activeTranscript,
+        clip.start,
+        clip.end,
+        effectiveCaptionStyle,
+        false,
+        assOptions
+      );
       fs.writeFileSync(tempAssPath, assContentVertical, 'utf8');
-      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, clip.captionStyle, verticalPath, false, ffmpegPath);
+      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, effectiveCaptionStyle, verticalPath, false, ffmpegPath);
       clip.videoPathVertical = `/outputs/${verticalFileName}`;
     }
 
     // Step 3: Render Horizontal Layout if selected
     if (clip.renderFormat === 'horizontal' || clip.renderFormat === 'both') {
-      console.log(`RENDER API: Rendering horizontal layout with ffmpeg: ${ffmpegPath}...`);
-      const assContentHorizontal = generateAssSubtitles(activeTranscript, clip.start, clip.captionStyle, true);
+      console.log(`RENDER API: Rendering horizontal layout with ffmpeg: ${ffmpegPath}, enableSubtitles=${isSubtitlesEnabled}...`);
+      const assContentHorizontal = generateAssSubtitles(
+        activeTranscript,
+        clip.start,
+        clip.end,
+        effectiveCaptionStyle,
+        true,
+        assOptions
+      );
       fs.writeFileSync(tempAssPath, assContentHorizontal, 'utf8');
-      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, clip.captionStyle, horizontalPath, true, ffmpegPath);
+      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, effectiveCaptionStyle, horizontalPath, true, ffmpegPath);
       clip.videoPathHorizontal = `/outputs/${horizontalFileName}`;
     }
 

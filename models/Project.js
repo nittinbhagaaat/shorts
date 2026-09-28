@@ -15,6 +15,8 @@ const ProjectSchema = new mongoose.Schema({
   thumbnail: String,
   transcript: [TranscriptSegmentSchema],
   hinglishTranscript: [TranscriptSegmentSchema],
+  englishTranscript: [TranscriptSegmentSchema],
+  targetClips: { type: Number, default: 5 },
   createdAt: { type: Date, default: Date.now }
 });
 

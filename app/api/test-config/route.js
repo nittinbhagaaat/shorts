@@ -9,7 +9,10 @@ export async function POST(req) {
 
     // 1. Test MongoDB Connection
     if (type === 'mongodb') {
-      const uri = mongodbUri || process.env.MONGODB_URI || 'mongodb://localhost:27017/shorts';
+      let uri = mongodbUri || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/shorts';
+      if (uri.includes('localhost:27017')) {
+        uri = uri.replace('localhost:27017', '127.0.0.1:27017');
+      }
       if (!uri) {
         return NextResponse.json({ success: false, error: 'No MongoDB URI provided' }, { status: 400 });
       }

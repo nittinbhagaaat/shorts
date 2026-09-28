@@ -9,6 +9,7 @@ import { fetchWithSettings, getStoredSettings } from '@/lib/settings';
 export default function HomePage() {
   const router = useRouter();
   const [url, setUrl] = useState('');
+  const [clipCount, setClipCount] = useState(5);
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [projects, setProjects] = useState([]);
@@ -51,7 +52,7 @@ export default function HomePage() {
       { delay: 1000, text: 'Fetching video metadata from YouTube...' },
       { delay: 3000, text: 'Downloading caption tracks and transcript...' },
       { delay: 6000, text: `Running ${settings?.aiProvider?.toUpperCase() || 'AI'} analysis on transcript segments...` },
-      { delay: 9000, text: 'Curating viral hooks and extracting optimal timestamps...' },
+      { delay: 9000, text: `Curating top ${clipCount} viral hooks and extracting optimal timestamps...` },
       { delay: 12000, text: 'Saving project and initializing workspace...' },
     ];
 
@@ -63,7 +64,10 @@ export default function HomePage() {
       const res = await fetchWithSettings('/api/project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ 
+          url, 
+          clipCount: Math.min(20, Math.max(1, clipCount))
+        }),
       });
 
       timeouts.forEach((t) => clearTimeout(t));
@@ -168,6 +172,75 @@ export default function HomePage() {
                     </svg>
                   )}
                 </div>
+              </div>
+
+              {/* Clip Count Selector */}
+              <div className="p-3.5 rounded-[10px] bg-[#1d2125] border border-[#39414b] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <span className="text-[#dd2222]">✂️</span>
+                    <span>Clips to Generate (Max: 20)</span>
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-[#dd2222] font-mono px-2 py-0.5 rounded bg-[#360c0c] border border-[#731111]">
+                      {clipCount} {clipCount === 1 ? 'Clip' : 'Clips'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="1"
+                    max="20"
+                    step="1"
+                    disabled={isLoading}
+                    value={clipCount}
+                    onChange={(e) => setClipCount(parseInt(e.target.value, 10))}
+                    className="w-full accent-[#dd2222] cursor-pointer"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    disabled={isLoading}
+                    value={clipCount}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        setClipCount(Math.min(20, Math.max(1, val)));
+                      }
+                    }}
+                    className="w-14 px-2 py-1 text-center font-mono font-bold text-xs app-input rounded-[8px]"
+                  />
+                </div>
+
+                {/* Preset quick buttons */}
+                <div className="flex items-center justify-between gap-1.5 pt-1">
+                  <span className="text-[10px] text-[#909cac] font-medium">Quick presets:</span>
+                  <div className="flex gap-1.5">
+                    {[1, 3, 5, 10, 15, 20].map((num) => (
+                      <button
+                        type="button"
+                        key={num}
+                        disabled={isLoading}
+                        onClick={() => setClipCount(num)}
+                        className={`px-2 py-0.5 rounded-[6px] text-[11px] font-semibold transition-colors cursor-pointer border ${
+                          clipCount === num
+                            ? 'bg-[#dd2222] text-white border-[#dd2222]'
+                            : 'bg-[#2d3239] text-[#909cac] border-[#39414b] hover:text-white'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-[#909cac] flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>AI filters out filler and selects the top {clipCount} highest-retention scenes with complete dialogues.</span>
+                </p>
               </div>
 
               {error && (
