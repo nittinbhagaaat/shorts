@@ -3,6 +3,9 @@ import "./globals.css";
 export const metadata = {
   title: "clip.studio - AI Viral Moments & Subtitle Studio",
   description: "Generate 35-40s vertical clips from YouTube videos with styled captions using Groq, Mistral, Gemini, and OpenAI.",
+  verification: {
+    google: "94RJZPLf9raobhEzHv0irDIvlb908Vwpv3WLRY_w1Nc",
+  },
   icons: {
     icon: [
       { url: '/favicon.png', type: 'image/png' },
@@ -18,6 +21,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="h-full antialiased">
       <head>
+        <meta name="google-site-verification" content="94RJZPLf9raobhEzHv0irDIvlb908Vwpv3WLRY_w1Nc" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="any" />
         <link rel="shortcut icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/favicon.png" />
