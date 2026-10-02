@@ -48,4 +48,5 @@ public/temp/*
 temp/
 /temp
 
-
+# deployment documentation
+HOSTINGER_VPS_DEPLOYMENT.md

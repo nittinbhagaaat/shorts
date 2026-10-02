@@ -10,12 +10,12 @@ export async function GET(req) {
     const defaultRedirect = `${protocol}://${host}/api/youtube/callback`;
     const redirectUri = searchParams.get('redirectUri') || defaultRedirect;
 
-    const clientId = searchParams.get('clientId') || req.headers.get('x-google-client-id') || process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = searchParams.get('clientSecret') || req.headers.get('x-google-client-secret') || process.env.GOOGLE_CLIENT_SECRET;
+    const clientId = process.env.GOOGLE_CLIENT_ID || searchParams.get('clientId');
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || searchParams.get('clientSecret');
 
     if (!clientId || !clientSecret) {
       return NextResponse.json(
-        { error: 'Google Client ID and Client Secret are missing. Please provide them in Settings or .env.local.' },
+        { error: 'Google Client ID and Client Secret are missing. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your server .env.local file.' },
         { status: 400 }
       );
     }
