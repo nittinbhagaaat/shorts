@@ -176,7 +176,12 @@ export async function DELETE(req, { params }) {
       ].filter(Boolean);
 
       filesToDelete.forEach(relPath => {
-        const filePath = path.join(process.cwd(), 'public', relPath);
+        const publicDir = path.join(process.cwd(), 'public');
+        const filePath = path.join(publicDir, relPath);
+        if (!filePath.startsWith(publicDir + path.sep)) {
+          console.error(`API PROJECT DELETE: Rejected path traversal attempt for ${relPath}`);
+          return;
+        }
         try {
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
