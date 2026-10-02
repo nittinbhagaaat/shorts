@@ -112,7 +112,7 @@ export default function ProjectWorkspace({ params }) {
       if (res.ok) {
         const data = await res.json();
         if (data.previewUrl) {
-          setLocalPreviewUrl(data.previewUrl);
+          setLocalPreviewUrl(`/api/clip/${targetId}/stream?format=${previewActiveTab}`);
         }
       }
     } catch (err) {
@@ -190,10 +190,7 @@ export default function ProjectWorkspace({ params }) {
       setPlayerTime(selectedClip.start || 0);
 
       if (selectedClip.status === 'completed') {
-        const completedPath = previewActiveTab === 'horizontal'
-          ? (selectedClip.videoPathHorizontal || selectedClip.videoPath)
-          : (selectedClip.videoPathVertical || selectedClip.videoPath);
-        setLocalPreviewUrl(completedPath || '');
+        setLocalPreviewUrl(`/api/clip/${selectedClip._id}/stream?format=${previewActiveTab}`);
       } else {
         // Automatically check if quick preview exists or extract it
         fetchQuickPreview(selectedClip._id);
@@ -1052,17 +1049,23 @@ export default function ProjectWorkspace({ params }) {
                             <video
                               ref={videoRef}
                               key={`${selectedClip._id}-${previewActiveTab}`}
-                              src={previewActiveTab === 'horizontal' 
-                                ? (selectedClip.videoPathHorizontal || selectedClip.videoPath) 
-                                : (selectedClip.videoPathVertical || selectedClip.videoPath)
-                              }
+                              src={`/api/clip/${selectedClip._id}/stream?format=${previewActiveTab}`}
                               controls
                               playsInline
                               autoPlay={false}
                               className="w-full h-full object-cover"
                               poster={project.thumbnail}
                               onTimeUpdate={handleTimeUpdate}
-                              onError={() => setVideoError(true)}
+                              onError={() => {
+                                const directPath = previewActiveTab === 'horizontal' 
+                                  ? (selectedClip.videoPathHorizontal || selectedClip.videoPath) 
+                                  : (selectedClip.videoPathVertical || selectedClip.videoPath);
+                                if (videoRef.current && directPath && !videoRef.current.src.endsWith(directPath)) {
+                                  videoRef.current.src = directPath;
+                                } else {
+                                  setVideoError(true);
+                                }
+                              }}
                             />
                             {videoError && (
                               <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-black/85 text-center">
