@@ -2,7 +2,7 @@ import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import Clip from '@/models/Clip';
 import { getYouTubeVideoData, fetchTranscript } from '@/lib/youtube';
-import { identifyViralClips, transliterateHindiToHinglish, translateTranscriptToEnglish } from '@/lib/ai';
+import { identifyViralClips, generateIntelligentFallbackClips, transliterateHindiToHinglish, translateTranscriptToEnglish } from '@/lib/ai';
 import { devanagariToHinglish, transliterateTranscript } from '@/lib/transliterate';
 import { generateShortMetadata } from '@/lib/youtubeMetadata';
 import { extractServerConfig } from '@/lib/serverConfig';
@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { mongodbUri, aiConfig } = extractServerConfig(req);
+    const { mongodbUri, aiConfig, ytDlpPath } = extractServerConfig(req);
     await dbConnect(mongodbUri);
 
     const body = await req.json();
@@ -23,7 +23,7 @@ export async function POST(req) {
     const targetClips = Math.min(20, Math.max(1, parseInt(clipCount, 10) || 5));
     console.log(`API PROJECT: Processing video with targetClips=${targetClips}:`, url);
 
-    const videoData = await getYouTubeVideoData(url);
+    const videoData = await getYouTubeVideoData(url, ytDlpPath);
     const { videoId, title, channel, duration, thumbnail, captionTracks } = videoData;
 
     // Check if project already exists in database
@@ -31,17 +31,18 @@ export async function POST(req) {
     let clips = [];
 
     if (project && !regenerate) {
-      console.log('API PROJECT: Project already exists in DB. Checking existing clips...');
       clips = await Clip.find({ projectId: videoId }).sort({ start: 1 });
-      if (clips.length > 0) {
+      if (clips.length > 0 && project.title !== 'Untitled Video' && project.duration > 0) {
+        console.log(`API PROJECT: Found existing healthy project ${videoId} with ${clips.length} clips.`);
         return NextResponse.json({ project, clips });
       }
+      console.log('API PROJECT: Project exists but clips are missing or metadata was incomplete. Re-processing...');
     }
 
     console.log('API PROJECT: Fetching transcript...');
     let transcript = [];
     try {
-      transcript = await fetchTranscript(captionTracks, videoId);
+      transcript = await fetchTranscript(captionTracks, videoId, ytDlpPath);
     } catch (e) {
       console.warn('Could not fetch transcript from YouTube:', e.message);
       // Fallback clips will be generated
@@ -80,6 +81,10 @@ export async function POST(req) {
 
     // Save or update project
     if (project) {
+      if (title && title !== 'Untitled Video') project.title = title;
+      if (channel && channel !== 'Unknown Channel') project.channel = channel;
+      if (duration && duration > 0) project.duration = duration;
+      if (thumbnail) project.thumbnail = thumbnail;
       project.transcript = transcript;
       project.hinglishTranscript = hinglishTranscript;
       project.englishTranscript = englishTranscript;
@@ -103,12 +108,14 @@ export async function POST(req) {
     // Call AI to identify viral clips matching requested targetClips
     console.log(`API PROJECT: Calling AI (${aiConfig.provider}) to identify ${targetClips} viral clips...`);
     const workingTranscript = containsHindi ? hinglishTranscript : transcript;
-    const rawClips = await identifyViralClips(workingTranscript, duration, aiConfig, { title, channel, targetClips });
-
-    if (regenerate) {
-      console.log(`API PROJECT: Deleting previous clips for project ${videoId} prior to regeneration...`);
-      await Clip.deleteMany({ projectId: videoId });
+    let rawClips = await identifyViralClips(workingTranscript, duration, aiConfig, { title, channel, targetClips });
+    if (!rawClips || rawClips.length === 0) {
+      rawClips = generateIntelligentFallbackClips(workingTranscript, duration, { title, channel, targetClips });
     }
+
+    // Delete existing clips if regenerating or repairing empty project
+    console.log(`API PROJECT: Refreshing clips in database for project ${videoId}...`);
+    await Clip.deleteMany({ projectId: videoId });
 
     // Save clips to DB
     clips = await Promise.all(rawClips.map(c => {
