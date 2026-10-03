@@ -3,6 +3,7 @@ import Clip from '@/models/Clip';
 import Project from '@/models/Project';
 import { downloadVideoClip } from '@/lib/video';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
@@ -12,12 +13,21 @@ export async function GET(req, { params }) {
     const { mongodbUri, ffmpegPath, ytDlpPath } = extractServerConfig(req);
     await dbConnect(mongodbUri);
 
+    const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    }
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
     const clip = await Clip.findById(id);
     if (!clip) {
       return NextResponse.json({ error: 'Clip not found' }, { status: 404 });
+    }
+
+    if (clip.userId && session.id !== clip.userId.toString()) {
+      return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
     }
 
     const outputsDir = path.join(process.cwd(), 'public', 'outputs');
@@ -46,6 +56,10 @@ export async function GET(req, { params }) {
     const project = await Project.findById(clip.projectId);
     if (!project) {
       return NextResponse.json({ error: 'Parent project not found' }, { status: 404 });
+    }
+
+    if (project.userId && session.id !== project.userId.toString()) {
+      return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
     }
 
     console.log(`PREVIEW API: Downloading quick raw preview for clip ${id} (${clip.start}s - ${clip.end}s)...`);

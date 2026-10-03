@@ -16,17 +16,28 @@ export async function GET(req, { params }) {
     const { mongodbUri, aiConfig, ytDlpPath } = extractServerConfig(req);
     await dbConnect(mongodbUri);
     const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json(
+        { error: 'Authentication required. Please sign in to view this workspace.' },
+        { status: 401 }
+      );
+    }
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
-    let project = await Project.findById(id);
-    if (!project && session?.id) {
-      project = await Project.findOne({
-        $or: [
-          { _id: `${session.id}_${id}` },
-          { videoId: id, userId: session.id },
-        ],
-      });
+    // First: Look for a project belonging to this user (matches id, prefixed id, or videoId)
+    let project = await Project.findOne({
+      $or: [
+        { _id: id, userId: session.id },
+        { _id: `${session.id}_${id}` },
+        { videoId: id, userId: session.id },
+      ],
+    });
+
+    // If not found by user, check if direct ID exists
+    if (!project) {
+      project = await Project.findById(id);
     }
 
     if (!project) {
@@ -35,16 +46,17 @@ export async function GET(req, { params }) {
 
     // Access control: only the workspace owner can access this project
     if (project.userId) {
-      if (!session || session.id !== project.userId.toString()) {
+      if (session.id !== project.userId.toString()) {
         return NextResponse.json(
           { error: 'Access denied. You do not have permission to view this workspace.' },
           { status: 403 }
         );
       }
-    } else if (session?.id) {
+    } else {
       // Claim legacy project for this user
       project.userId = session.id;
       await project.save();
+      await Clip.updateMany({ projectId: project._id }, { $set: { userId: session.id } });
     }
 
     let clips = await Clip.find({ projectId: project._id }).sort({ start: 1 });
@@ -182,23 +194,40 @@ export async function DELETE(req, { params }) {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
     const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    }
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
-    const project = await Project.findById(id);
+    let project = await Project.findOne({
+      $or: [
+        { _id: id, userId: session.id },
+        { _id: `${session.id}_${id}` },
+        { videoId: id, userId: session.id },
+      ],
+    });
+
+    if (!project) {
+      project = await Project.findById(id);
+    }
+
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    if (project.userId && (!session || session.id !== project.userId.toString())) {
+    if (project.userId && session.id !== project.userId.toString()) {
       return NextResponse.json(
         { error: 'Access denied. You do not have permission to delete this workspace.' },
         { status: 403 }
       );
     }
 
+    const projectIdToDelete = project._id;
+
     // Find all clips belonging to this project
-    const clips = await Clip.find({ projectId: id });
+    const clips = await Clip.find({ projectId: projectIdToDelete });
 
     // Delete associated rendered video files from disk
     clips.forEach(clip => {
@@ -222,12 +251,12 @@ export async function DELETE(req, { params }) {
     });
 
     // Delete clips from MongoDB
-    await Clip.deleteMany({ projectId: id });
+    await Clip.deleteMany({ projectId: projectIdToDelete });
 
     // Delete project from MongoDB
-    await Project.findByIdAndDelete(id);
+    await Project.findByIdAndDelete(projectIdToDelete);
 
-    console.log(`API PROJECT DELETE: Successfully deleted workspace for project ${id}`);
+    console.log(`API PROJECT DELETE: Successfully deleted workspace for project ${projectIdToDelete}`);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('API PROJECT DELETE: Error:', error);

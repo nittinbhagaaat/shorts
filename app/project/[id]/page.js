@@ -1,13 +1,18 @@
 'use client';
 
 import { useState, useEffect, use, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import YouTubeUploadModal from '@/components/YouTubeUploadModal';
 import { fetchWithSettings, getStoredSettings } from '@/lib/settings';
 import { devanagariToHinglish, transliterateTranscript } from '@/lib/transliterate';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProjectWorkspace({ params }) {
+  const router = useRouter();
+  const { user, loading: authLoading, loginWithGoogle } = useAuth();
+  const [authError, setAuthError] = useState('');
   const resolvedParams = use(params);
   const projectId = resolvedParams.id;
 
@@ -64,7 +69,18 @@ export default function ProjectWorkspace({ params }) {
   const fetchProjectData = async () => {
     try {
       const res = await fetchWithSettings(`/api/project/${projectId}`);
-      if (!res.ok) throw new Error('Failed to load project details');
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push(`/login?returnTo=/project/${projectId}`);
+          return;
+        }
+        if (res.status === 403) {
+          setAuthError('Access denied: You do not have permission to access this workspace.');
+          setIsLoading(false);
+          return;
+        }
+        throw new Error('Failed to load project details');
+      }
       const data = await res.json();
       setProject(data.project);
       setClips(data.clips || []);
@@ -99,9 +115,15 @@ export default function ProjectWorkspace({ params }) {
   };
 
   useEffect(() => {
-    fetchProjectData();
-    fetchYouTubeUploads();
-  }, [projectId]);
+    if (!authLoading) {
+      if (!user) {
+        router.push(`/login?returnTo=/project/${projectId}`);
+      } else {
+        fetchProjectData();
+        fetchYouTubeUploads();
+      }
+    }
+  }, [projectId, user, authLoading]);
 
   const fetchQuickPreview = async (clipId) => {
     const targetId = clipId || selectedClip?._id;
@@ -741,6 +763,46 @@ export default function ProjectWorkspace({ params }) {
   const hasHinglish = Boolean(selectedClip && ((selectedClip.transcript && selectedClip.transcript.length > 0) || (selectedClip.hinglishTranscript && selectedClip.hinglishTranscript.length > 0)));
   const hasEnglish = selectedClip && selectedClip.englishTranscript && selectedClip.englishTranscript.length > 0;
 
+  if (!authLoading && !user) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center space-y-5 max-w-md mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-[#dd2222]/10 border border-[#dd2222]/30 flex items-center justify-center mx-auto text-[#dd2222]">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white mb-1.5">Sign In Required</h2>
+            <p className="text-[#909cac] text-xs leading-relaxed">
+              Workspaces are private and isolated. You must be signed in to access this project.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+            <button
+              onClick={() => loginWithGoogle(`/project/${projectId}`)}
+              className="px-5 py-2.5 rounded-xl bg-[#1d2125] hover:bg-[#252a30] border border-[#4b5563] text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z" />
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.27 21.43 7.35 24 12 24z" />
+                <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 10.03 0 12s.45 3.82 1.25 5.42l4.03-3.13z" />
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.27 2.57 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z" />
+              </svg>
+              <span>Sign In with Google</span>
+            </button>
+            <Link
+              href={`/login?returnTo=/project/${projectId}`}
+              className="px-5 py-2.5 rounded-xl bg-[#dd2222] hover:bg-[#c81e1e] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-[#dd2222]/20"
+            >
+              Sign In with Email
+            </Link>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -752,6 +814,27 @@ export default function ProjectWorkspace({ params }) {
             </svg>
             <p className="text-[#909cac] font-normal text-xs">Loading workspace and clips...</p>
           </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (authError) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center space-y-4 max-w-md mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto text-red-400">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white mb-1.5">Private Workspace</h2>
+            <p className="text-[#909cac] text-xs leading-relaxed">{authError}</p>
+          </div>
+          <Link href="/workspaces" className="px-5 py-2.5 btn-primary text-xs font-bold inline-block">
+            Back to My Workspaces
+          </Link>
         </div>
       </DashboardLayout>
     );

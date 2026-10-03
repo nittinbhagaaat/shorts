@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
@@ -9,6 +10,12 @@ export async function GET(req, { params }) {
   try {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
+
+    const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    }
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
@@ -18,6 +25,10 @@ export async function GET(req, { params }) {
     const clip = await Clip.findById(id);
     if (!clip || clip.status !== 'completed') {
       return NextResponse.json({ error: 'Video clip not ready or not found' }, { status: 404 });
+    }
+
+    if (clip.userId && session.id !== clip.userId.toString()) {
+      return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
     }
 
     let relativePath = clip.videoPath;

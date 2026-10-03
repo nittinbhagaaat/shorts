@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { getAuthUser } from '@/lib/auth';
 import fs from 'fs';
 import path from 'path';
 
@@ -8,6 +9,11 @@ export async function GET(req, { params }) {
   try {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
+
+    const session = await getAuthUser(req);
+    if (!session?.id) {
+      return new Response('Authentication required', { status: 401 });
+    }
 
     const resolvedParams = await params;
     const { id } = resolvedParams;
@@ -17,6 +23,10 @@ export async function GET(req, { params }) {
     const clip = await Clip.findById(id);
     if (!clip) {
       return new Response('Clip not found', { status: 404 });
+    }
+
+    if (clip.userId && session.id !== clip.userId.toString()) {
+      return new Response('Access denied', { status: 403 });
     }
 
     let relPath = format === 'horizontal' 

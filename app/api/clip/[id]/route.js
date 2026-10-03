@@ -8,12 +8,21 @@ export async function GET(req, { params }) {
   try {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
+    const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    }
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
     const clip = await Clip.findById(id);
     if (!clip) {
       return NextResponse.json({ error: 'Clip not found' }, { status: 404 });
+    }
+
+    if (clip.userId && session.id !== clip.userId.toString()) {
+      return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
     }
 
     return NextResponse.json({ clip });
@@ -28,6 +37,10 @@ export async function PATCH(req, { params }) {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
     const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    }
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
@@ -36,7 +49,7 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: 'Clip not found' }, { status: 404 });
     }
 
-    if (existingClip.userId && (!session || session.id !== existingClip.userId.toString())) {
+    if (existingClip.userId && session.id !== existingClip.userId.toString()) {
       return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
     }
 

@@ -4,6 +4,7 @@ import Project from '@/models/Project';
 import { downloadVideoClip, generateAssSubtitles, renderFinalShort } from '@/lib/video';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { transliterateTranscript } from '@/lib/transliterate';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
@@ -12,6 +13,12 @@ export async function POST(req, { params }) {
   try {
     const { mongodbUri, ffmpegPath, ytDlpPath } = extractServerConfig(req);
     await dbConnect(mongodbUri);
+
+    const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Authentication required. Please sign in.' }, { status: 401 });
+    }
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
@@ -38,9 +45,17 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: 'Clip not found' }, { status: 404 });
     }
 
+    if (clip.userId && session.id !== clip.userId.toString()) {
+      return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
+    }
+
     const project = await Project.findById(clip.projectId);
     if (!project) {
       return NextResponse.json({ error: 'Parent project not found' }, { status: 404 });
+    }
+
+    if (project.userId && session.id !== project.userId.toString()) {
+      return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
     }
 
     // Update status to rendering and store editor customization settings

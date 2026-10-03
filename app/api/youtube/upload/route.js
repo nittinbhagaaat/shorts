@@ -16,6 +16,9 @@ export async function POST(req) {
     await dbConnect(mongodbUri);
 
     const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Please sign in to upload YouTube Shorts.' }, { status: 401 });
+    }
 
     const body = await req.json();
     const {
@@ -38,7 +41,14 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Clip not found.' }, { status: 404 });
     }
 
+    if (clip.userId && clip.userId.toString() !== session.id) {
+      return NextResponse.json({ error: 'Access denied. You do not own this clip.' }, { status: 403 });
+    }
+
     const project = await Project.findById(clip.projectId);
+    if (project?.userId && project.userId.toString() !== session.id) {
+      return NextResponse.json({ error: 'Access denied. You do not own this project.' }, { status: 403 });
+    }
 
     // Strict validation: Only Shorts are allowed
     if (clip.duration > 90) {
@@ -106,6 +116,7 @@ export async function POST(req) {
 
     // Save record in YouTubeUpload collection
     const uploadRecord = await YouTubeUpload.create({
+      userId: session.id,
       clipId: clip._id,
       projectId: clip.projectId,
       channelId: uploadResult.channelId,
