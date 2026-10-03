@@ -2,12 +2,23 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 
+function getAppBaseUrl(req) {
+  if (process.env.APP_URL) {
+    return process.env.APP_URL.replace(/\/$/, '');
+  }
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL.replace(/\/$/, '');
+  }
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000';
+  const proto = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
+  return `${proto}://${host}`;
+}
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const host = req.headers.get('host') || 'localhost:3000';
-    const protocol = host.includes('localhost') ? 'http' : 'https';
-    const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+    const baseUrl = getAppBaseUrl(req);
+    const redirectUri = `${baseUrl}/api/auth/google/callback`;
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -39,7 +50,7 @@ export async function GET(req) {
     });
 
     if (searchParams.get('format') === 'json') {
-      return NextResponse.json({ url: authUrl });
+      return NextResponse.json({ url: authUrl, redirectUri });
     }
 
     return NextResponse.redirect(authUrl);

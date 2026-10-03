@@ -6,15 +6,25 @@ import User from '@/models/User';
 import { createAuthToken, getAuthCookieOptions } from '@/lib/auth';
 import { extractServerConfig } from '@/lib/serverConfig';
 
+function getAppBaseUrl(req) {
+  if (process.env.APP_URL) {
+    return process.env.APP_URL.replace(/\/$/, '');
+  }
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL.replace(/\/$/, '');
+  }
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000';
+  const proto = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
+  return `${proto}://${host}`;
+}
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
   const stateRaw = searchParams.get('state');
 
-  const host = req.headers.get('host') || 'localhost:3000';
-  const protocol = host.includes('localhost') ? 'http' : 'https';
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getAppBaseUrl(req);
 
   let returnTo = '/workspaces';
   if (stateRaw) {
