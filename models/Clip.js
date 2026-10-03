@@ -7,7 +7,8 @@ const SubtitleWordSchema = new mongoose.Schema({
 });
 
 const ClipSchema = new mongoose.Schema({
-  projectId: { type: String, ref: 'Project', required: true },
+  projectId: { type: String, ref: 'Project', required: true, index: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
   title: String,
   description: String, // Why it's viral
   start: Number, // start time in original video (seconds)

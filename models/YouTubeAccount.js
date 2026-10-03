@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 const YouTubeAccountSchema = new mongoose.Schema({
-  channelId: { type: String, required: true, unique: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  channelId: { type: String, required: true },
   channelTitle: { type: String, required: true },
   channelHandle: { type: String, default: '' },
   channelThumbnail: { type: String, default: '' },

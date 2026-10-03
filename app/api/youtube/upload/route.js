@@ -5,6 +5,7 @@ import Project from '@/models/Project';
 import YouTubeUpload from '@/models/YouTubeUpload';
 import { uploadShortToYouTube } from '@/lib/youtubeClient';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
@@ -13,6 +14,8 @@ export async function POST(req) {
   try {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
+
+    const session = await getAuthUser(req);
 
     const body = await req.json();
     const {
@@ -98,6 +101,7 @@ export async function POST(req) {
       privacyStatus,
       scheduledPublishTime,
       mongodbUri,
+      userId: session?.id,
     });
 
     // Save record in YouTubeUpload collection

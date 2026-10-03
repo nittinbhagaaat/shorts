@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import { fetchWithSettings, getStoredSettings } from '@/lib/settings';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomePage() {
   const router = useRouter();
+  const { user, loading: authLoading, loginWithGoogle } = useAuth();
   const [url, setUrl] = useState('');
   const [clipCount, setClipCount] = useState(5);
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +18,15 @@ export default function HomePage() {
   const [isFetchingProjects, setIsFetchingProjects] = useState(true);
   const [error, setError] = useState('');
   const [settings, setSettings] = useState(null);
+
+  // Pre-fill URL from query parameter if returning from login
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlParam = params.get('url');
+      if (urlParam) setUrl(urlParam);
+    }
+  }, []);
 
   // Fetch past projects and load settings
   useEffect(() => {
@@ -33,16 +44,29 @@ export default function HomePage() {
         setIsFetchingProjects(false);
       }
     }
-    fetchProjects();
+
+    if (!authLoading) {
+      if (user) {
+        fetchProjects();
+      } else {
+        setProjects([]);
+        setIsFetchingProjects(false);
+      }
+    }
 
     const handleSettingsUpdate = (e) => setSettings(e.detail);
     window.addEventListener('shorts_settings_updated', handleSettingsUpdate);
     return () => window.removeEventListener('shorts_settings_updated', handleSettingsUpdate);
-  }, []);
+  }, [user, authLoading]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!url.trim()) return;
+
+    if (!user) {
+      router.push(`/login?returnTo=${encodeURIComponent(`/?url=${encodeURIComponent(url.trim())}`)}`);
+      return;
+    }
 
     setIsLoading(true);
     setError('');
@@ -344,6 +368,21 @@ export default function HomePage() {
                     <div className="h-9 bg-[#39414b] rounded-[10px] w-full mt-3"></div>
                   </div>
                 ))}
+              </div>
+            ) : !authLoading && !user ? (
+              <div className="app-panel p-8 text-center max-w-md mx-auto space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-[#dd2222]/10 border border-[#dd2222]/30 flex items-center justify-center mx-auto text-[#dd2222]">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-semibold text-white">Private Workspaces</h3>
+                <p className="text-[#909cac] text-xs">Sign in with Google or Email to save and access your personal video projects.</p>
+                <div className="flex justify-center gap-2 pt-1">
+                  <Link href="/login" className="px-4 py-2 rounded-xl bg-[#dd2222] hover:bg-[#c81e1e] text-white text-xs font-bold transition-all shadow-md shadow-[#dd2222]/20">
+                    Sign In
+                  </Link>
+                </div>
               </div>
             ) : projects.length === 0 ? (
               <div className="app-panel p-8 text-center max-w-md mx-auto">

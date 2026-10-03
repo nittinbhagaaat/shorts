@@ -6,12 +6,22 @@ import { identifyViralClips, generateIntelligentFallbackClips, transliterateHind
 import { devanagariToHinglish, transliterateTranscript } from '@/lib/transliterate';
 import { generateShortMetadata } from '@/lib/youtubeMetadata';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
     const { mongodbUri, aiConfig, ytDlpPath } = extractServerConfig(req);
     await dbConnect(mongodbUri);
+
+    const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json(
+        { error: 'Please sign in to create and manage workspaces.' },
+        { status: 401 }
+      );
+    }
+    const userId = session.id;
 
     const body = await req.json();
     const { url, clipCount = 5, regenerate = false } = body;
@@ -21,19 +31,22 @@ export async function POST(req) {
     }
 
     const targetClips = Math.min(20, Math.max(1, parseInt(clipCount, 10) || 5));
-    console.log(`API PROJECT: Processing video with targetClips=${targetClips}:`, url);
+    console.log(`API PROJECT: Processing video with targetClips=${targetClips} for user=${userId}:`, url);
 
     const videoData = await getYouTubeVideoData(url, ytDlpPath);
     const { videoId, title, channel, duration, thumbnail, captionTracks } = videoData;
 
-    // Check if project already exists in database
-    let project = await Project.findById(videoId);
+    // Isolate workspace per user: projectId is prefixed by userId
+    const projectId = `${userId}_${videoId}`;
+
+    // Check if project already exists for this user
+    let project = await Project.findById(projectId);
     let clips = [];
 
     if (project && !regenerate) {
-      clips = await Clip.find({ projectId: videoId }).sort({ start: 1 });
+      clips = await Clip.find({ projectId }).sort({ start: 1 });
       if (clips.length > 0 && project.title !== 'Untitled Video' && project.duration > 0) {
-        console.log(`API PROJECT: Found existing healthy project ${videoId} with ${clips.length} clips.`);
+        console.log(`API PROJECT: Found existing healthy project ${projectId} with ${clips.length} clips.`);
         return NextResponse.json({ project, clips });
       }
       console.log('API PROJECT: Project exists but clips are missing or metadata was incomplete. Re-processing...');
@@ -89,10 +102,14 @@ export async function POST(req) {
       project.hinglishTranscript = hinglishTranscript;
       project.englishTranscript = englishTranscript;
       project.targetClips = targetClips;
+      project.userId = userId;
+      project.videoId = videoId;
       await project.save();
     } else {
       project = await Project.create({
-        _id: videoId,
+        _id: projectId,
+        userId,
+        videoId,
         url,
         title,
         channel,
@@ -113,9 +130,9 @@ export async function POST(req) {
       rawClips = generateIntelligentFallbackClips(workingTranscript, duration, { title, channel, targetClips });
     }
 
-    // Delete existing clips if regenerating or repairing empty project
-    console.log(`API PROJECT: Refreshing clips in database for project ${videoId}...`);
-    await Clip.deleteMany({ projectId: videoId });
+    // Delete existing clips for this project
+    console.log(`API PROJECT: Refreshing clips in database for project ${projectId}...`);
+    await Clip.deleteMany({ projectId });
 
     // Save clips to DB
     clips = await Promise.all(rawClips.map(c => {
@@ -148,7 +165,8 @@ export async function POST(req) {
       });
 
       return Clip.create({
-        projectId: videoId,
+        projectId,
+        userId,
         title: devanagariToHinglish(c.title),
         description: devanagariToHinglish(c.description),
         start: c.start,
@@ -157,7 +175,7 @@ export async function POST(req) {
         status: 'pending',
         enableSubtitles: isSubtitlesEnabled,
         captionStyle: isSubtitlesEnabled ? 'hormozi' : 'none',
-        cropFocus: 'auto', // Default to smart active speaker tracking!
+        cropFocus: 'auto',
         captionPosition: 'lower',
         captionYPercent: 72,
         captionAlign: 'center',
@@ -193,7 +211,13 @@ export async function GET(req) {
   try {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
-    const projects = await Project.find({}).sort({ createdAt: -1 });
+
+    const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ projects: [] });
+    }
+
+    const projects = await Project.find({ userId: session.id }).sort({ createdAt: -1 });
     return NextResponse.json({ projects });
   } catch (error) {
     console.error('API PROJECT: Error fetching projects:', error);

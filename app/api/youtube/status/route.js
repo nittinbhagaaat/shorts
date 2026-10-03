@@ -2,6 +2,7 @@
 import dbConnect from '@/lib/db';
 import YouTubeAccount from '@/models/YouTubeAccount';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export async function GET(req) {
@@ -9,7 +10,13 @@ export async function GET(req) {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
 
-    const account = await YouTubeAccount.findOne({ isConnected: true });
+    const session = await getAuthUser(req);
+    const query = { isConnected: true };
+    if (session?.id) {
+      query.userId = session.id;
+    }
+
+    const account = await YouTubeAccount.findOne(query);
 
     if (!account) {
       return NextResponse.json({
@@ -40,11 +47,13 @@ export async function POST(req) {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
 
+    const session = await getAuthUser(req);
     const body = await req.json().catch(() => ({}));
     const action = body.action || 'disconnect';
 
     if (action === 'disconnect') {
-      await YouTubeAccount.updateMany({}, { isConnected: false });
+      const updateQuery = session?.id ? { userId: session.id } : {};
+      await YouTubeAccount.updateMany(updateQuery, { isConnected: false });
       return NextResponse.json({ success: true, message: 'YouTube channel disconnected.' });
     }
 
@@ -60,10 +69,12 @@ export async function DELETE(req) {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
 
-    await YouTubeAccount.updateMany({}, { isConnected: false });
-    return NextResponse.json({ success: true, message: 'YouTube channel disconnected.' });
+    const session = await getAuthUser(req);
+    const deleteQuery = session?.id ? { userId: session.id } : {};
+    await YouTubeAccount.deleteMany(deleteQuery);
+    return NextResponse.json({ success: true, message: 'YouTube connection removed completely.' });
   } catch (err) {
-    console.error('API YOUTUBE STATUS: Error disconnecting channel:', err);
+    console.error('API YOUTUBE STATUS: Error deleting account:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

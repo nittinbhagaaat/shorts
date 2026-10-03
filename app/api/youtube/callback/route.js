@@ -1,6 +1,7 @@
 // app/api/youtube/callback/route.js
 import { exchangeCodeAndSaveAccount } from '@/lib/youtubeClient';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export async function GET(req) {
@@ -23,7 +24,8 @@ export async function GET(req) {
     }
 
     const { mongodbUri } = extractServerConfig(req);
-    const account = await exchangeCodeAndSaveAccount(code, redirectUri, null, mongodbUri);
+    const session = await getAuthUser(req);
+    const account = await exchangeCodeAndSaveAccount(code, redirectUri, null, mongodbUri, session?.id);
 
     console.log(`API YOUTUBE CALLBACK: Successfully connected YouTube channel: ${account.channelTitle} (${account.channelId})`);
     return NextResponse.redirect(`${protocol}://${host}/settings?youtube=connected&channel=${encodeURIComponent(account.channelTitle)}`);

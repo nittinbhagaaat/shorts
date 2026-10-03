@@ -1,4 +1,5 @@
 import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata = {
   title: "clip.studio - AI Viral Moments & Subtitle Studio",
@@ -27,7 +28,9 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/favicon.png" />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#1d2125] text-[#f6f7f8]">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

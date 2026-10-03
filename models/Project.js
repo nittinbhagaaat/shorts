@@ -7,7 +7,9 @@ const TranscriptSegmentSchema = new mongoose.Schema({
 });
 
 const ProjectSchema = new mongoose.Schema({
-  _id: { type: String, required: true }, // YouTube Video ID (e.g. dQw4w9WgXcQ)
+  _id: { type: String, required: true }, // `${userId}_${videoId}` or legacy `${videoId}`
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  videoId: { type: String },
   url: { type: String, required: true },
   title: String,
   channel: String,
@@ -17,7 +19,8 @@ const ProjectSchema = new mongoose.Schema({
   hinglishTranscript: [TranscriptSegmentSchema],
   englishTranscript: [TranscriptSegmentSchema],
   targetClips: { type: Number, default: 5 },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 export default mongoose.models.Project || mongoose.model('Project', ProjectSchema);

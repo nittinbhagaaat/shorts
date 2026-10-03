@@ -6,6 +6,7 @@ import { extractServerConfig } from '@/lib/serverConfig';
 import { getYouTubeVideoData, fetchTranscript } from '@/lib/youtube';
 import { identifyViralClips, generateIntelligentFallbackClips, transliterateHindiToHinglish, translateTranscriptToEnglish } from '@/lib/ai';
 import { devanagariToHinglish, transliterateTranscript } from '@/lib/transliterate';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
@@ -14,15 +15,39 @@ export async function GET(req, { params }) {
   try {
     const { mongodbUri, aiConfig, ytDlpPath } = extractServerConfig(req);
     await dbConnect(mongodbUri);
+    const session = await getAuthUser(req);
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
     let project = await Project.findById(id);
+    if (!project && session?.id) {
+      project = await Project.findOne({
+        $or: [
+          { _id: `${session.id}_${id}` },
+          { videoId: id, userId: session.id },
+        ],
+      });
+    }
+
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    let clips = await Clip.find({ projectId: id }).sort({ start: 1 });
+    // Access control: only the workspace owner can access this project
+    if (project.userId) {
+      if (!session || session.id !== project.userId.toString()) {
+        return NextResponse.json(
+          { error: 'Access denied. You do not have permission to view this workspace.' },
+          { status: 403 }
+        );
+      }
+    } else if (session?.id) {
+      // Claim legacy project for this user
+      project.userId = session.id;
+      await project.save();
+    }
+
+    let clips = await Clip.find({ projectId: project._id }).sort({ start: 1 });
 
     // Self-healing: If workspace has 0 clips or default/empty metadata, automatically generate and save them
     if (clips.length === 0 || project.title === 'Untitled Video' || !project.duration || project.duration === 0) {
@@ -156,12 +181,20 @@ export async function DELETE(req, { params }) {
   try {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
+    const session = await getAuthUser(req);
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
     const project = await Project.findById(id);
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    if (project.userId && (!session || session.id !== project.userId.toString())) {
+      return NextResponse.json(
+        { error: 'Access denied. You do not have permission to delete this workspace.' },
+        { status: 403 }
+      );
     }
 
     // Find all clips belonging to this project

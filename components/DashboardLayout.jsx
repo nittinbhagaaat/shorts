@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getStoredSettings } from '@/lib/settings';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
+  const { user, loading: authLoading, logout } = useAuth();
   const [settings, setSettings] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -81,6 +83,8 @@ export default function DashboardLayout({ children }) {
     (currentProvider === 'openai' && settings?.openaiKey)
   );
 
+  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
+
   return (
     <div className="min-h-screen bg-[#1d2125] text-[#f6f7f8] flex flex-col md:flex-row">
       {/* Mobile Top Header */}
@@ -93,19 +97,39 @@ export default function DashboardLayout({ children }) {
           />
           <span className="font-bold text-lg text-white">clip<span className="text-[#dd2222]">.studio</span></span>
         </Link>
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-[10px] bg-[#39414b] border border-[#4b5563] text-gray-200"
-          aria-label="Toggle menu"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {isMobileMenuOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          {user ? (
+            <div className="flex items-center gap-2">
+              {user.image ? (
+                <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full border border-[#4b5563] object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#dd2222] text-white font-bold flex items-center justify-center text-xs">
+                  {userInitial}
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="px-3 py-1.5 rounded-lg bg-[#dd2222] text-white text-xs font-semibold"
+            >
+              Sign In
+            </Link>
+          )}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 rounded-[10px] bg-[#39414b] border border-[#4b5563] text-gray-200"
+            aria-label="Toggle menu"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Desktop Sidebar */}
@@ -171,8 +195,84 @@ export default function DashboardLayout({ children }) {
           </nav>
         </div>
 
-        {/* Sidebar Footer / AI Status */}
+        {/* Sidebar Footer / User Account & AI Status */}
         <div className="pt-4 border-t border-[#39414b] space-y-3">
+          {/* User Account Section */}
+          {!authLoading && (
+            user ? (
+              !isCollapsed ? (
+                <div className="p-2.5 rounded-xl bg-[#1d2125] border border-[#39414b] flex items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {user.image ? (
+                      <img
+                        src={user.image}
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full border border-[#4b5563] object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#dd2222] text-white font-bold flex items-center justify-center text-xs shrink-0">
+                        {userInitial}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-white truncate">{user.name}</div>
+                      <div className="text-[10px] text-[#909cac] truncate">{user.email}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={logout}
+                    title="Log out"
+                    className="p-1.5 rounded-lg text-[#909cac] hover:text-red-400 hover:bg-[#39414b] transition-colors shrink-0 cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={logout}
+                  className="w-10 h-10 mx-auto rounded-xl bg-[#1d2125] border border-[#39414b] flex items-center justify-center text-[#909cac] hover:text-red-400 transition-colors"
+                  title={`Logged in as ${user.name}. Click to log out.`}
+                >
+                  {user.image ? (
+                    <img src={user.image} alt={user.name} className="w-6 h-6 rounded-full object-cover" />
+                  ) : (
+                    <span className="font-bold text-xs text-[#dd2222]">{userInitial}</span>
+                  )}
+                </button>
+              )
+            ) : (
+              !isCollapsed ? (
+                <div className="flex flex-col gap-2">
+                  <Link
+                    href="/login"
+                    className="w-full py-2 px-3 rounded-xl bg-[#dd2222] hover:bg-[#c81e1e] text-white text-xs font-bold text-center transition-all shadow-md shadow-[#dd2222]/20"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="w-full py-1.5 px-3 rounded-xl bg-[#1d2125] hover:bg-[#39414b] text-[#b9c0ca] hover:text-white text-[11px] font-medium text-center border border-[#39414b] transition-all"
+                  >
+                    Create Account
+                  </Link>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="w-10 h-10 mx-auto rounded-xl bg-[#dd2222] text-white flex items-center justify-center text-xs font-bold"
+                  title="Sign In"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                </Link>
+              )
+            )
+          )}
+
+          {/* AI Status */}
           {!isCollapsed ? (
             <div className="p-3 rounded-[10px] bg-[#1d2125] border border-[#39414b] space-y-2">
               <div className="flex items-center justify-between text-[11px]">
@@ -200,7 +300,7 @@ export default function DashboardLayout({ children }) {
                 </Link>
               </div>
               <div className="text-[10px] text-[#6e7d91] truncate font-mono">
-                Storage: localStorage (100% Client)
+                Workspaces: Isolated & Private
               </div>
             </div>
           ) : (
@@ -215,7 +315,7 @@ export default function DashboardLayout({ children }) {
 
           {!isCollapsed && (
             <div className="text-[11px] text-[#6e7d91] text-center font-normal">
-              clip.studio • open source
+              clip.studio • private cloud
             </div>
           )}
         </div>
@@ -224,7 +324,48 @@ export default function DashboardLayout({ children }) {
       {/* Mobile Dropdown Navigation */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-x-0 top-16 bg-[#2d3239] border-b border-[#39414b] p-4 z-40 space-y-3">
-          <nav className="space-y-1.5">
+          {user ? (
+            <div className="p-3 rounded-xl bg-[#1d2125] border border-[#39414b] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {user.image ? (
+                  <img src={user.image} alt={user.name} className="w-9 h-9 rounded-full object-cover" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-[#dd2222] text-white font-bold flex items-center justify-center text-sm">
+                    {userInitial}
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs font-semibold text-white">{user.name}</div>
+                  <div className="text-[11px] text-[#909cac]">{user.email}</div>
+                </div>
+              </div>
+              <button
+                onClick={logout}
+                className="px-3 py-1.5 rounded-lg bg-[#39414b] text-red-400 text-xs font-semibold"
+              >
+                Log Out
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Link
+                href="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex-1 py-2 rounded-xl bg-[#dd2222] text-white text-xs font-bold text-center"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex-1 py-2 rounded-xl bg-[#1d2125] border border-[#39414b] text-white text-xs font-medium text-center"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
+
+          <nav className="space-y-1.5 pt-2">
             {navItems.map((item) => (
               <Link
                 key={item.name}

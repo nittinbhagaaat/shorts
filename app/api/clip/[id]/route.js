@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export async function GET(req, { params }) {
@@ -26,8 +27,18 @@ export async function PATCH(req, { params }) {
   try {
     const { mongodbUri } = extractServerConfig(req);
     await dbConnect(mongodbUri);
+    const session = await getAuthUser(req);
     const resolvedParams = await params;
     const { id } = resolvedParams;
+
+    const existingClip = await Clip.findById(id);
+    if (!existingClip) {
+      return NextResponse.json({ error: 'Clip not found' }, { status: 404 });
+    }
+
+    if (existingClip.userId && (!session || session.id !== existingClip.userId.toString())) {
+      return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
+    }
 
     const body = await req.json();
     const clip = await Clip.findByIdAndUpdate(id, { $set: body }, { new: true });
