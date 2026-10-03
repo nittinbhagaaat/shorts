@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const YouTubeUploadSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
   clipId: { type: mongoose.Schema.Types.ObjectId, ref: 'Clip', required: true },
   projectId: { type: String, required: true },
   channelId: { type: String, default: '' },

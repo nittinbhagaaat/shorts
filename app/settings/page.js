@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import { getStoredSettings, saveStoredSettings, DEFAULT_SETTINGS, fetchWithSettings } from '@/lib/settings';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SettingsPage() {
+  const { user, loading: authLoading } = useAuth();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [saveStatus, setSaveStatus] = useState('');
   
@@ -70,7 +72,15 @@ export default function SettingsPage() {
   useEffect(() => {
     const loaded = getStoredSettings();
     setSettings(loaded);
-    fetchYouTubeStatus();
+
+    if (!authLoading) {
+      if (user) {
+        fetchYouTubeStatus();
+      } else {
+        setYtAccount(null);
+        setIsCheckingYt(false);
+      }
+    }
 
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -89,7 +99,7 @@ export default function SettingsPage() {
         setTimeout(() => setYtBanner(null), 6000);
       }
     }
-  }, []);
+  }, [user, authLoading]);
 
   const handleChange = (field, value) => {
     setSettings((prev) => ({
@@ -539,7 +549,29 @@ export default function SettingsPage() {
           </div>
 
           <div className="app-panel p-5 space-y-4">
-            {isCheckingYt ? (
+            {!authLoading && !user ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-[12px] bg-[#1d2125] border border-[#39414b]">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Sign In Required</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-mono uppercase font-bold">
+                      Account Linked
+                    </span>
+                  </h3>
+                  <p className="text-xs text-[#909cac] max-w-xl leading-relaxed">
+                    YouTube channel connections are strictly isolated to your personal account. Sign in with Google or Email to connect and manage your YouTube channel.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    href="/login?returnTo=/settings"
+                    className="px-5 py-2.5 rounded-[10px] bg-[#dd2222] hover:bg-[#b91c1c] text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-900/40 flex items-center justify-center gap-2 transition-transform hover:scale-105"
+                  >
+                    <span>Sign In to Connect</span>
+                  </Link>
+                </div>
+              </div>
+            ) : isCheckingYt ? (
               <div className="flex items-center gap-2 text-xs text-[#909cac] p-4 rounded-[10px] bg-[#1d2125] border border-[#39414b]">
                 <div className="w-3.5 h-3.5 rounded-full border-2 border-[#dd2222] border-t-transparent animate-spin"></div>
                 <span>Checking connected YouTube channel status...</span>

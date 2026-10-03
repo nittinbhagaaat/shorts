@@ -11,12 +11,14 @@ export async function GET(req) {
     await dbConnect(mongodbUri);
 
     const session = await getAuthUser(req);
-    const query = { isConnected: true };
-    if (session?.id) {
-      query.userId = session.id;
+    if (!session?.id) {
+      return NextResponse.json({
+        connected: false,
+        account: null,
+      });
     }
 
-    const account = await YouTubeAccount.findOne(query);
+    const account = await YouTubeAccount.findOne({ isConnected: true, userId: session.id });
 
     if (!account) {
       return NextResponse.json({
@@ -48,12 +50,15 @@ export async function POST(req) {
     await dbConnect(mongodbUri);
 
     const session = await getAuthUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const action = body.action || 'disconnect';
 
     if (action === 'disconnect') {
-      const updateQuery = session?.id ? { userId: session.id } : {};
-      await YouTubeAccount.updateMany(updateQuery, { isConnected: false });
+      await YouTubeAccount.updateMany({ userId: session.id }, { isConnected: false });
       return NextResponse.json({ success: true, message: 'YouTube channel disconnected.' });
     }
 
@@ -70,8 +75,11 @@ export async function DELETE(req) {
     await dbConnect(mongodbUri);
 
     const session = await getAuthUser(req);
-    const deleteQuery = session?.id ? { userId: session.id } : {};
-    await YouTubeAccount.deleteMany(deleteQuery);
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await YouTubeAccount.deleteMany({ userId: session.id });
     return NextResponse.json({ success: true, message: 'YouTube connection removed completely.' });
   } catch (err) {
     console.error('API YOUTUBE STATUS: Error deleting account:', err);
