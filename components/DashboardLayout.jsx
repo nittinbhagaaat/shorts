@@ -26,14 +26,14 @@ export default function DashboardLayout({ children }) {
 
   const navItems = [
     {
-      name: 'Home',
-      href: '/',
+      name: 'Dashboard',
+      href: '/dashboard',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       ),
-      active: pathname === '/',
+      active: pathname === '/dashboard',
     },
     {
       name: 'Workspaces',
@@ -66,6 +66,16 @@ export default function DashboardLayout({ children }) {
       ),
       active: pathname === '/settings',
     },
+    {
+      name: 'Website',
+      href: '/',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+        </svg>
+      ),
+      active: pathname === '/',
+    },
   ];
 
   const providerNames = {
@@ -89,7 +99,7 @@ export default function DashboardLayout({ children }) {
     <div className="min-h-screen bg-[#1d2125] text-[#f6f7f8] flex flex-col md:flex-row">
       {/* Mobile Top Header */}
       <div className="md:hidden flex items-center justify-between px-5 py-4 border-b border-[#39414b] bg-[#2d3239] sticky top-0 z-40">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
           <img
             src="/logo.png"
             alt="clip.studio logo"
@@ -141,7 +151,7 @@ export default function DashboardLayout({ children }) {
         <div className="space-y-6">
           {/* Logo & Brand */}
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
+            <Link href="/dashboard" className="flex items-center gap-3">
               <img
                 src="/logo.png"
                 alt="clip.studio logo"

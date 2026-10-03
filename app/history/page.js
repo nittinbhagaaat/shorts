@@ -110,7 +110,7 @@ export default function PlatformHistoryPage() {
               </button>
 
               <Link
-                href="/"
+                href="/dashboard"
                 className="px-4 py-2 btn-primary text-xs flex items-center gap-2 cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -278,7 +278,7 @@ export default function PlatformHistoryPage() {
                     : 'Render clips from your workspaces and publish or schedule them directly to YouTube.'}
                 </p>
                 <Link
-                  href="/"
+                  href="/dashboard"
                   className="inline-flex items-center gap-1.5 px-4 py-2 btn-primary text-xs font-semibold mt-2"
                 >
                   <span>Go to Studio</span>

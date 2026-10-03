@@ -128,7 +128,7 @@ export default function WorkspacesPage() {
               </svg>
             </button>
             <Link
-              href="/"
+              href="/dashboard"
               className="px-4 py-2.5 btn-primary text-xs flex items-center gap-1.5 cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -241,7 +241,7 @@ export default function WorkspacesPage() {
               </p>
             </div>
             <Link
-              href="/"
+              href="/dashboard"
               className="inline-flex items-center gap-1.5 px-4 py-2 btn-primary text-xs font-semibold"
             >
               <span>Create Workspace</span>
