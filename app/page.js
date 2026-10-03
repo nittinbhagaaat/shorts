@@ -218,6 +218,10 @@ export default function HomePage() {
             <a href="#subtitles" className="hover:text-white transition-colors">Subtitle Styles</a>
             <a href="#compare" className="hover:text-white transition-colors">Comparison</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
+            <Link href="/impact" className="hover:text-white transition-colors flex items-center gap-1.5">
+              <span>Our Impact</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#dd2222]"></span>
+            </Link>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
 
@@ -1047,6 +1051,9 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-6">
+            <Link href="/impact" className="hover:text-white transition-colors">
+              Our Impact
+            </Link>
             <Link href="/dashboard" className="text-white hover:text-[#dd2222] transition-colors font-semibold">
               Studio Dashboard
             </Link>

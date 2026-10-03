@@ -40,6 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# scratch
+scratch/
+
 # generated videos & temp render files
 public/outputs/*
 !public/outputs/.gitkeep
