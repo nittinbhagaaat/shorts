@@ -12,6 +12,9 @@ export default function DashboardPage() {
   const { user, loading: authLoading, loginWithGoogle } = useAuth();
   const [url, setUrl] = useState('');
   const [clipCount, setClipCount] = useState(5);
+  const [minDuration, setMinDuration] = useState(30);
+  const [maxDuration, setMaxDuration] = useState(60);
+  const [durationPreset, setDurationPreset] = useState('30-60');
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [projects, setProjects] = useState([]);
@@ -19,12 +22,36 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [settings, setSettings] = useState(null);
 
-  // Pre-fill URL from query parameter if returning from login
+  // Pre-fill URL, clipCount, minDuration, and maxDuration from query parameters
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlParam = params.get('url');
+      const countParam = params.get('clipCount');
+      const minParam = params.get('minDuration');
+      const maxParam = params.get('maxDuration');
+
       if (urlParam) setUrl(urlParam);
+      if (countParam) {
+        const parsed = parseInt(countParam, 10);
+        if (!isNaN(parsed)) setClipCount(Math.min(20, Math.max(1, parsed)));
+      }
+      if (minParam) {
+        const parsed = parseInt(minParam, 10);
+        if (!isNaN(parsed)) setMinDuration(parsed);
+      }
+      if (maxParam) {
+        const parsed = parseInt(maxParam, 10);
+        if (!isNaN(parsed)) setMaxDuration(parsed);
+      }
+      if (minParam || maxParam) {
+        const key = `${minParam || 30}-${maxParam || 60}`;
+        if (['15-30', '30-60', '60-90'].includes(key)) {
+          setDurationPreset(key);
+        } else {
+          setDurationPreset('custom');
+        }
+      }
     }
   }, []);
 
@@ -90,7 +117,9 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           url, 
-          clipCount: Math.min(20, Math.max(1, clipCount))
+          clipCount: Math.min(20, Math.max(1, clipCount)),
+          minDuration,
+          maxDuration
         }),
       });
 
@@ -265,6 +294,90 @@ export default function DashboardPage() {
                   <span>⚡</span>
                   <span>AI filters out filler and selects the top {clipCount} highest-retention scenes with complete dialogues.</span>
                 </p>
+              </div>
+
+              {/* Clip Duration Selector */}
+              <div className="p-3.5 rounded-[10px] bg-[#1d2125] border border-[#39414b] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <span className="text-[#dd2222]">⏱️</span>
+                    <span>Clip Duration Range</span>
+                  </label>
+                  <span className="text-xs font-bold text-[#dd2222] font-mono px-2.5 py-0.5 rounded bg-[#360c0c] border border-[#731111]">
+                    {minDuration}s – {maxDuration}s
+                  </span>
+                </div>
+
+                {/* Duration Presets */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: '15-30', label: '15s – 30s', desc: 'Punchy & Roasts', min: 15, max: 30 },
+                    { id: '30-60', label: '30s – 60s', desc: 'Standard Viral', min: 30, max: 60 },
+                    { id: '60-90', label: '60s – 90s', desc: 'Conversations', min: 60, max: 90 },
+                    { id: 'custom', label: 'Custom Range', desc: 'Set your bounds', min: minDuration, max: maxDuration }
+                  ].map((preset) => (
+                    <button
+                      type="button"
+                      key={preset.id}
+                      disabled={isLoading}
+                      onClick={() => {
+                        setDurationPreset(preset.id);
+                        if (preset.id !== 'custom') {
+                          setMinDuration(preset.min);
+                          setMaxDuration(preset.max);
+                        }
+                      }}
+                      className={`p-2 rounded-[8px] border text-left transition-colors cursor-pointer flex flex-col justify-between ${
+                        durationPreset === preset.id
+                          ? 'bg-[#360c0c] border-[#dd2222] text-[#fcf2f2]'
+                          : 'bg-[#2d3239] border-[#39414b] text-[#909cac] hover:border-[#4b5563]'
+                      }`}
+                    >
+                      <span className="block text-xs font-bold text-white">{preset.label}</span>
+                      <span className="block text-[10px] text-[#909cac] mt-0.5">{preset.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom sliders if custom preset is selected */}
+                {durationPreset === 'custom' && (
+                  <div className="pt-2 border-t border-[#39414b] space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span className="text-[#909cac]">Min Duration:</span>
+                          <span className="font-mono font-bold text-white">{minDuration}s</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max={Math.max(10, maxDuration - 5)}
+                          step="5"
+                          disabled={isLoading}
+                          value={minDuration}
+                          onChange={(e) => setMinDuration(Math.min(maxDuration - 5, parseInt(e.target.value, 10)))}
+                          className="w-full accent-[#dd2222] cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span className="text-[#909cac]">Max Duration:</span>
+                          <span className="font-mono font-bold text-white">{maxDuration}s</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={minDuration + 5}
+                          max="180"
+                          step="5"
+                          disabled={isLoading}
+                          value={maxDuration}
+                          onChange={(e) => setMaxDuration(Math.max(minDuration + 5, parseInt(e.target.value, 10)))}
+                          className="w-full accent-[#dd2222] cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {error && (

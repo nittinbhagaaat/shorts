@@ -19,6 +19,8 @@ const ProjectSchema = new mongoose.Schema({
   hinglishTranscript: [TranscriptSegmentSchema],
   englishTranscript: [TranscriptSegmentSchema],
   targetClips: { type: Number, default: 5 },
+  minDuration: { type: Number, default: 30 }, // in seconds
+  maxDuration: { type: Number, default: 60 }, // in seconds
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

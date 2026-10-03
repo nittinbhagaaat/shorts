@@ -24,14 +24,16 @@ export async function POST(req) {
     const userId = session.id;
 
     const body = await req.json();
-    const { url, clipCount = 5, regenerate = false } = body;
+    const { url, clipCount = 5, regenerate = false, minDuration = 30, maxDuration = 60 } = body;
     const isSubtitlesEnabled = typeof body.enableSubtitles === 'boolean' ? body.enableSubtitles : true;
     if (!url) {
       return NextResponse.json({ error: 'YouTube URL is required' }, { status: 400 });
     }
 
     const targetClips = Math.min(20, Math.max(1, parseInt(clipCount, 10) || 5));
-    console.log(`API PROJECT: Processing video with targetClips=${targetClips} for user=${userId}:`, url);
+    const parsedMin = Math.max(10, Math.min(180, parseInt(minDuration, 10) || 30));
+    const parsedMax = Math.max(parsedMin + 5, Math.min(300, parseInt(maxDuration, 10) || 60));
+    console.log(`API PROJECT: Processing video with targetClips=${targetClips}, duration=${parsedMin}s-${parsedMax}s for user=${userId}:`, url);
 
     const videoData = await getYouTubeVideoData(url, ytDlpPath);
     const { videoId, title, channel, duration, thumbnail, captionTracks } = videoData;
@@ -43,10 +45,11 @@ export async function POST(req) {
     let project = await Project.findById(projectId);
     let clips = [];
 
-    if (project && !regenerate) {
+    const durationMatches = project && project.minDuration === parsedMin && project.maxDuration === parsedMax && project.targetClips === targetClips;
+    if (project && !regenerate && durationMatches) {
       clips = await Clip.find({ projectId }).sort({ start: 1 });
       if (clips.length > 0 && project.title !== 'Untitled Video' && project.duration > 0) {
-        console.log(`API PROJECT: Found existing healthy project ${projectId} with ${clips.length} clips.`);
+        console.log(`API PROJECT: Found existing healthy project ${projectId} with ${clips.length} clips matching duration bounds.`);
         return NextResponse.json({ project, clips });
       }
       console.log('API PROJECT: Project exists but clips are missing or metadata was incomplete. Re-processing...');
@@ -102,6 +105,8 @@ export async function POST(req) {
       project.hinglishTranscript = hinglishTranscript;
       project.englishTranscript = englishTranscript;
       project.targetClips = targetClips;
+      project.minDuration = parsedMin;
+      project.maxDuration = parsedMax;
       project.userId = userId;
       project.videoId = videoId;
       await project.save();
@@ -118,16 +123,30 @@ export async function POST(req) {
         transcript,
         hinglishTranscript,
         englishTranscript,
-        targetClips
+        targetClips,
+        minDuration: parsedMin,
+        maxDuration: parsedMax
       });
     }
 
-    // Call AI to identify viral clips matching requested targetClips
-    console.log(`API PROJECT: Calling AI (${aiConfig.provider}) to identify ${targetClips} viral clips...`);
+    // Call AI to identify viral clips matching requested targetClips and duration bounds
+    console.log(`API PROJECT: Calling AI (${aiConfig.provider}) to identify ${targetClips} viral clips between ${parsedMin}s and ${parsedMax}s...`);
     const workingTranscript = containsHindi ? hinglishTranscript : transcript;
-    let rawClips = await identifyViralClips(workingTranscript, duration, aiConfig, { title, channel, targetClips });
+    let rawClips = await identifyViralClips(workingTranscript, duration, aiConfig, {
+      title,
+      channel,
+      targetClips,
+      minDuration: parsedMin,
+      maxDuration: parsedMax
+    });
     if (!rawClips || rawClips.length === 0) {
-      rawClips = generateIntelligentFallbackClips(workingTranscript, duration, { title, channel, targetClips });
+      rawClips = generateIntelligentFallbackClips(workingTranscript, duration, {
+        title,
+        channel,
+        targetClips,
+        minDuration: parsedMin,
+        maxDuration: parsedMax
+      });
     }
 
     // Delete existing clips for this project

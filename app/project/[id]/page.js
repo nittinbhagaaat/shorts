@@ -367,7 +367,7 @@ export default function ProjectWorkspace({ params }) {
     const steps = [
       { delay: 1000, text: 'Opening video stream using configured tools...' },
       { delay: 3500, text: 'Downloading clip segment in HD...' },
-      { delay: 6500, text: cropFocus === 'auto' ? 'AI Vision: Tracking speaker & centering camera...' : 'Processing video layout...' },
+      { delay: 6500, text: cropFocus === 'auto' ? 'AI Vision: Tracking speaker & centering camera...' : cropFocus === 'blurred_fit' ? 'FFmpeg: Creating 9:16 blurred background canvas...' : 'Processing video layout...' },
       { delay: 9500, text: 'Generating ASS subtitles and custom text overlays...' },
       { delay: 13000, text: 'Executing FFmpeg filters and exporting final container...' },
     ];
@@ -1161,19 +1161,44 @@ export default function ProjectWorkspace({ params }) {
                           </div>
                         ) : localPreviewUrl ? (
                           /* 3. Local High-Definition Clip Preview */
-                          <div className="relative w-full h-full flex items-center justify-center bg-black">
-                            <video
-                              ref={videoRef}
-                              key={`preview-${selectedClip._id}`}
-                              src={localPreviewUrl}
-                              controls
-                              playsInline
-                              autoPlay={false}
-                              className="w-full h-full object-cover"
-                              poster={project.thumbnail}
-                              onTimeUpdate={handleTimeUpdate}
-                              onError={() => setLocalPreviewUrl('')}
-                            />
+                          <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
+                            {cropFocus === 'blurred_fit' && previewActiveTab === 'vertical' ? (
+                              <>
+                                <video
+                                  src={localPreviewUrl}
+                                  className="absolute inset-0 w-full h-full object-cover filter blur-lg scale-110 opacity-70 pointer-events-none"
+                                  tabIndex="-1"
+                                  aria-hidden="true"
+                                  muted
+                                />
+                                <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+                                <video
+                                  ref={videoRef}
+                                  key={`preview-${selectedClip._id}`}
+                                  src={localPreviewUrl}
+                                  controls
+                                  playsInline
+                                  autoPlay={false}
+                                  className="relative z-10 w-full object-contain shadow-2xl"
+                                  poster={project.thumbnail}
+                                  onTimeUpdate={handleTimeUpdate}
+                                  onError={() => setLocalPreviewUrl('')}
+                                />
+                              </>
+                            ) : (
+                              <video
+                                ref={videoRef}
+                                key={`preview-${selectedClip._id}`}
+                                src={localPreviewUrl}
+                                controls
+                                playsInline
+                                autoPlay={false}
+                                className="w-full h-full object-cover"
+                                poster={project.thumbnail}
+                                onTimeUpdate={handleTimeUpdate}
+                                onError={() => setLocalPreviewUrl('')}
+                              />
+                            )}
                           </div>
                         ) : (
                           /* 4. Pre-Render Studio with Poster & 1-Click Fast HD Preview */
@@ -1183,10 +1208,21 @@ export default function ProjectWorkspace({ params }) {
                               <img
                                 src={project.thumbnail}
                                 alt={selectedClip.title || 'Clip thumbnail'}
-                                className="absolute inset-0 w-full h-full object-cover opacity-60 filter blur-[2px]"
+                                className={`absolute inset-0 w-full h-full object-cover opacity-60 ${
+                                  cropFocus === 'blurred_fit' && previewActiveTab === 'vertical' ? 'filter blur-md scale-110' : 'filter blur-[2px]'
+                                }`}
                               />
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/60"></div>
+                            {cropFocus === 'blurred_fit' && previewActiveTab === 'vertical' && project.thumbnail && (
+                              <div className="relative z-0 w-full aspect-video flex items-center justify-center shadow-2xl border-y border-white/10 overflow-hidden">
+                                <img
+                                  src={project.thumbnail}
+                                  alt="16:9 Fit Preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/60 pointer-events-none"></div>
 
                             {/* Center Action Overlay */}
                             <div className="relative z-10 flex flex-col items-center justify-center p-3 text-center">
@@ -1544,14 +1580,21 @@ export default function ProjectWorkspace({ params }) {
                         <span className="text-[10px] text-[#909cac]">Follow speaking person</span>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                         {[
                           { 
                             id: 'auto', 
-                            label: 'AI Active Speaker', 
+                            label: 'AI Speaker', 
                             badge: 'Smart Center',
-                            desc: 'Camera follows person',
+                            desc: 'Tracks speaker face',
                             icon: '🎯' 
+                          },
+                          { 
+                            id: 'blurred_fit', 
+                            label: 'Blurred Canvas', 
+                            badge: 'Viral 9:16',
+                            desc: '16:9 on blurred BG',
+                            icon: '🖼️' 
                           },
                           { 
                             id: 'center', 
