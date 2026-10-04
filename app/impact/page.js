@@ -15,144 +15,133 @@ import {
 export default function ImpactPage() {
   const { user } = useAuth();
 
-  // Real Database Metrics State
-  const [dbStats, setDbStats] = useState({
-    totalClips: 0,
-    completedClips: 0,
-    renderingClips: 0,
-    pendingClips: 0,
-    totalProjects: 0,
-    totalUsers: 0,
-    connectedChannels: 0,
-    youtubeUploads: 0,
-    totalSeconds: 0,
-    totalMinutes: 0,
-    totalVisitors: 1,
-    countriesLitUp: 1,
+  // Location-Only Metrics State
+  const [locationStats, setLocationStats] = useState({
+    totalUsers: 1,
+    totalCities: 1,
+    totalCountries: 1,
+    topLocation: 'Kolkata, India',
   });
 
-  // Real Browser Diagnostics State
-  const [browserInfo, setBrowserInfo] = useState({
-    timezone: '',
-    language: '',
-    platform: '',
-    screen: '',
-    onLine: true,
-    detectedCountry: 'India',
-    detectedCity: 'Kolkata',
-    coords: null,
+  // Recorded Locations list from database
+  const [recordedLocations, setRecordedLocations] = useState([]);
+  const [countryStats, setCountryStats] = useState({});
+
+  // Browser Geolocation / Telemetry State
+  const [detectedLocation, setDetectedLocation] = useState({
+    city: 'Kolkata',
+    country: 'India',
+    countryCode: 'IND',
+    timezone: 'Asia/Kolkata',
+    latitude: null,
+    longitude: null,
     gpsActive: false,
   });
-
-  const [realCountryStats, setRealCountryStats] = useState({});
-  const [liveActivity, setLiveActivity] = useState([]);
-  const [connectedChannels, setConnectedChannels] = useState([]);
-  const [loadingRealData, setLoadingRealData] = useState(true);
 
   // Map Filter & Interaction States
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTierFilter, setActiveTierFilter] = useState('all'); // 'all', 'hotspots', 'steady', 'few', 'my-location'
-  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const [hoveredDot, setHoveredDot] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const mapContainerRef = useRef(null);
 
-  // 1. Gather Real Browser Data & Telemetry
+  // 1. Detect Browser Location & Sync with Database
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
-    const lang = typeof navigator !== 'undefined' ? navigator.language : 'en-US';
-    const plat = typeof navigator !== 'undefined' ? navigator.platform : 'Unknown';
-    const scr = typeof window !== 'undefined' ? `${window.screen.width}x${window.screen.height}` : '1920x1080';
-    const onLine = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
-    // Detect country from timezone heuristic
-    let guessedCountry = 'India';
-    let guessedCity = 'Kolkata';
+    let detectedCity = 'Kolkata';
+    let detectedCountry = 'India';
+    let detectedCode = 'IND';
+
     if (tz.includes('Kolkata') || tz.includes('Calcutta')) {
-      guessedCountry = 'India';
-      guessedCity = 'Kolkata / Mumbai';
+      detectedCity = 'Kolkata';
+      detectedCountry = 'India';
+      detectedCode = 'IND';
     } else if (tz.includes('New_York')) {
-      guessedCountry = 'United States';
-      guessedCity = 'New York';
+      detectedCity = 'New York';
+      detectedCountry = 'United States';
+      detectedCode = 'USA';
     } else if (tz.includes('Los_Angeles')) {
-      guessedCountry = 'United States';
-      guessedCity = 'Los Angeles';
+      detectedCity = 'Los Angeles';
+      detectedCountry = 'United States';
+      detectedCode = 'USA';
     } else if (tz.includes('Chicago')) {
-      guessedCountry = 'United States';
-      guessedCity = 'Chicago';
+      detectedCity = 'Chicago';
+      detectedCountry = 'United States';
+      detectedCode = 'USA';
     } else if (tz.includes('Toronto')) {
-      guessedCountry = 'Canada';
-      guessedCity = 'Toronto';
+      detectedCity = 'Toronto';
+      detectedCountry = 'Canada';
+      detectedCode = 'CAN';
     } else if (tz.includes('London')) {
-      guessedCountry = 'United Kingdom';
-      guessedCity = 'London';
+      detectedCity = 'London';
+      detectedCountry = 'United Kingdom';
+      detectedCode = 'GBR';
     } else if (tz.includes('Berlin')) {
-      guessedCountry = 'Germany';
-      guessedCity = 'Berlin';
+      detectedCity = 'Berlin';
+      detectedCountry = 'Germany';
+      detectedCode = 'DEU';
     } else if (tz.includes('Paris')) {
-      guessedCountry = 'France';
-      guessedCity = 'Paris';
+      detectedCity = 'Paris';
+      detectedCountry = 'France';
+      detectedCode = 'FRA';
     } else if (tz.includes('Sydney') || tz.includes('Melbourne')) {
-      guessedCountry = 'Australia';
-      guessedCity = 'Sydney';
+      detectedCity = 'Sydney';
+      detectedCountry = 'Australia';
+      detectedCode = 'AUS';
     } else if (tz.includes('Sao_Paulo')) {
-      guessedCountry = 'Brazil';
-      guessedCity = 'São Paulo';
+      detectedCity = 'São Paulo';
+      detectedCountry = 'Brazil';
+      detectedCode = 'BRA';
     } else if (tz.includes('Tokyo')) {
-      guessedCountry = 'Japan';
-      guessedCity = 'Tokyo';
+      detectedCity = 'Tokyo';
+      detectedCountry = 'Japan';
+      detectedCode = 'JPN';
     }
 
-    setBrowserInfo({
+    setDetectedLocation({
+      city: detectedCity,
+      country: detectedCountry,
+      countryCode: detectedCode,
       timezone: tz,
-      language: lang,
-      platform: plat,
-      screen: scr,
-      onLine,
-      detectedCountry: guessedCountry,
-      detectedCity: guessedCity,
-      coords: null,
+      latitude: null,
+      longitude: null,
       gpsActive: false,
     });
 
-    setSelectedCountry(getCountryDetails(guessedCountry));
-
-    // Send real telemetry ping to MongoDB
-    async function sendPingAndFetchData() {
+    async function recordLocationAndFetchData() {
       try {
-        // Send real browser ping
+        // Send user location record to database (upserts & increments user count)
         await fetch('/api/impact/ping', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            city: detectedCity,
+            country: detectedCountry,
+            countryCode: detectedCode,
             timezone: tz,
-            language: lang,
-            platform: plat,
-            screen: scr,
-            clientCountry: guessedCountry,
-            clientCity: guessedCity,
-            userId: user?._id || null,
           }),
         }).catch(() => {});
 
-        // Fetch real aggregated metrics
+        // Fetch location metrics from database
         const res = await fetch('/api/impact');
         if (res.ok) {
           const data = await res.json();
-          if (data.stats) setDbStats(data.stats);
-          if (data.realCountryStats) setRealCountryStats(data.realCountryStats);
-          if (data.liveActivity) setLiveActivity(data.liveActivity);
-          if (data.channels) setConnectedChannels(data.channels);
+          if (data.stats) setLocationStats(data.stats);
+          if (data.locations) setRecordedLocations(data.locations);
+          if (data.countryStats) {
+            setCountryStats(data.countryStats);
+            setSelectedLocation(getCountryDetails(detectedCountry, data.countryStats));
+          }
         }
       } catch (err) {
-        console.error('Error fetching real impact data:', err);
-      } finally {
-        setLoadingRealData(false);
+        console.error('Error syncing location data:', err);
       }
     }
 
-    sendPingAndFetchData();
-  }, [user]);
+    recordLocationAndFetchData();
+  }, []);
 
   // Request browser GPS position on demand
   const handleRequestGPS = () => {
@@ -163,9 +152,9 @@ export default function ImpactPage() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           };
-          setBrowserInfo((prev) => ({
+          setDetectedLocation((prev) => ({
             ...prev,
-            coords,
+            ...coords,
             gpsActive: true,
           }));
 
@@ -174,49 +163,47 @@ export default function ImpactPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              timezone: browserInfo.timezone,
-              language: browserInfo.language,
-              platform: browserInfo.platform,
-              screen: browserInfo.screen,
-              coords,
-              clientCountry: browserInfo.detectedCountry,
-              clientCity: browserInfo.detectedCity,
-              userId: user?._id || null,
+              city: detectedLocation.city,
+              country: detectedLocation.country,
+              countryCode: detectedLocation.countryCode,
+              timezone: detectedLocation.timezone,
+              latitude: coords.latitude,
+              longitude: coords.longitude,
             }),
           }).catch(() => {});
         },
         (err) => {
-          console.warn('Geolocation denied or unavailable:', err.message);
+          console.warn('Geolocation unavailable:', err.message);
         }
       );
     }
   };
 
-  // Center coordinate of user's detected country for the "You are here" beacon
+  // Center coordinate of user's detected location for beacon
   const userCountryBeacon = useMemo(() => {
-    const userDots = WORLD_GRID_DOTS.filter((d) => d.country === browserInfo.detectedCountry);
+    const userDots = WORLD_GRID_DOTS.filter((d) => d.country === detectedLocation.country);
     if (!userDots.length) return null;
     const avgX = userDots.reduce((acc, d) => acc + d.x, 0) / userDots.length;
     const avgY = userDots.reduce((acc, d) => acc + d.y, 0) / userDots.length;
     return {
       x: avgX * 5.8 + 22,
       y: avgY * 5.8 + 20,
-      country: browserInfo.detectedCountry,
-      city: browserInfo.detectedCity,
-      flag: getCountryFlag(browserInfo.detectedCountry),
+      city: detectedLocation.city,
+      country: detectedLocation.country,
+      flag: getCountryFlag(detectedLocation.country),
     };
-  }, [browserInfo.detectedCountry, browserInfo.detectedCity]);
+  }, [detectedLocation.country, detectedLocation.city]);
 
-  // Filtered dots
+  // Filtered dots with dynamic tiers based on user location data
   const filteredDots = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     return WORLD_GRID_DOTS.map((dot) => {
       let isDimmed = false;
 
-      // Real tier from DB or base reference
-      const realInfo = realCountryStats[dot.country];
-      const effectiveTier = realInfo ? realInfo.tier : dot.tier;
+      // Real tier from user location database: darker for more users, lighter for less
+      const locData = countryStats[dot.country];
+      const effectiveTier = locData ? locData.tier : dot.tier;
 
       if (query && !dot.country.toLowerCase().includes(query)) {
         isDimmed = true;
@@ -227,10 +214,10 @@ export default function ImpactPage() {
       } else if (activeTierFilter === 'few') {
         if (effectiveTier !== 1) isDimmed = true;
       } else if (activeTierFilter === 'my-location') {
-        if (dot.country !== browserInfo.detectedCountry) isDimmed = true;
+        if (dot.country !== detectedLocation.country) isDimmed = true;
       }
 
-      const isUserLocation = dot.country === browserInfo.detectedCountry;
+      const isUserLocation = dot.country === detectedLocation.country;
 
       return {
         ...dot,
@@ -239,7 +226,7 @@ export default function ImpactPage() {
         isUserLocation,
       };
     });
-  }, [searchQuery, activeTierFilter, browserInfo.detectedCountry, realCountryStats]);
+  }, [searchQuery, activeTierFilter, detectedLocation.country, countryStats]);
 
   const handleDotMouseEnter = (dot, e) => {
     setHoveredDot(dot);
@@ -263,8 +250,8 @@ export default function ImpactPage() {
   };
 
   const handleDotClick = (dot) => {
-    const details = getCountryDetails(dot.country, realCountryStats);
-    setSelectedCountry(details);
+    const details = getCountryDetails(dot.country, countryStats);
+    setSelectedLocation(details);
   };
 
   return (
@@ -340,7 +327,7 @@ export default function ImpactPage() {
         <section className="flex flex-col items-center text-center max-w-3xl mx-auto gap-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#111923] border border-[#223144] text-[11px] font-bold text-[#b9c0ca] uppercase tracking-wider">
             <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-ping"></span>
-            <span>Real Live Studio & Telemetry Data</span>
+            <span>Live User Location Distribution</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
@@ -348,23 +335,23 @@ export default function ImpactPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-[#9aa4b2] leading-relaxed">
-            Live analytics pulled directly from your active studio database and connected creators.
-            Darker dots denote creator hotspots with high activity; lighter dots show emerging regions.
+            Real user locations recorded across the globe. Darker dots represent areas with more users;
+            lighter dots represent emerging user locations.
           </p>
 
-          {/* Real User Browser Detection Banner */}
-          <div className="w-full max-w-2xl bg-[#0f151e] border border-[#202b3b] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-lg">
+          {/* User Location Detected Banner */}
+          <div className="w-full max-w-xl bg-[#0f151e] border border-[#202b3b] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-lg">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">{getCountryFlag(browserInfo.detectedCountry)}</span>
+              <span className="text-2xl">{getCountryFlag(detectedLocation.country)}</span>
               <div className="text-left">
                 <div className="font-bold text-white flex items-center gap-2">
-                  <span>Connected from {browserInfo.detectedCity}, {browserInfo.detectedCountry}</span>
+                  <span>Your Location: {detectedLocation.city}, {detectedLocation.country}</span>
                   <span className="px-1.5 py-0.5 rounded bg-[#1e293b] text-[10px] text-[#38bdf8] font-mono">
-                    {browserInfo.timezone}
+                    {detectedLocation.timezone}
                   </span>
                 </div>
                 <div className="text-[11px] text-[#808d9e] mt-0.5">
-                  Device: {browserInfo.platform} • Browser Language: {browserInfo.language} • {browserInfo.screen}
+                  Location recorded & user count updated
                 </div>
               </div>
             </div>
@@ -373,14 +360,14 @@ export default function ImpactPage() {
               <button
                 onClick={handleRequestGPS}
                 className="px-3 py-1.5 rounded-lg bg-[#182332] hover:bg-[#202e42] border border-[#293b54] text-[11px] font-semibold text-[#cbd5e1] transition-colors"
-                title="Get precise GPS coordinates from browser"
+                title="Get precise GPS coordinates"
               >
-                {browserInfo.gpsActive ? '✓ GPS Active' : '📍 Detect GPS'}
+                {detectedLocation.gpsActive ? '✓ GPS Active' : '📍 Detect GPS'}
               </button>
               <button
                 onClick={() => {
                   setActiveTierFilter('my-location');
-                  setSelectedCountry(getCountryDetails(browserInfo.detectedCountry, realCountryStats));
+                  setSelectedLocation(getCountryDetails(detectedLocation.country, countryStats));
                 }}
                 className="px-3 py-1.5 rounded-lg bg-[#dd2222] hover:bg-[#b81d1d] text-white text-[11px] font-bold shadow-md transition-colors"
               >
@@ -390,61 +377,59 @@ export default function ImpactPage() {
           </div>
         </section>
 
-        {/* 100% REAL DATABASE METRICS BAR */}
+        {/* ======================================================== */}
+        {/* LOCATION-ONLY METRICS BAR                                */}
+        {/* ======================================================== */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
             <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
-              <span>Real Clips in DB</span>
+              <span>Total Active Users</span>
               <span className="w-2 h-2 rounded-full bg-[#22c55e]"></span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-white">
-              {dbStats?.totalClips ?? 0} Clips
-            </div>
-            <div className="text-[11px] text-[#9aa4b2] flex items-center gap-2">
-              <span className="text-[#22c55e] font-semibold">{dbStats?.completedClips ?? 0} Completed</span>
-              <span>•</span>
-              <span className="text-[#f59e0b] font-semibold">{dbStats?.pendingClips ?? 0} In Queue</span>
-            </div>
-          </div>
-
-          <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
-            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
-              <span>Connected Channels</span>
-              <span className="text-xs">📺</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-[#ea7635]">
-              {dbStats?.connectedChannels ?? 0} Active
-            </div>
-            <div className="text-[11px] text-[#9aa4b2] truncate">
-              {Array.isArray(connectedChannels) && connectedChannels.length > 0
-                ? connectedChannels.map((c) => c?.channelTitle || '').filter(Boolean).join(', ')
-                : 'Ready to Connect'}
-            </div>
-          </div>
-
-          <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
-            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
-              <span>Video Duration</span>
-              <span className="text-xs">⏱️</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-[#d3a06e]">
-              {dbStats?.totalSeconds ?? 0}s
+              {locationStats?.totalUsers ?? 1}
             </div>
             <div className="text-[11px] text-[#9aa4b2]">
-              Processed across {dbStats?.totalProjects ?? 0} Studio Projects
+              Recorded Across Worldwide Locations
             </div>
           </div>
 
           <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
             <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
-              <span>Visitor Telemetry</span>
-              <span className="text-xs">👥</span>
+              <span>Cities Reached</span>
+              <span className="text-xs">🏙️</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-white">
-              {dbStats?.totalVisitors ?? 1} Sessions
+            <div className="text-2xl sm:text-3xl font-black text-[#ea7635]">
+              {locationStats?.totalCities ?? 1}
+            </div>
+            <div className="text-[11px] text-[#9aa4b2]">
+              Unique Cities with Active Users
+            </div>
+          </div>
+
+          <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
+            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
+              <span>Countries Active</span>
+              <span className="text-xs">🌍</span>
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-[#d3a06e]">
+              {locationStats?.totalCountries ?? 1}
+            </div>
+            <div className="text-[11px] text-[#9aa4b2]">
+              Lit Up on World Map
+            </div>
+          </div>
+
+          <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
+            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
+              <span>Top User Location</span>
+              <span className="text-xs">🔥</span>
+            </div>
+            <div className="text-xl sm:text-2xl font-black text-white truncate">
+              {locationStats?.topLocation || 'Kolkata, India'}
             </div>
             <div className="text-[11px] text-[#38bdf8] font-medium">
-              Real telemetry recorded in MongoDB
+              Highest User Concentration
             </div>
           </div>
         </section>
@@ -469,7 +454,7 @@ export default function ImpactPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search refined map (e.g. India, United States)..."
+                placeholder="Search country or city (e.g. India, Kolkata)..."
                 className="w-full bg-[#0d1219] border border-[#1f2937] focus:border-[#dd2222] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-[#606d80] outline-none transition-colors"
               />
               {searchQuery && (
@@ -503,7 +488,7 @@ export default function ImpactPage() {
                 }`}
               >
                 <span className="w-2.5 h-2.5 rounded-sm bg-[#9d350f]"></span>
-                <span>Hotspots</span>
+                <span>Hotspots (More Users)</span>
               </button>
               <button
                 onClick={() => setActiveTierFilter('steady')}
@@ -525,12 +510,12 @@ export default function ImpactPage() {
                 }`}
               >
                 <span className="w-2.5 h-2.5 rounded-sm bg-[#d3a06e]"></span>
-                <span>A Few Downloads</span>
+                <span>A Few Users</span>
               </button>
               <button
                 onClick={() => {
                   setActiveTierFilter('my-location');
-                  setSelectedCountry(getCountryDetails(browserInfo.detectedCountry, realCountryStats));
+                  setSelectedLocation(getCountryDetails(detectedLocation.country, countryStats));
                 }}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   activeTierFilter === 'my-location'
@@ -543,7 +528,7 @@ export default function ImpactPage() {
             </div>
           </div>
 
-          {/* The Refined World Map Container */}
+          {/* World Map Container */}
           <div
             ref={mapContainerRef}
             onMouseMove={handleDotMouseMove}
@@ -558,15 +543,15 @@ export default function ImpactPage() {
                 style={{ filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.6))' }}
               >
                 <defs>
-                  {/* Subtle radial glow under India & active hotspots */}
-                  <radialGradient id="indiaGlow" cx="50%" cy="50%" r="50%">
+                  {/* Subtle radial glow under active hotspot regions */}
+                  <radialGradient id="hotspotGlow" cx="50%" cy="50%" r="50%">
                     <stop offset="0%" stopColor="#9d350f" stopOpacity="0.4" />
                     <stop offset="100%" stopColor="#040608" stopOpacity="0" />
                   </radialGradient>
                 </defs>
 
                 {/* Background glow behind India */}
-                <ellipse cx="660" cy="220" rx="35" ry="40" fill="url(#indiaGlow)" />
+                <ellipse cx="660" cy="220" rx="35" ry="40" fill="url(#hotspotGlow)" />
 
                 {/* Render All 3,795 Refined Dots */}
                 <g>
@@ -625,7 +610,7 @@ export default function ImpactPage() {
                 </g>
 
                 {/* Animated Pulsing Beacon for User's Detected Location */}
-                {userCountryBeacon && !filteredDots.find((d) => d.country === browserInfo.detectedCountry)?.isDimmed && (
+                {userCountryBeacon && !filteredDots.find((d) => d.country === detectedLocation.country)?.isDimmed && (
                   <g pointerEvents="none">
                     {/* Outer ripple ring */}
                     <circle
@@ -686,9 +671,9 @@ export default function ImpactPage() {
                     />
 
                     {/* Floating Callout Pin */}
-                    <g transform={`translate(${userCountryBeacon.x - 38}, ${userCountryBeacon.y - 26})`}>
+                    <g transform={`translate(${userCountryBeacon.x - 42}, ${userCountryBeacon.y - 26})`}>
                       <rect
-                        width="76"
+                        width="84"
                         height="18"
                         rx="4"
                         fill="#0d1218"
@@ -697,7 +682,7 @@ export default function ImpactPage() {
                         filter="drop-shadow(0 2px 5px rgba(0,0,0,0.8))"
                       />
                       <text
-                        x="38"
+                        x="42"
                         y="12"
                         textAnchor="middle"
                         fill="#ffffff"
@@ -705,7 +690,7 @@ export default function ImpactPage() {
                         fontWeight="bold"
                         fontFamily="sans-serif"
                       >
-                        📍 You are here
+                        📍 You ({userCountryBeacon.city})
                       </text>
                     </g>
                   </g>
@@ -723,8 +708,8 @@ export default function ImpactPage() {
                 }}
               >
                 {(() => {
-                  const details = getCountryDetails(hoveredDot?.country, realCountryStats) || {};
-                  const isUser = hoveredDot?.country === browserInfo?.detectedCountry;
+                  const details = getCountryDetails(hoveredDot?.country, countryStats) || {};
+                  const isUser = hoveredDot?.country === detectedLocation.country;
                   const tier = TIER_CONFIG[hoveredDot?.tier] || TIER_CONFIG[0];
                   return (
                     <div className="bg-[#0e131b]/95 backdrop-blur-md border border-[#222c3b] rounded-xl p-3 shadow-2xl text-xs flex flex-col gap-1 min-w-[200px]">
@@ -748,17 +733,17 @@ export default function ImpactPage() {
                       </div>
 
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-[#8895a7]">Recorded Visits:</span>
+                        <span className="text-[#8895a7]">Recorded Users:</span>
                         <span className="text-white font-semibold">
-                          {details?.visits ?? 1}
+                          {details?.usersCount ?? 0} {details?.usersCount === 1 ? 'user' : 'users'}
                         </span>
                       </div>
 
-                      {hoveredDot?.country === 'India' && (
+                      {details?.topCity && (
                         <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-[#8895a7]">Studio Clips:</span>
+                          <span className="text-[#8895a7]">Primary City:</span>
                           <span className="text-[#d3a06e] font-semibold">
-                            {dbStats?.totalClips ?? 0} generated
+                            {details.topCity}
                           </span>
                         </div>
                       )}
@@ -768,7 +753,7 @@ export default function ImpactPage() {
               </div>
             )}
 
-            {/* Bottom Legend (Matching Uploaded Reference Image) */}
+            {/* Bottom Legend Matching Reference Image */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-3 border-t border-[#161d26] text-xs text-[#8c97a5]">
               {/* Left Legend Items */}
               <div className="flex flex-wrap items-center gap-4 sm:gap-6">
@@ -786,64 +771,62 @@ export default function ImpactPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-[2px] bg-[#9d350f] inline-block"></span>
-                  <span className="text-[#d1d5db]">A hotspot</span>
+                  <span className="text-[#d1d5db]">A hotspot (More Users)</span>
                 </div>
               </div>
 
               {/* Right Count */}
               <div className="text-xs sm:text-sm font-semibold text-[#8c97a5] font-mono">
-                <strong className="text-white font-bold">{dbStats.countriesLitUp}</strong> countries lit up so far
+                <strong className="text-white font-bold">{locationStats?.totalCountries ?? 1}</strong> countries lit up so far
               </div>
             </div>
           </div>
         </section>
 
         {/* Selected Country Spotlight Banner */}
-        {selectedCountry && (
+        {selectedLocation && (
           <section className="bg-[#0d1219] border border-[#1e2736] rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg">
             <div className="flex items-center gap-4">
-              <span className="text-3xl sm:text-4xl">{selectedCountry?.flag || '🌍'}</span>
+              <span className="text-3xl sm:text-4xl">{selectedLocation?.flag || '🌍'}</span>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-white">{selectedCountry?.name || ''}</h3>
+                  <h3 className="text-lg font-bold text-white">{selectedLocation?.name || ''}</h3>
                   <span
                     className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
                     style={{
                       backgroundColor:
-                        selectedCountry?.tier === 3 ? '#360c0c' : selectedCountry?.tier === 2 ? '#331908' : '#241f17',
+                        selectedLocation?.tier === 3 ? '#360c0c' : selectedLocation?.tier === 2 ? '#331908' : '#241f17',
                       color:
-                        selectedCountry?.tier === 3 ? '#dd2222' : selectedCountry?.tier === 2 ? '#f97316' : '#d3a06e',
+                        selectedLocation?.tier === 3 ? '#dd2222' : selectedLocation?.tier === 2 ? '#f97316' : '#d3a06e',
                     }}
                   >
-                    {selectedCountry?.label || 'Active'}
+                    {selectedLocation?.label || 'Active'}
                   </span>
-                  {selectedCountry?.name === browserInfo?.detectedCountry && (
+                  {selectedLocation?.name === detectedLocation.country && (
                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#1e3a8a] text-blue-300">
                       Your Region 📍
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-[#9aa4b2] mt-0.5">
-                  Primary Location: <strong className="text-white">{selectedCountry?.city || selectedCountry?.name || ''}</strong> • Real Activity Logged
+                  Primary Location: <strong className="text-white">{selectedLocation?.topCity || selectedLocation?.name}</strong> • Real Location Recorded
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-6 sm:gap-8 text-xs">
               <div>
-                <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Recorded Visits</div>
+                <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Active Users</div>
                 <div className="text-base sm:text-lg font-bold text-white">
-                  {selectedCountry?.visits ?? 1}
+                  {selectedLocation?.usersCount ?? 1}
                 </div>
               </div>
-              {selectedCountry?.name === 'India' && (
-                <div>
-                  <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Real Clips in DB</div>
-                  <div className="text-base sm:text-lg font-bold text-[#d3a06e]">
-                    {dbStats?.totalClips ?? 0}
-                  </div>
+              <div>
+                <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Activity Tier</div>
+                <div className="text-base sm:text-lg font-bold text-[#d3a06e]">
+                  {selectedLocation?.label || 'A few downloads'}
                 </div>
-              )}
+              </div>
               <Link
                 href="/dashboard"
                 className="px-4 py-2 btn-primary text-xs font-bold rounded-lg shadow whitespace-nowrap"
@@ -855,62 +838,77 @@ export default function ImpactPage() {
         )}
 
         {/* ======================================================== */}
-        {/* REAL ACTIVITY FEED (ACTUAL DATABASE CLIPS & CHANNELS)    */}
+        {/* RECORDED LOCATIONS DIRECTORY                             */}
         {/* ======================================================== */}
-        <section className="bg-[#0b0f15] border border-[#18212c] rounded-2xl p-5 flex flex-col gap-3">
-          <div className="flex items-center justify-between border-b border-[#18212c] pb-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#22c55e] animate-pulse"></span>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                Live Studio Activity (Real MongoDB Records)
-              </h3>
-            </div>
-            <span className="text-[11px] text-[#6e7d91]">Real Time</span>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {liveActivity.length > 0 ? (
-              liveActivity.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between text-xs py-2 px-3 rounded-lg hover:bg-[#121822] transition-colors border border-transparent hover:border-[#1e293b]"
-                >
-                  <div className="flex items-center gap-2.5 text-[#d1d5db]">
-                    <span className="text-base">{item.icon}</span>
-                    <span className="font-semibold text-white">{item.title}</span>
-                    <span className="text-[#64748b]">•</span>
-                    <span className="text-[#94a3b8]">{item.action}</span>
-                    {item.duration && (
-                      <span className="px-1.5 py-0.5 rounded bg-[#1e293b] text-[10px] text-[#38bdf8] font-mono">
-                        {item.duration}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-[#6b7280] font-mono whitespace-nowrap ml-3">
-                    {item.timestamp}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="text-xs text-[#718096] py-3 text-center">
-                Generating clips in the studio will immediately display here in real time.
+        {recordedLocations.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Active User Locations</h2>
+                <p className="text-xs sm:text-sm text-[#8c97a5]">
+                  Real recorded locations where creators have accessed the platform.
+                </p>
               </div>
-            )}
-          </div>
-        </section>
+              <span className="text-xs font-semibold text-[#8c97a5]">Ranked by Users</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {recordedLocations.map((loc, idx) => {
+                const isUser = loc.city.toLowerCase() === detectedLocation.city.toLowerCase();
+                return (
+                  <div
+                    key={`${loc.city}-${loc.country}-${idx}`}
+                    onClick={() => {
+                      setSelectedLocation(getCountryDetails(loc.country, countryStats));
+                      setSearchQuery(loc.country);
+                      mapContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className={`bg-[#0d1219] border rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-[#dd2222]/50 hover:bg-[#121822] transition-all group ${
+                      isUser ? 'border-[#dd2222] shadow-md shadow-[#dd2222]/10' : 'border-[#1b2532]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{getCountryFlag(loc.country)}</span>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-[#dd2222] transition-colors flex items-center gap-1.5">
+                          <span>{loc.city}, {loc.country}</span>
+                          {isUser && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#dd2222]"></span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-[#718096]">
+                          Last seen: {new Date(loc.lastActive).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-base font-bold text-white">
+                        {loc.usersCount} {loc.usersCount === 1 ? 'User' : 'Users'}
+                      </div>
+                      <div className="text-[10px] text-[#38bdf8]">
+                        #{idx + 1}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ======================================================== */}
         {/* CALL TO ACTION                                           */}
         {/* ======================================================== */}
         <section className="bg-[#0e131b] border border-[#1d2736] rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 shadow-xl">
           <div className="w-12 h-12 rounded-2xl bg-[#360c0c] border border-[#dd2222]/50 flex items-center justify-center text-xl text-[#dd2222]">
-            🎬
+            🌍
           </div>
           <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            Generate Real Viral Clips Now
+            Put Your Content On The Map
           </h2>
           <p className="text-sm sm:text-base text-[#9aa4b2] max-w-xl">
-            Paste any YouTube video link, select duration and layouts (9:16 or blurred background), and let AI generate ready-to-publish shorts.
+            Start clipping YouTube videos into high-retention shorts. Completely free with your own AI API keys.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Link

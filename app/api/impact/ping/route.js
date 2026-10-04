@@ -1,149 +1,134 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/db';
-import VisitorImpact from '@/models/VisitorImpact';
-import Clip from '@/models/Clip';
-import Project from '@/models/Project';
+import UserLocation from '@/models/UserLocation';
 
-// Common timezone to country mapping
-const TIMEZONE_TO_COUNTRY = {
-  'Asia/Kolkata': { country: 'India', code: 'IND', city: 'Kolkata' },
-  'Asia/Calcutta': { country: 'India', code: 'IND', city: 'Mumbai' },
-  'America/New_York': { country: 'United States', code: 'USA', city: 'New York' },
-  'America/Los_Angeles': { country: 'United States', code: 'USA', city: 'Los Angeles' },
-  'America/Chicago': { country: 'United States', code: 'USA', city: 'Chicago' },
-  'America/Denver': { country: 'United States', code: 'USA', city: 'Denver' },
-  'America/Toronto': { country: 'Canada', code: 'CAN', city: 'Toronto' },
-  'America/Vancouver': { country: 'Canada', code: 'CAN', city: 'Vancouver' },
-  'Europe/London': { country: 'United Kingdom', code: 'GBR', city: 'London' },
-  'Europe/Berlin': { country: 'Germany', code: 'DEU', city: 'Berlin' },
-  'Europe/Paris': { country: 'France', code: 'FRA', city: 'Paris' },
-  'Australia/Sydney': { country: 'Australia', code: 'AUS', city: 'Sydney' },
-  'Australia/Melbourne': { country: 'Australia', code: 'AUS', city: 'Melbourne' },
-  'America/Sao_Paulo': { country: 'Brazil', code: 'BRA', city: 'São Paulo' },
-  'Asia/Tokyo': { country: 'Japan', code: 'JPN', city: 'Tokyo' },
-  'Asia/Seoul': { country: 'South Korea', code: 'KOR', city: 'Seoul' },
-  'Asia/Singapore': { country: 'Singapore', code: 'SGP', city: 'Singapore' },
-  'Asia/Dubai': { country: 'United Arab Emirates', code: 'ARE', city: 'Dubai' },
-  'Europe/Madrid': { country: 'Spain', code: 'ESP', city: 'Madrid' },
-  'Europe/Rome': { country: 'Italy', code: 'ITA', city: 'Rome' },
-  'Europe/Amsterdam': { country: 'Netherlands', code: 'NLD', city: 'Amsterdam' },
-  'Africa/Johannesburg': { country: 'South Africa', code: 'ZAF', city: 'Johannesburg' },
-  'America/Mexico_City': { country: 'Mexico', code: 'MEX', city: 'Mexico City' },
-  'America/Buenos_Aires': { country: 'Argentina', code: 'ARG', city: 'Buenos Aires' },
-  'Asia/Jakarta': { country: 'Indonesia', code: 'IDN', city: 'Jakarta' },
-  'Asia/Manila': { country: 'Philippines', code: 'PHL', city: 'Manila' },
-  'Asia/Karachi': { country: 'Pakistan', code: 'PAK', city: 'Karachi' },
-  'Africa/Cairo': { country: 'Egypt', code: 'EGY', city: 'Cairo' },
-  'Africa/Lagos': { country: 'Nigeria', code: 'NGA', city: 'Lagos' },
+const TIMEZONE_MAP = {
+  'Asia/Kolkata': { city: 'Kolkata', country: 'India', code: 'IND' },
+  'Asia/Calcutta': { city: 'Kolkata', country: 'India', code: 'IND' },
+  'America/New_York': { city: 'New York', country: 'United States', code: 'USA' },
+  'America/Los_Angeles': { city: 'Los Angeles', country: 'United States', code: 'USA' },
+  'America/Chicago': { city: 'Chicago', country: 'United States', code: 'USA' },
+  'America/Denver': { city: 'Denver', country: 'United States', code: 'USA' },
+  'America/Toronto': { city: 'Toronto', country: 'Canada', code: 'CAN' },
+  'America/Vancouver': { city: 'Vancouver', country: 'Canada', code: 'CAN' },
+  'Europe/London': { city: 'London', country: 'United Kingdom', code: 'GBR' },
+  'Europe/Berlin': { city: 'Berlin', country: 'Germany', code: 'DEU' },
+  'Europe/Paris': { city: 'Paris', country: 'France', code: 'FRA' },
+  'Australia/Sydney': { city: 'Sydney', country: 'Australia', code: 'AUS' },
+  'Australia/Melbourne': { city: 'Melbourne', country: 'Australia', code: 'AUS' },
+  'America/Sao_Paulo': { city: 'São Paulo', country: 'Brazil', code: 'BRA' },
+  'Asia/Tokyo': { city: 'Tokyo', country: 'Japan', code: 'JPN' },
+  'Asia/Seoul': { city: 'Seoul', country: 'South Korea', code: 'KOR' },
+  'Asia/Singapore': { city: 'Singapore', country: 'Singapore', code: 'SGP' },
+  'Asia/Dubai': { city: 'Dubai', country: 'United Arab Emirates', code: 'ARE' },
+  'Europe/Madrid': { city: 'Madrid', country: 'Spain', code: 'ESP' },
+  'Europe/Rome': { city: 'Rome', country: 'Italy', code: 'ITA' },
+  'Europe/Amsterdam': { city: 'Amsterdam', country: 'Netherlands', code: 'NLD' },
+  'Africa/Johannesburg': { city: 'Johannesburg', country: 'South Africa', code: 'ZAF' },
+  'America/Mexico_City': { city: 'Mexico City', country: 'Mexico', code: 'MEX' },
+  'America/Buenos_Aires': { city: 'Buenos Aires', country: 'Argentina', code: 'ARG' },
+  'Asia/Jakarta': { city: 'Jakarta', country: 'Indonesia', code: 'IDN' },
+  'Asia/Manila': { city: 'Manila', country: 'Philippines', code: 'PHL' },
+  'Asia/Karachi': { city: 'Karachi', country: 'Pakistan', code: 'PAK' },
+  'Africa/Cairo': { city: 'Cairo', country: 'Egypt', code: 'EGY' },
+  'Africa/Lagos': { city: 'Lagos', country: 'Nigeria', code: 'NGA' },
 };
+
+function capitalize(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 export async function POST(request) {
   try {
     await dbConnect();
 
     const body = await request.json().catch(() => ({}));
-    const {
+    let {
+      city = '',
+      country = '',
+      countryCode = '',
       timezone = '',
-      language = '',
-      platform = '',
-      screen = '',
-      coords = null,
-      clientCountry = '',
-      clientCity = '',
-      userId = null,
+      latitude = null,
+      longitude = null,
     } = body;
 
-    // Detect IP from headers
-    const forwarded = request.headers.get('x-forwarded-for') || '';
-    const realIp = request.headers.get('x-real-ip') || forwarded.split(',')[0].trim() || '127.0.0.1';
+    // Timezone heuristic if location not provided
+    if ((!city || !country) && timezone && TIMEZONE_MAP[timezone]) {
+      const match = TIMEZONE_MAP[timezone];
+      city = city || match.city;
+      country = country || match.country;
+      countryCode = countryCode || match.code;
+    }
 
-    // Header country detection (Vercel, Cloudflare, AWS CloudFront)
+    // Header country fallback
     const headerCountry = request.headers.get('x-vercel-ip-country') || request.headers.get('cf-ipcountry') || '';
-
-    // Determine country & city using timezone and headers
-    let country = 'India';
-    let countryCode = 'IND';
-    let city = clientCity || '';
-
-    if (TIMEZONE_TO_COUNTRY[timezone]) {
-      const match = TIMEZONE_TO_COUNTRY[timezone];
-      country = match.country;
-      countryCode = match.code;
-      if (!city) city = match.city;
-    } else if (clientCountry) {
-      country = clientCountry;
-      countryCode = clientCountry.slice(0, 3).toUpperCase();
-    } else if (headerCountry) {
+    if (!country && headerCountry) {
       country = headerCountry;
       countryCode = headerCountry;
     }
 
-    // Query real clips in database
-    const totalClipsInDB = await Clip.countDocuments();
-    const totalProjectsInDB = await Project.countDocuments();
+    // Default to Kolkata, India if undetermined
+    city = capitalize(city.trim()) || 'Kolkata';
+    country = capitalize(country.trim()) || 'India';
+    countryCode = (countryCode.trim() || country.slice(0, 3)).toUpperCase();
 
-    // Check if this visitor exists
-    let visitor = null;
-    if (realIp && realIp !== '127.0.0.1') {
-      visitor = await VisitorImpact.findOne({ ip: realIp });
+    // Find existing location record case-insensitively
+    const existing = await UserLocation.findOne({
+      city: { $regex: new RegExp(`^${city}$`, 'i') },
+      country: { $regex: new RegExp(`^${country}$`, 'i') },
+    });
+
+    let locationRecord;
+    if (existing) {
+      locationRecord = await UserLocation.findByIdAndUpdate(
+        existing._id,
+        {
+          $inc: { usersCount: 1 },
+          $set: {
+            countryCode: countryCode || existing.countryCode,
+            lastActive: new Date(),
+            ...(latitude ? { latitude } : {}),
+            ...(longitude ? { longitude } : {}),
+          },
+        },
+        { new: true }
+      );
     } else {
-      visitor = await VisitorImpact.findOne({ timezone, platform });
+      locationRecord = await UserLocation.findOneAndUpdate(
+        { city, country },
+        {
+          $inc: { usersCount: 1 },
+          $set: {
+            countryCode,
+            lastActive: new Date(),
+            ...(latitude ? { latitude } : {}),
+            ...(longitude ? { longitude } : {}),
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true,
+        }
+      );
     }
-
-    if (visitor) {
-      visitor.visits += 1;
-      visitor.lastSeen = new Date();
-      if (city && !visitor.city) visitor.city = city;
-      if (coords?.latitude) {
-        visitor.latitude = coords.latitude;
-        visitor.longitude = coords.longitude;
-      }
-      visitor.clipsGenerated = totalClipsInDB;
-      visitor.projectsCreated = totalProjectsInDB;
-      await visitor.save();
-    } else {
-      visitor = await VisitorImpact.create({
-        ip: realIp,
-        country,
-        countryCode,
-        city: city || 'Local',
-        timezone,
-        language,
-        platform,
-        device: screen,
-        latitude: coords?.latitude || null,
-        longitude: coords?.longitude || null,
-        userId: userId || null,
-        visits: 1,
-        clipsGenerated: totalClipsInDB,
-        projectsCreated: totalProjectsInDB,
-        lastSeen: new Date(),
-        createdAt: new Date(),
-      });
-    }
-
-    // Get real counts for this country
-    const countryVisitors = await VisitorImpact.countDocuments({ country });
-    const totalVisitors = await VisitorImpact.countDocuments();
 
     return NextResponse.json({
       success: true,
-      visitor: {
-        id: visitor._id,
-        country: visitor.country,
-        countryCode: visitor.countryCode,
-        city: visitor.city,
-        timezone: visitor.timezone,
-        visits: visitor.visits,
-        countryVisitors,
-        totalVisitors,
-        realClips: totalClipsInDB,
-        realProjects: totalProjectsInDB,
-        isRealData: true,
+      location: {
+        city: locationRecord.city,
+        country: locationRecord.country,
+        countryCode: locationRecord.countryCode,
+        usersCount: locationRecord.usersCount,
+        lastActive: locationRecord.lastActive,
       },
     });
   } catch (err) {
-    console.error('Impact Ping Error:', err);
+    console.error('User Location Ping Error:', err);
     return NextResponse.json(
       { success: false, error: err.message },
       { status: 500 }
