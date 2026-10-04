@@ -398,12 +398,12 @@ export default function ImpactPage() {
               <span className="w-2 h-2 rounded-full bg-[#22c55e]"></span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-white">
-              {dbStats.totalClips} Clips
+              {dbStats?.totalClips ?? 0} Clips
             </div>
             <div className="text-[11px] text-[#9aa4b2] flex items-center gap-2">
-              <span className="text-[#22c55e] font-semibold">{dbStats.completedClips} Completed</span>
+              <span className="text-[#22c55e] font-semibold">{dbStats?.completedClips ?? 0} Completed</span>
               <span>•</span>
-              <span className="text-[#f59e0b] font-semibold">{dbStats.pendingClips} In Queue</span>
+              <span className="text-[#f59e0b] font-semibold">{dbStats?.pendingClips ?? 0} In Queue</span>
             </div>
           </div>
 
@@ -413,10 +413,12 @@ export default function ImpactPage() {
               <span className="text-xs">📺</span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-[#ea7635]">
-              {dbStats.connectedChannels} Active
+              {dbStats?.connectedChannels ?? 0} Active
             </div>
             <div className="text-[11px] text-[#9aa4b2] truncate">
-              {connectedChannels.map((c) => c.channelTitle).join(', ') || 'Ready to Connect'}
+              {Array.isArray(connectedChannels) && connectedChannels.length > 0
+                ? connectedChannels.map((c) => c?.channelTitle || '').filter(Boolean).join(', ')
+                : 'Ready to Connect'}
             </div>
           </div>
 
@@ -426,10 +428,10 @@ export default function ImpactPage() {
               <span className="text-xs">⏱️</span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-[#d3a06e]">
-              {dbStats.totalSeconds}s
+              {dbStats?.totalSeconds ?? 0}s
             </div>
             <div className="text-[11px] text-[#9aa4b2]">
-              Processed across {dbStats.totalProjects} Studio Projects
+              Processed across {dbStats?.totalProjects ?? 0} Studio Projects
             </div>
           </div>
 
@@ -439,7 +441,7 @@ export default function ImpactPage() {
               <span className="text-xs">👥</span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-white">
-              {dbStats.totalVisitors} Sessions
+              {dbStats?.totalVisitors ?? 1} Sessions
             </div>
             <div className="text-[11px] text-[#38bdf8] font-medium">
               Real telemetry recorded in MongoDB
@@ -721,15 +723,15 @@ export default function ImpactPage() {
                 }}
               >
                 {(() => {
-                  const details = getCountryDetails(hoveredDot.country, realCountryStats);
-                  const isUser = hoveredDot.country === browserInfo.detectedCountry;
-                  const tier = TIER_CONFIG[hoveredDot.tier] || TIER_CONFIG[0];
+                  const details = getCountryDetails(hoveredDot?.country, realCountryStats) || {};
+                  const isUser = hoveredDot?.country === browserInfo?.detectedCountry;
+                  const tier = TIER_CONFIG[hoveredDot?.tier] || TIER_CONFIG[0];
                   return (
                     <div className="bg-[#0e131b]/95 backdrop-blur-md border border-[#222c3b] rounded-xl p-3 shadow-2xl text-xs flex flex-col gap-1 min-w-[200px]">
                       <div className="flex items-center justify-between gap-2 border-b border-[#1f2836] pb-1.5">
                         <div className="flex items-center gap-1.5 font-bold text-white text-sm">
-                          <span>{details.flag}</span>
-                          <span>{hoveredDot.country}</span>
+                          <span>{details?.flag || '🌍'}</span>
+                          <span>{hoveredDot?.country || 'Unknown'}</span>
                         </div>
                         {isUser && (
                           <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-[#380e0e] text-[#dd2222] border border-[#dd2222]/40">
@@ -740,23 +742,23 @@ export default function ImpactPage() {
 
                       <div className="flex items-center justify-between text-[11px] pt-0.5">
                         <span className="text-[#8895a7]">Activity Tier:</span>
-                        <span className="font-semibold" style={{ color: tier.color }}>
-                          {tier.label}
+                        <span className="font-semibold" style={{ color: tier?.color || '#d3a06e' }}>
+                          {tier?.label || 'A few downloads'}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-[#8895a7]">Recorded Visits:</span>
                         <span className="text-white font-semibold">
-                          {details.visits}
+                          {details?.visits ?? 1}
                         </span>
                       </div>
 
-                      {hoveredDot.country === 'India' && (
+                      {hoveredDot?.country === 'India' && (
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-[#8895a7]">Studio Clips:</span>
                           <span className="text-[#d3a06e] font-semibold">
-                            {dbStats.totalClips} generated
+                            {dbStats?.totalClips ?? 0} generated
                           </span>
                         </div>
                       )}
@@ -800,29 +802,29 @@ export default function ImpactPage() {
         {selectedCountry && (
           <section className="bg-[#0d1219] border border-[#1e2736] rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg">
             <div className="flex items-center gap-4">
-              <span className="text-3xl sm:text-4xl">{selectedCountry.flag}</span>
+              <span className="text-3xl sm:text-4xl">{selectedCountry?.flag || '🌍'}</span>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-white">{selectedCountry.name}</h3>
+                  <h3 className="text-lg font-bold text-white">{selectedCountry?.name || ''}</h3>
                   <span
                     className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
                     style={{
                       backgroundColor:
-                        selectedCountry.tier === 3 ? '#360c0c' : selectedCountry.tier === 2 ? '#331908' : '#241f17',
+                        selectedCountry?.tier === 3 ? '#360c0c' : selectedCountry?.tier === 2 ? '#331908' : '#241f17',
                       color:
-                        selectedCountry.tier === 3 ? '#dd2222' : selectedCountry.tier === 2 ? '#f97316' : '#d3a06e',
+                        selectedCountry?.tier === 3 ? '#dd2222' : selectedCountry?.tier === 2 ? '#f97316' : '#d3a06e',
                     }}
                   >
-                    {selectedCountry.label}
+                    {selectedCountry?.label || 'Active'}
                   </span>
-                  {selectedCountry.name === browserInfo.detectedCountry && (
+                  {selectedCountry?.name === browserInfo?.detectedCountry && (
                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#1e3a8a] text-blue-300">
                       Your Region 📍
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-[#9aa4b2] mt-0.5">
-                  Primary Location: <strong className="text-white">{selectedCountry.city}</strong> • Real Activity Logged
+                  Primary Location: <strong className="text-white">{selectedCountry?.city || selectedCountry?.name || ''}</strong> • Real Activity Logged
                 </p>
               </div>
             </div>
@@ -831,14 +833,14 @@ export default function ImpactPage() {
               <div>
                 <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Recorded Visits</div>
                 <div className="text-base sm:text-lg font-bold text-white">
-                  {selectedCountry.visits}
+                  {selectedCountry?.visits ?? 1}
                 </div>
               </div>
-              {selectedCountry.name === 'India' && (
+              {selectedCountry?.name === 'India' && (
                 <div>
                   <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Real Clips in DB</div>
                   <div className="text-base sm:text-lg font-bold text-[#d3a06e]">
-                    {dbStats.totalClips}
+                    {dbStats?.totalClips ?? 0}
                   </div>
                 </div>
               )}
