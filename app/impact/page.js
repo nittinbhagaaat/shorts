@@ -203,7 +203,7 @@ export default function ImpactPage() {
 
       // Real tier from user location database: darker for more users, lighter for less
       const locData = countryStats[dot.country];
-      const effectiveTier = locData ? locData.tier : dot.tier;
+      const effectiveTier = locData && locData.usersCount > 0 ? locData.tier : 0;
 
       if (query && !dot.country.toLowerCase().includes(query)) {
         isDimmed = true;
@@ -550,9 +550,6 @@ export default function ImpactPage() {
                   </radialGradient>
                 </defs>
 
-                {/* Background glow behind India */}
-                <ellipse cx="660" cy="220" rx="35" ry="40" fill="url(#hotspotGlow)" />
-
                 {/* Render All 3,795 Refined Dots */}
                 <g>
                   {filteredDots.map((dot, idx) => {
@@ -727,8 +724,15 @@ export default function ImpactPage() {
 
                       <div className="flex items-center justify-between text-[11px] pt-0.5">
                         <span className="text-[#8895a7]">Activity Tier:</span>
-                        <span className="font-semibold" style={{ color: tier?.color || '#d3a06e' }}>
-                          {tier?.label || 'A few downloads'}
+                        <span
+                          className="font-semibold"
+                          style={{
+                            color: details?.hasUsers
+                              ? (tier?.color || '#d3a06e')
+                              : '#5eead4',
+                          }}
+                        >
+                          {details?.hasUsers ? (tier?.label || 'A few downloads') : 'No downloads yet'}
                         </span>
                       </div>
 
@@ -739,7 +743,7 @@ export default function ImpactPage() {
                         </span>
                       </div>
 
-                      {details?.topCity && (
+                      {details?.topCity && details?.hasUsers && (
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-[#8895a7]">Primary City:</span>
                           <span className="text-[#d3a06e] font-semibold">
@@ -795,12 +799,24 @@ export default function ImpactPage() {
                     className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
                     style={{
                       backgroundColor:
-                        selectedLocation?.tier === 3 ? '#360c0c' : selectedLocation?.tier === 2 ? '#331908' : '#241f17',
+                        selectedLocation?.tier === 3
+                          ? '#360c0c'
+                          : selectedLocation?.tier === 2
+                          ? '#331908'
+                          : selectedLocation?.tier === 1
+                          ? '#241f17'
+                          : '#0b1f1d',
                       color:
-                        selectedLocation?.tier === 3 ? '#dd2222' : selectedLocation?.tier === 2 ? '#f97316' : '#d3a06e',
+                        selectedLocation?.tier === 3
+                          ? '#dd2222'
+                          : selectedLocation?.tier === 2
+                          ? '#f97316'
+                          : selectedLocation?.tier === 1
+                          ? '#d3a06e'
+                          : '#5eead4',
                     }}
                   >
-                    {selectedLocation?.label || 'Active'}
+                    {selectedLocation?.label || 'No downloads yet'}
                   </span>
                   {selectedLocation?.name === detectedLocation.country && (
                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#1e3a8a] text-blue-300">
@@ -809,7 +825,13 @@ export default function ImpactPage() {
                   )}
                 </div>
                 <p className="text-xs text-[#9aa4b2] mt-0.5">
-                  Primary Location: <strong className="text-white">{selectedLocation?.topCity || selectedLocation?.name}</strong> • Real Location Recorded
+                  {selectedLocation?.hasUsers ? (
+                    <>
+                      Primary Location: <strong className="text-white">{selectedLocation?.topCity}</strong> • Real Location Recorded
+                    </>
+                  ) : (
+                    <>Awaiting first creator from {selectedLocation?.name}</>
+                  )}
                 </p>
               </div>
             </div>
@@ -818,13 +840,20 @@ export default function ImpactPage() {
               <div>
                 <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Active Users</div>
                 <div className="text-base sm:text-lg font-bold text-white">
-                  {selectedLocation?.usersCount ?? 1}
+                  {selectedLocation?.usersCount ?? 0}
                 </div>
               </div>
               <div>
                 <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Activity Tier</div>
-                <div className="text-base sm:text-lg font-bold text-[#d3a06e]">
-                  {selectedLocation?.label || 'A few downloads'}
+                <div
+                  className="text-base sm:text-lg font-bold"
+                  style={{
+                    color: selectedLocation?.hasUsers
+                      ? (TIER_CONFIG[selectedLocation?.tier]?.color || '#d3a06e')
+                      : '#5eead4',
+                  }}
+                >
+                  {selectedLocation?.label || 'No downloads yet'}
                 </div>
               </div>
               <Link
