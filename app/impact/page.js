@@ -5,83 +5,51 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   WORLD_GRID_DOTS,
-  COUNTRY_STATS,
   TIER_CONFIG,
   MAP_COLS,
   MAP_ROWS,
+  getCountryFlag,
   getCountryDetails,
 } from '@/lib/impactMapData';
 
-// Map timezone heuristics to countries
-function detectCountryFromTimezone() {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    if (tz.includes('Calcutta') || tz.includes('Kolkata')) return 'India';
-    if (
-      tz.includes('New_York') ||
-      tz.includes('Chicago') ||
-      tz.includes('Los_Angeles') ||
-      tz.includes('Denver') ||
-      tz.includes('Phoenix') ||
-      tz.includes('America/Anchorage') ||
-      tz.includes('America/Detroit') ||
-      tz.includes('America/Indiana')
-    ) return 'United States';
-    if (tz.includes('Toronto') || tz.includes('Vancouver') || tz.includes('Montreal') || tz.includes('Edmonton') || tz.includes('Winnipeg')) return 'Canada';
-    if (tz.includes('London')) return 'United Kingdom';
-    if (tz.includes('Berlin')) return 'Germany';
-    if (tz.includes('Paris')) return 'France';
-    if (tz.includes('Sydney') || tz.includes('Melbourne') || tz.includes('Brisbane') || tz.includes('Perth') || tz.includes('Adelaide')) return 'Australia';
-    if (tz.includes('Sao_Paulo')) return 'Brazil';
-    if (tz.includes('Tokyo')) return 'Japan';
-    if (tz.includes('Seoul')) return 'South Korea';
-    if (tz.includes('Singapore')) return 'Singapore';
-    if (tz.includes('Dubai')) return 'United Arab Emirates';
-    if (tz.includes('Madrid')) return 'Spain';
-    if (tz.includes('Rome')) return 'Italy';
-    if (tz.includes('Amsterdam')) return 'Netherlands';
-    if (tz.includes('Johannesburg')) return 'South Africa';
-    if (tz.includes('Mexico_City')) return 'Mexico';
-    if (tz.includes('Buenos_Aires')) return 'Argentina';
-    if (tz.includes('Jakarta')) return 'Indonesia';
-    if (tz.includes('Manila')) return 'Philippines';
-    if (tz.includes('Karachi')) return 'Pakistan';
-    if (tz.includes('Cairo')) return 'Egypt';
-    if (tz.includes('Lagos')) return 'Nigeria';
-    if (tz.includes('Nairobi')) return 'Kenya';
-    if (tz.includes('Warsaw')) return 'Poland';
-    if (tz.includes('Stockholm')) return 'Sweden';
-    if (tz.includes('Auckland')) return 'New Zealand';
-    if (tz.includes('Bangkok')) return 'Thailand';
-    if (tz.includes('Kuala_Lumpur')) return 'Malaysia';
-    if (tz.includes('Bogota')) return 'Colombia';
-    if (tz.includes('Santiago')) return 'Chile';
-    if (tz.includes('Lima')) return 'Peru';
-    if (tz.includes('Casablanca')) return 'Morocco';
-    if (tz.includes('Dublin')) return 'Ireland';
-    if (tz.includes('Zurich')) return 'Switzerland';
-    if (tz.includes('Vienna')) return 'Austria';
-    if (tz.includes('Brussels')) return 'Belgium';
-    if (tz.includes('Athens')) return 'Greece';
-    if (tz.includes('Lisbon')) return 'Portugal';
-    if (tz.includes('Helsinki')) return 'Finland';
-    if (tz.includes('Oslo')) return 'Norway';
-    if (tz.includes('Copenhagen')) return 'Denmark';
-  } catch {}
-  return 'India';
-}
-
 export default function ImpactPage() {
   const { user } = useAuth();
-  const [statsData, setStatsData] = useState({
-    totalClips: 3842100,
-    totalCreators: 856400,
-    totalProjects: 412000,
-    hoursSaved: 140877,
-    countriesLitUp: 92,
+
+  // Real Database Metrics State
+  const [dbStats, setDbStats] = useState({
+    totalClips: 0,
+    completedClips: 0,
+    renderingClips: 0,
+    pendingClips: 0,
+    totalProjects: 0,
+    totalUsers: 0,
+    connectedChannels: 0,
+    youtubeUploads: 0,
+    totalSeconds: 0,
+    totalMinutes: 0,
+    totalVisitors: 1,
+    countriesLitUp: 1,
   });
 
-  const [userCountry, setUserCountry] = useState('India');
+  // Real Browser Diagnostics State
+  const [browserInfo, setBrowserInfo] = useState({
+    timezone: '',
+    language: '',
+    platform: '',
+    screen: '',
+    onLine: true,
+    detectedCountry: 'India',
+    detectedCity: 'Kolkata',
+    coords: null,
+    gpsActive: false,
+  });
+
+  const [realCountryStats, setRealCountryStats] = useState({});
+  const [liveActivity, setLiveActivity] = useState([]);
+  const [connectedChannels, setConnectedChannels] = useState([]);
+  const [loadingRealData, setLoadingRealData] = useState(true);
+
+  // Map Filter & Interaction States
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTierFilter, setActiveTierFilter] = useState('all'); // 'all', 'hotspots', 'steady', 'few', 'my-location'
   const [selectedCountry, setSelectedCountry] = useState(null);
@@ -89,118 +57,189 @@ export default function ImpactPage() {
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const mapContainerRef = useRef(null);
 
-  // Live activity feed simulation
-  const [activityFeed, setActivityFeed] = useState([
-    { id: 1, text: 'Creator in Bengaluru clipped 6 viral podcasts with Hormozi captions', time: 'Just now', country: 'India', flag: '🇮🇳' },
-    { id: 2, text: 'Creator in Los Angeles converted 2h stream to 14 TikTok shorts', time: '42s ago', country: 'United States', flag: '🇺🇸' },
-    { id: 3, text: 'Creator in Berlin rendered 8 clips with blurred 9:16 layout', time: '1m ago', country: 'Germany', flag: '🇩🇪' },
-    { id: 4, text: 'Creator in London connected YouTube channel for 1-click publishing', time: '2m ago', country: 'United Kingdom', flag: '🇬🇧' },
-    { id: 5, text: 'Creator in São Paulo generated subtitles in Portuguese & English', time: '3m ago', country: 'Brazil', flag: '🇧🇷' },
-    { id: 6, text: 'Creator in Tokyo exported 5 gaming highlights in 1080p vertical', time: '4m ago', country: 'Japan', flag: '🇯🇵' },
-  ]);
-
-  // Fetch real database metrics and location from API
+  // 1. Gather Real Browser Data & Telemetry
   useEffect(() => {
-    // Initial timezone heuristic
-    const localCountry = detectCountryFromTimezone();
-    if (localCountry) {
-      setUserCountry(localCountry);
-      setSelectedCountry(getCountryDetails(localCountry));
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
+    const lang = typeof navigator !== 'undefined' ? navigator.language : 'en-US';
+    const plat = typeof navigator !== 'undefined' ? navigator.platform : 'Unknown';
+    const scr = typeof window !== 'undefined' ? `${window.screen.width}x${window.screen.height}` : '1920x1080';
+    const onLine = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
+    // Detect country from timezone heuristic
+    let guessedCountry = 'India';
+    let guessedCity = 'Kolkata';
+    if (tz.includes('Kolkata') || tz.includes('Calcutta')) {
+      guessedCountry = 'India';
+      guessedCity = 'Kolkata / Mumbai';
+    } else if (tz.includes('New_York')) {
+      guessedCountry = 'United States';
+      guessedCity = 'New York';
+    } else if (tz.includes('Los_Angeles')) {
+      guessedCountry = 'United States';
+      guessedCity = 'Los Angeles';
+    } else if (tz.includes('Chicago')) {
+      guessedCountry = 'United States';
+      guessedCity = 'Chicago';
+    } else if (tz.includes('Toronto')) {
+      guessedCountry = 'Canada';
+      guessedCity = 'Toronto';
+    } else if (tz.includes('London')) {
+      guessedCountry = 'United Kingdom';
+      guessedCity = 'London';
+    } else if (tz.includes('Berlin')) {
+      guessedCountry = 'Germany';
+      guessedCity = 'Berlin';
+    } else if (tz.includes('Paris')) {
+      guessedCountry = 'France';
+      guessedCity = 'Paris';
+    } else if (tz.includes('Sydney') || tz.includes('Melbourne')) {
+      guessedCountry = 'Australia';
+      guessedCity = 'Sydney';
+    } else if (tz.includes('Sao_Paulo')) {
+      guessedCountry = 'Brazil';
+      guessedCity = 'São Paulo';
+    } else if (tz.includes('Tokyo')) {
+      guessedCountry = 'Japan';
+      guessedCity = 'Tokyo';
     }
 
-    async function loadImpactData() {
+    setBrowserInfo({
+      timezone: tz,
+      language: lang,
+      platform: plat,
+      screen: scr,
+      onLine,
+      detectedCountry: guessedCountry,
+      detectedCity: guessedCity,
+      coords: null,
+      gpsActive: false,
+    });
+
+    setSelectedCountry(getCountryDetails(guessedCountry));
+
+    // Send real telemetry ping to MongoDB
+    async function sendPingAndFetchData() {
       try {
+        // Send real browser ping
+        await fetch('/api/impact/ping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            timezone: tz,
+            language: lang,
+            platform: plat,
+            screen: scr,
+            clientCountry: guessedCountry,
+            clientCity: guessedCity,
+            userId: user?._id || null,
+          }),
+        }).catch(() => {});
+
+        // Fetch real aggregated metrics
         const res = await fetch('/api/impact');
         if (res.ok) {
           const data = await res.json();
-          if (data.stats) {
-            setStatsData(data.stats);
-          }
-          if (data.userLocation?.country) {
-            setUserCountry(data.userLocation.country);
-            setSelectedCountry(getCountryDetails(data.userLocation.country));
-          }
+          if (data.stats) setDbStats(data.stats);
+          if (data.realCountryStats) setRealCountryStats(data.realCountryStats);
+          if (data.liveActivity) setLiveActivity(data.liveActivity);
+          if (data.channels) setConnectedChannels(data.channels);
         }
-      } catch {
-        // Keep initial fallback
+      } catch (err) {
+        console.error('Error fetching real impact data:', err);
+      } finally {
+        setLoadingRealData(false);
       }
     }
-    loadImpactData();
 
-    // Rotate live activity feed periodically
-    const feedInterval = setInterval(() => {
-      const candidates = [
-        { text: 'Creator in Toronto extracted 8 viral moments with AI scoring', country: 'Canada', flag: '🇨🇦' },
-        { text: 'Creator in Sydney clipped 10 interviews into YouTube Shorts', country: 'Australia', flag: '🇦🇺' },
-        { text: 'Creator in Paris rendered 5 clips with MrBeast energy style', country: 'France', flag: '🇫🇷' },
-        { text: 'Creator in Mumbai generated 12 shorts with auto Hindi subtitles', country: 'India', flag: '🇮🇳' },
-        { text: 'Creator in Austin saved 4.5 hours of manual video editing', country: 'United States', flag: '🇺🇸' },
-        { text: 'Creator in Seoul produced 7 vertical shorts in 9:16 layout', country: 'South Korea', flag: '🇰🇷' },
-        { text: 'Creator in Cape Town converted podcast episode into TikTok series', country: 'South Africa', flag: '🇿🇦' },
-      ];
-      const nextItem = candidates[Math.floor(Math.random() * candidates.length)];
-      setActivityFeed((prev) => [
-        { id: Date.now(), text: nextItem.text, time: 'Just now', country: nextItem.country, flag: nextItem.flag },
-        ...prev.slice(0, 5),
-      ]);
-    }, 7000);
+    sendPingAndFetchData();
+  }, [user]);
 
-    return () => clearInterval(feedInterval);
-  }, []);
+  // Request browser GPS position on demand
+  const handleRequestGPS = () => {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const coords = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          setBrowserInfo((prev) => ({
+            ...prev,
+            coords,
+            gpsActive: true,
+          }));
 
-  // Filtered dots
-  const filteredDots = useMemo(() => {
-    return WORLD_GRID_DOTS.map((dot) => {
-      let isDimmed = false;
-      const countryMatch = searchQuery
-        ? dot.country.toLowerCase().includes(searchQuery.toLowerCase())
-        : true;
+          // Send updated coordinates to database
+          await fetch('/api/impact/ping', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              timezone: browserInfo.timezone,
+              language: browserInfo.language,
+              platform: browserInfo.platform,
+              screen: browserInfo.screen,
+              coords,
+              clientCountry: browserInfo.detectedCountry,
+              clientCity: browserInfo.detectedCity,
+              userId: user?._id || null,
+            }),
+          }).catch(() => {});
+        },
+        (err) => {
+          console.warn('Geolocation denied or unavailable:', err.message);
+        }
+      );
+    }
+  };
 
-      if (!countryMatch) {
-        isDimmed = true;
-      } else if (activeTierFilter === 'hotspots') {
-        if (dot.tier !== 3) isDimmed = true;
-      } else if (activeTierFilter === 'steady') {
-        if (dot.tier !== 2) isDimmed = true;
-      } else if (activeTierFilter === 'few') {
-        if (dot.tier !== 1) isDimmed = true;
-      } else if (activeTierFilter === 'my-location') {
-        if (dot.country !== userCountry) isDimmed = true;
-      }
-
-      const isUserLocation = dot.country === userCountry;
-      const isSelected = selectedCountry?.name === dot.country;
-
-      return {
-        ...dot,
-        isDimmed,
-        isUserLocation,
-        isSelected,
-      };
-    });
-  }, [searchQuery, activeTierFilter, userCountry, selectedCountry]);
-
-  // Center coordinate of user's country for the "You are here" beacon
+  // Center coordinate of user's detected country for the "You are here" beacon
   const userCountryBeacon = useMemo(() => {
-    const userDots = WORLD_GRID_DOTS.filter((d) => d.country === userCountry);
+    const userDots = WORLD_GRID_DOTS.filter((d) => d.country === browserInfo.detectedCountry);
     if (!userDots.length) return null;
     const avgX = userDots.reduce((acc, d) => acc + d.x, 0) / userDots.length;
     const avgY = userDots.reduce((acc, d) => acc + d.y, 0) / userDots.length;
     return {
-      x: avgX * 11 + 24,
-      y: avgY * 11 + 24,
-      country: userCountry,
-      details: getCountryDetails(userCountry),
+      x: avgX * 5.8 + 22,
+      y: avgY * 5.8 + 20,
+      country: browserInfo.detectedCountry,
+      city: browserInfo.detectedCity,
+      flag: getCountryFlag(browserInfo.detectedCountry),
     };
-  }, [userCountry]);
+  }, [browserInfo.detectedCountry, browserInfo.detectedCity]);
 
-  // Top 12 countries for the leaderboard cards
-  const topHubs = useMemo(() => {
-    return Object.entries(COUNTRY_STATS)
-      .map(([name, data]) => ({ name, ...data }))
-      .sort((a, b) => b.clips - a.clips)
-      .slice(0, 12);
-  }, []);
+  // Filtered dots
+  const filteredDots = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return WORLD_GRID_DOTS.map((dot) => {
+      let isDimmed = false;
+
+      // Real tier from DB or base reference
+      const realInfo = realCountryStats[dot.country];
+      const effectiveTier = realInfo ? realInfo.tier : dot.tier;
+
+      if (query && !dot.country.toLowerCase().includes(query)) {
+        isDimmed = true;
+      } else if (activeTierFilter === 'hotspots') {
+        if (effectiveTier !== 3) isDimmed = true;
+      } else if (activeTierFilter === 'steady') {
+        if (effectiveTier !== 2) isDimmed = true;
+      } else if (activeTierFilter === 'few') {
+        if (effectiveTier !== 1) isDimmed = true;
+      } else if (activeTierFilter === 'my-location') {
+        if (dot.country !== browserInfo.detectedCountry) isDimmed = true;
+      }
+
+      const isUserLocation = dot.country === browserInfo.detectedCountry;
+
+      return {
+        ...dot,
+        tier: effectiveTier,
+        isDimmed,
+        isUserLocation,
+      };
+    });
+  }, [searchQuery, activeTierFilter, browserInfo.detectedCountry, realCountryStats]);
 
   const handleDotMouseEnter = (dot, e) => {
     setHoveredDot(dot);
@@ -224,16 +263,16 @@ export default function ImpactPage() {
   };
 
   const handleDotClick = (dot) => {
-    const details = getCountryDetails(dot.country);
+    const details = getCountryDetails(dot.country, realCountryStats);
     setSelectedCountry(details);
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0f14] text-[#f6f7f8] flex flex-col font-sans selection:bg-[#dd2222] selection:text-white">
+    <div className="min-h-screen bg-[#06090c] text-[#f6f7f8] flex flex-col font-sans selection:bg-[#dd2222] selection:text-white">
       {/* ======================================================== */}
       {/* HEADER / NAVIGATION                                      */}
       {/* ======================================================== */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-[#11161d]/90 border-b border-[#202731]">
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-[#0d1218]/90 border-b border-[#1b232e]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
             <img
@@ -295,12 +334,13 @@ export default function ImpactPage() {
       {/* ======================================================== */}
       {/* MAIN CONTAINER                                           */}
       {/* ======================================================== */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col gap-10">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col gap-8">
+        
         {/* Top Hero Section */}
         <section className="flex flex-col items-center text-center max-w-3xl mx-auto gap-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#18212c] border border-[#2a3749] text-[11px] font-bold text-[#b9c0ca] uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#111923] border border-[#223144] text-[11px] font-bold text-[#b9c0ca] uppercase tracking-wider">
             <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-ping"></span>
-            <span>Real-Time Global Impact</span>
+            <span>Real Live Studio & Telemetry Data</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
@@ -308,74 +348,107 @@ export default function ImpactPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-[#9aa4b2] leading-relaxed">
-            See how creators and editors worldwide transform longform YouTube videos into high-retention viral shorts.
-            Darker dots denote bustling creator hotspots generating high volume daily.
+            Live analytics pulled directly from your active studio database and connected creators.
+            Darker dots denote creator hotspots with high activity; lighter dots show emerging regions.
           </p>
 
-          {/* User Location Callout Badge */}
-          {userCountryBeacon && (
-            <div className="mt-2 inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#162230] border border-[#2b3d54] text-xs text-[#e1e7f0] shadow-md">
-              <span className="text-base">{userCountryBeacon.details?.flag || '📍'}</span>
-              <span>
-                Detected location: <strong className="text-white font-bold">{userCountry}</strong>
-              </span>
-              <span className="text-[#64748b]">•</span>
-              <span className="text-[#f97316] font-semibold">
-                {userCountryBeacon.details?.label || 'A steady stream'}
-              </span>
+          {/* Real User Browser Detection Banner */}
+          <div className="w-full max-w-2xl bg-[#0f151e] border border-[#202b3b] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{getCountryFlag(browserInfo.detectedCountry)}</span>
+              <div className="text-left">
+                <div className="font-bold text-white flex items-center gap-2">
+                  <span>Connected from {browserInfo.detectedCity}, {browserInfo.detectedCountry}</span>
+                  <span className="px-1.5 py-0.5 rounded bg-[#1e293b] text-[10px] text-[#38bdf8] font-mono">
+                    {browserInfo.timezone}
+                  </span>
+                </div>
+                <div className="text-[11px] text-[#808d9e] mt-0.5">
+                  Device: {browserInfo.platform} • Browser Language: {browserInfo.language} • {browserInfo.screen}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRequestGPS}
+                className="px-3 py-1.5 rounded-lg bg-[#182332] hover:bg-[#202e42] border border-[#293b54] text-[11px] font-semibold text-[#cbd5e1] transition-colors"
+                title="Get precise GPS coordinates from browser"
+              >
+                {browserInfo.gpsActive ? '✓ GPS Active' : '📍 Detect GPS'}
+              </button>
               <button
                 onClick={() => {
                   setActiveTierFilter('my-location');
-                  setSelectedCountry(userCountryBeacon.details);
+                  setSelectedCountry(getCountryDetails(browserInfo.detectedCountry, realCountryStats));
                 }}
-                className="ml-1 text-[11px] underline text-[#f8caa1] hover:text-white transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-[#dd2222] hover:bg-[#b81d1d] text-white text-[11px] font-bold shadow-md transition-colors"
               >
-                Highlight on map
+                Locate Me
               </button>
             </div>
-          )}
+          </div>
         </section>
 
-        {/* Global Impact Key Stat Cards */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-          <div className="bg-[#121720] border border-[#212936] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm hover:border-[#374457] transition-colors">
-            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider">Clips Rendered</div>
-            <div className="text-2xl sm:text-3xl font-black text-white">
-              {statsData.totalClips.toLocaleString()}+
+        {/* 100% REAL DATABASE METRICS BAR */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
+            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
+              <span>Real Clips in DB</span>
+              <span className="w-2 h-2 rounded-full bg-[#22c55e]"></span>
             </div>
-            <div className="text-[11px] text-[#22c55e] font-medium flex items-center gap-1">
-              <span>↑ 100% Free</span>
-              <span className="text-[#64748b]">No Watermarks</span>
+            <div className="text-2xl sm:text-3xl font-black text-white">
+              {dbStats.totalClips} Clips
+            </div>
+            <div className="text-[11px] text-[#9aa4b2] flex items-center gap-2">
+              <span className="text-[#22c55e] font-semibold">{dbStats.completedClips} Completed</span>
+              <span>•</span>
+              <span className="text-[#f59e0b] font-semibold">{dbStats.pendingClips} In Queue</span>
             </div>
           </div>
 
-          <div className="bg-[#121720] border border-[#212936] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm hover:border-[#374457] transition-colors">
-            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider">Countries Lit Up</div>
+          <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
+            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
+              <span>Connected Channels</span>
+              <span className="text-xs">📺</span>
+            </div>
             <div className="text-2xl sm:text-3xl font-black text-[#ea7635]">
-              {statsData.countriesLitUp}+
+              {dbStats.connectedChannels} Active
             </div>
-            <div className="text-[11px] text-[#9aa4b2]">Across 6 Continents</div>
+            <div className="text-[11px] text-[#9aa4b2] truncate">
+              {connectedChannels.map((c) => c.channelTitle).join(', ') || 'Ready to Connect'}
+            </div>
           </div>
 
-          <div className="bg-[#121720] border border-[#212936] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm hover:border-[#374457] transition-colors">
-            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider">Editing Hours Saved</div>
-            <div className="text-2xl sm:text-3xl font-black text-[#f8caa1]">
-              {statsData.hoursSaved.toLocaleString()}+ hrs
+          <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
+            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
+              <span>Video Duration</span>
+              <span className="text-xs">⏱️</span>
             </div>
-            <div className="text-[11px] text-[#9aa4b2]">AI Clip Detection</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#d3a06e]">
+              {dbStats.totalSeconds}s
+            </div>
+            <div className="text-[11px] text-[#9aa4b2]">
+              Processed across {dbStats.totalProjects} Studio Projects
+            </div>
           </div>
 
-          <div className="bg-[#121720] border border-[#212936] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm hover:border-[#374457] transition-colors">
-            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider">Creators Empowered</div>
+          <div className="bg-[#0d1219] border border-[#1b2532] rounded-2xl p-4 sm:p-5 flex flex-col gap-1 shadow-sm">
+            <div className="text-xs font-semibold text-[#8b97a8] uppercase tracking-wider flex items-center justify-between">
+              <span>Visitor Telemetry</span>
+              <span className="text-xs">👥</span>
+            </div>
             <div className="text-2xl sm:text-3xl font-black text-white">
-              {statsData.totalCreators.toLocaleString()}+
+              {dbStats.totalVisitors} Sessions
             </div>
-            <div className="text-[11px] text-[#9aa4b2]">Worldwide Community</div>
+            <div className="text-[11px] text-[#38bdf8] font-medium">
+              Real telemetry recorded in MongoDB
+            </div>
           </div>
         </section>
 
         {/* ======================================================== */}
-        {/* WORLD MAP SECTION - EXACT REFERENCE GITHUB GRID DESIGN  */}
+        {/* REFINED HIGH-RESOLUTION WORLD MAP (158 x 76 Grid)        */}
         {/* ======================================================== */}
         <section className="flex flex-col gap-4">
           {/* Controls Bar */}
@@ -394,8 +467,8 @@ export default function ImpactPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search country (e.g. India, United States)..."
-                className="w-full bg-[#111720] border border-[#232d3d] focus:border-[#dd2222] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-[#606d80] outline-none transition-colors"
+                placeholder="Search refined map (e.g. India, United States)..."
+                className="w-full bg-[#0d1219] border border-[#1f2937] focus:border-[#dd2222] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-[#606d80] outline-none transition-colors"
               />
               {searchQuery && (
                 <button
@@ -414,55 +487,53 @@ export default function ImpactPage() {
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${
                   activeTierFilter === 'all'
                     ? 'bg-white text-black font-bold'
-                    : 'bg-[#151c27] text-[#9aa4b2] hover:text-white border border-[#253041]'
+                    : 'bg-[#121822] text-[#9aa4b2] hover:text-white border border-[#202b3b]'
                 }`}
               >
-                All Dots
+                All 3,795 Dots
               </button>
               <button
                 onClick={() => setActiveTierFilter('hotspots')}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   activeTierFilter === 'hotspots'
-                    ? 'bg-[#b83a1b] text-white font-bold'
-                    : 'bg-[#151c27] text-[#9aa4b2] hover:text-white border border-[#253041]'
+                    ? 'bg-[#9d350f] text-white font-bold'
+                    : 'bg-[#121822] text-[#9aa4b2] hover:text-white border border-[#202b3b]'
                 }`}
               >
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#b83a1b]"></span>
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#9d350f]"></span>
                 <span>Hotspots</span>
               </button>
               <button
                 onClick={() => setActiveTierFilter('steady')}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   activeTierFilter === 'steady'
-                    ? 'bg-[#ea7635] text-white font-bold'
-                    : 'bg-[#151c27] text-[#9aa4b2] hover:text-white border border-[#253041]'
+                    ? 'bg-[#dd661a] text-white font-bold'
+                    : 'bg-[#121822] text-[#9aa4b2] hover:text-white border border-[#202b3b]'
                 }`}
               >
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#ea7635]"></span>
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#dd661a]"></span>
                 <span>Steady Stream</span>
               </button>
               <button
                 onClick={() => setActiveTierFilter('few')}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   activeTierFilter === 'few'
-                    ? 'bg-[#f8caa1] text-black font-bold'
-                    : 'bg-[#151c27] text-[#9aa4b2] hover:text-white border border-[#253041]'
+                    ? 'bg-[#d3a06e] text-black font-bold'
+                    : 'bg-[#121822] text-[#9aa4b2] hover:text-white border border-[#202b3b]'
                 }`}
               >
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#f8caa1]"></span>
-                <span>A Few Users</span>
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#d3a06e]"></span>
+                <span>A Few Downloads</span>
               </button>
               <button
                 onClick={() => {
                   setActiveTierFilter('my-location');
-                  if (userCountryBeacon?.details) {
-                    setSelectedCountry(userCountryBeacon.details);
-                  }
+                  setSelectedCountry(getCountryDetails(browserInfo.detectedCountry, realCountryStats));
                 }}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   activeTierFilter === 'my-location'
                     ? 'bg-[#dd2222] text-white font-bold'
-                    : 'bg-[#151c27] text-[#9aa4b2] hover:text-white border border-[#253041]'
+                    : 'bg-[#121822] text-[#9aa4b2] hover:text-white border border-[#202b3b]'
                 }`}
               >
                 <span>📍 My Location</span>
@@ -470,41 +541,40 @@ export default function ImpactPage() {
             </div>
           </div>
 
-          {/* The World Map Card */}
+          {/* The Refined World Map Container */}
           <div
             ref={mapContainerRef}
             onMouseMove={handleDotMouseMove}
             onMouseLeave={() => setHoveredDot(null)}
-            className="relative bg-[#080d11] border border-[#1a232e] rounded-3xl p-4 sm:p-7 shadow-2xl overflow-hidden flex flex-col gap-6"
+            className="relative bg-[#040608] border border-[#161d26] rounded-3xl p-4 sm:p-6 shadow-2xl overflow-hidden flex flex-col gap-5"
           >
-            {/* SVG Grid Map */}
+            {/* SVG Refined Grid (960 x 480 ViewBox) */}
             <div className="w-full overflow-x-auto pb-2">
               <svg
-                viewBox="0 0 865 440"
-                className="w-full min-w-[700px] h-auto select-none transition-all"
-                style={{ filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.5))' }}
+                viewBox="0 0 960 480"
+                className="w-full min-w-[760px] h-auto select-none transition-all"
+                style={{ filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.6))' }}
               >
                 <defs>
-                  {/* Subtle radial glow under intense hotspots */}
-                  <radialGradient id="hotspotGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#b83a1b" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#080d11" stopOpacity="0" />
+                  {/* Subtle radial glow under India & active hotspots */}
+                  <radialGradient id="indiaGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#9d350f" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#040608" stopOpacity="0" />
                   </radialGradient>
                 </defs>
 
                 {/* Background glow behind India */}
-                <ellipse cx="605" cy="180" rx="40" ry="40" fill="url(#hotspotGlow)" />
-                {/* Background glow behind US */}
-                <ellipse cx="180" cy="120" rx="60" ry="45" fill="url(#hotspotGlow)" />
+                <ellipse cx="660" cy="220" rx="35" ry="40" fill="url(#indiaGlow)" />
 
-                {/* Render All 908 Dots */}
+                {/* Render All 3,795 Refined Dots */}
                 <g>
                   {filteredDots.map((dot, idx) => {
                     const tierConf = TIER_CONFIG[dot.tier] || TIER_CONFIG[0];
-                    const cx = dot.x * 11 + 24;
-                    const cy = dot.y * 11 + 24;
+                    const cx = dot.x * 5.8 + 22;
+                    const cy = dot.y * 5.8 + 20;
+
                     const isHovered = hoveredDot?.x === dot.x && hoveredDot?.y === dot.y;
-                    const isSameCountryAsHovered = hoveredDot && hoveredDot.country === dot.country;
+                    const isSameCountry = hoveredDot && hoveredDot.country === dot.country;
 
                     let fill = tierConf.color;
                     let stroke = 'transparent';
@@ -512,17 +582,17 @@ export default function ImpactPage() {
                     let opacity = 1;
 
                     if (dot.isDimmed) {
-                      opacity = 0.15;
+                      opacity = 0.12;
                     }
 
                     if (dot.isUserLocation && activeTierFilter === 'my-location') {
                       stroke = '#ffffff';
-                      strokeWidth = 1.2;
+                      strokeWidth = 1.0;
                     }
 
-                    if (isSameCountryAsHovered) {
+                    if (isSameCountry) {
                       stroke = '#ffffff';
-                      strokeWidth = 1;
+                      strokeWidth = 0.8;
                       fill = tierConf.hoverColor;
                     }
 
@@ -535,16 +605,16 @@ export default function ImpactPage() {
                     return (
                       <rect
                         key={`${dot.x}-${dot.y}-${idx}`}
-                        x={cx - 3.8}
-                        y={cy - 3.8}
-                        width={7.6}
-                        height={7.6}
-                        rx={1.6}
+                        x={cx - 2.3}
+                        y={cy - 2.3}
+                        width={4.6}
+                        height={4.6}
+                        rx={1.0}
                         fill={fill}
                         stroke={stroke}
                         strokeWidth={strokeWidth}
                         opacity={opacity}
-                        className="cursor-pointer transition-all duration-150"
+                        className="cursor-pointer transition-all duration-100"
                         onMouseEnter={(e) => handleDotMouseEnter(dot, e)}
                         onClick={() => handleDotClick(dot)}
                       />
@@ -553,7 +623,7 @@ export default function ImpactPage() {
                 </g>
 
                 {/* Animated Pulsing Beacon for User's Detected Location */}
-                {userCountryBeacon && !filteredDots.find((d) => d.country === userCountry)?.isDimmed && (
+                {userCountryBeacon && !filteredDots.find((d) => d.country === browserInfo.detectedCountry)?.isDimmed && (
                   <g pointerEvents="none">
                     {/* Outer ripple ring */}
                     <circle
@@ -563,18 +633,17 @@ export default function ImpactPage() {
                       fill="none"
                       stroke="#dd2222"
                       strokeWidth="1.5"
-                      opacity="0.8"
                     >
                       <animate
                         attributeName="r"
-                        values="6; 22; 6"
-                        dur="2.5s"
+                        values="5; 22; 5"
+                        dur="2.4s"
                         repeatCount="indefinite"
                       />
                       <animate
                         attributeName="opacity"
                         values="0.9; 0; 0.9"
-                        dur="2.5s"
+                        dur="2.4s"
                         repeatCount="indefinite"
                       />
                     </circle>
@@ -585,22 +654,21 @@ export default function ImpactPage() {
                       cy={userCountryBeacon.y}
                       r="6"
                       fill="none"
-                      stroke="#ea7635"
+                      stroke="#dd661a"
                       strokeWidth="1.2"
-                      opacity="0.6"
                     >
                       <animate
                         attributeName="r"
-                        values="4; 16; 4"
-                        dur="2.5s"
-                        begin="0.8s"
+                        values="3; 14; 3"
+                        dur="2.4s"
+                        begin="0.7s"
                         repeatCount="indefinite"
                       />
                       <animate
                         attributeName="opacity"
                         values="0.8; 0; 0.8"
-                        dur="2.5s"
-                        begin="0.8s"
+                        dur="2.4s"
+                        begin="0.7s"
                         repeatCount="indefinite"
                       />
                     </circle>
@@ -616,22 +684,22 @@ export default function ImpactPage() {
                     />
 
                     {/* Floating Callout Pin */}
-                    <g transform={`translate(${userCountryBeacon.x - 38}, ${userCountryBeacon.y - 28})`}>
+                    <g transform={`translate(${userCountryBeacon.x - 38}, ${userCountryBeacon.y - 26})`}>
                       <rect
                         width="76"
-                        height="20"
-                        rx="5"
-                        fill="#121720"
+                        height="18"
+                        rx="4"
+                        fill="#0d1218"
                         stroke="#dd2222"
                         strokeWidth="1"
-                        filter="drop-shadow(0 2px 5px rgba(0,0,0,0.7))"
+                        filter="drop-shadow(0 2px 5px rgba(0,0,0,0.8))"
                       />
                       <text
                         x="38"
-                        y="13"
+                        y="12"
                         textAnchor="middle"
                         fill="#ffffff"
-                        fontSize="9"
+                        fontSize="8.5"
                         fontWeight="bold"
                         fontFamily="sans-serif"
                       >
@@ -648,79 +716,81 @@ export default function ImpactPage() {
               <div
                 className="absolute z-30 pointer-events-none transition-all duration-75"
                 style={{
-                  left: `${Math.min(tooltipPos.x + 12, 620)}px`,
-                  top: `${Math.max(tooltipPos.y - 80, 10)}px`,
+                  left: `${Math.min(tooltipPos.x + 12, 700)}px`,
+                  top: `${Math.max(tooltipPos.y - 85, 10)}px`,
                 }}
               >
                 {(() => {
-                  const details = getCountryDetails(hoveredDot.country);
-                  const isUser = hoveredDot.country === userCountry;
+                  const details = getCountryDetails(hoveredDot.country, realCountryStats);
+                  const isUser = hoveredDot.country === browserInfo.detectedCountry;
                   const tier = TIER_CONFIG[hoveredDot.tier] || TIER_CONFIG[0];
                   return (
-                    <div className="bg-[#121822]/95 backdrop-blur-md border border-[#273243] rounded-xl p-3 shadow-2xl text-xs flex flex-col gap-1 min-w-[190px]">
-                      <div className="flex items-center justify-between gap-2 border-b border-[#222c3b] pb-1.5">
+                    <div className="bg-[#0e131b]/95 backdrop-blur-md border border-[#222c3b] rounded-xl p-3 shadow-2xl text-xs flex flex-col gap-1 min-w-[200px]">
+                      <div className="flex items-center justify-between gap-2 border-b border-[#1f2836] pb-1.5">
                         <div className="flex items-center gap-1.5 font-bold text-white text-sm">
-                          <span>{details?.flag || '🌍'}</span>
+                          <span>{details.flag}</span>
                           <span>{hoveredDot.country}</span>
                         </div>
                         {isUser && (
                           <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-[#380e0e] text-[#dd2222] border border-[#dd2222]/40">
-                            You
+                            Your Region
                           </span>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between text-[11px] pt-0.5">
-                        <span className="text-[#8895a7]">Status:</span>
+                        <span className="text-[#8895a7]">Activity Tier:</span>
                         <span className="font-semibold" style={{ color: tier.color }}>
                           {tier.label}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-[#8895a7]">Active Creators:</span>
+                        <span className="text-[#8895a7]">Recorded Visits:</span>
                         <span className="text-white font-semibold">
-                          {details?.users ? details.users.toLocaleString() : 'Growing'}
+                          {details.visits}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-[#8895a7]">Clips Rendered:</span>
-                        <span className="text-[#f8caa1] font-semibold">
-                          {details?.clips ? details.clips.toLocaleString() : 'Available'}
-                        </span>
-                      </div>
+                      {hoveredDot.country === 'India' && (
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-[#8895a7]">Studio Clips:</span>
+                          <span className="text-[#d3a06e] font-semibold">
+                            {dbStats.totalClips} generated
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
               </div>
             )}
 
-            {/* Bottom Legend Matching Reference Image */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-3 border-t border-[#1a232e] text-xs text-[#8c97a5]">
+            {/* Bottom Legend (Matching Uploaded Reference Image) */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-3 border-t border-[#161d26] text-xs text-[#8c97a5]">
               {/* Left Legend Items */}
               <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-[2px] bg-[#133833] inline-block border border-[#18453e]"></span>
+                  <span className="w-3 h-3 rounded-[2px] bg-[#10453f] inline-block border border-[#14534c]"></span>
                   <span className="text-[#8895a7]">No downloads yet</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-[2px] bg-[#f8caa1] inline-block"></span>
+                  <span className="w-3 h-3 rounded-[2px] bg-[#d3a06e] inline-block"></span>
                   <span className="text-[#d1d5db]">A few downloads</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-[2px] bg-[#ea7635] inline-block"></span>
+                  <span className="w-3 h-3 rounded-[2px] bg-[#dd661a] inline-block"></span>
                   <span className="text-[#d1d5db]">A steady stream</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-[2px] bg-[#b83a1b] inline-block"></span>
+                  <span className="w-3 h-3 rounded-[2px] bg-[#9d350f] inline-block"></span>
                   <span className="text-[#d1d5db]">A hotspot</span>
                 </div>
               </div>
 
-              {/* Right Lit-up count */}
+              {/* Right Count */}
               <div className="text-xs sm:text-sm font-semibold text-[#8c97a5] font-mono">
-                <strong className="text-white font-bold">{statsData.countriesLitUp}</strong> countries lit up so far
+                <strong className="text-white font-bold">{dbStats.countriesLitUp}</strong> countries lit up so far
               </div>
             </div>
           </div>
@@ -728,9 +798,9 @@ export default function ImpactPage() {
 
         {/* Selected Country Spotlight Banner */}
         {selectedCountry && (
-          <section className="bg-[#121721] border border-[#253042] rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg">
+          <section className="bg-[#0d1219] border border-[#1e2736] rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg">
             <div className="flex items-center gap-4">
-              <span className="text-3xl sm:text-4xl">{selectedCountry.flag || '🌍'}</span>
+              <span className="text-3xl sm:text-4xl">{selectedCountry.flag}</span>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-bold text-white">{selectedCountry.name}</h3>
@@ -740,147 +810,105 @@ export default function ImpactPage() {
                       backgroundColor:
                         selectedCountry.tier === 3 ? '#360c0c' : selectedCountry.tier === 2 ? '#331908' : '#241f17',
                       color:
-                        selectedCountry.tier === 3 ? '#dd2222' : selectedCountry.tier === 2 ? '#f97316' : '#f8caa1',
+                        selectedCountry.tier === 3 ? '#dd2222' : selectedCountry.tier === 2 ? '#f97316' : '#d3a06e',
                     }}
                   >
                     {selectedCountry.label}
                   </span>
-                  {selectedCountry.name === userCountry && (
+                  {selectedCountry.name === browserInfo.detectedCountry && (
                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#1e3a8a] text-blue-300">
                       Your Region 📍
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-[#9aa4b2] mt-0.5">
-                  Primary Hub: <strong className="text-white">{selectedCountry.city || selectedCountry.name}</strong> • Active Community Growth
+                  Primary Location: <strong className="text-white">{selectedCountry.city}</strong> • Real Activity Logged
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-6 sm:gap-8 text-xs">
               <div>
-                <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Estimated Creators</div>
+                <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Recorded Visits</div>
                 <div className="text-base sm:text-lg font-bold text-white">
-                  {selectedCountry.users ? selectedCountry.users.toLocaleString() : '1,200+'}
+                  {selectedCountry.visits}
                 </div>
               </div>
-              <div>
-                <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Total Clips Generated</div>
-                <div className="text-base sm:text-lg font-bold text-[#f8caa1]">
-                  {selectedCountry.clips ? selectedCountry.clips.toLocaleString() : '4,800+'}
+              {selectedCountry.name === 'India' && (
+                <div>
+                  <div className="text-[#7d8b9d] uppercase tracking-wider text-[10px]">Real Clips in DB</div>
+                  <div className="text-base sm:text-lg font-bold text-[#d3a06e]">
+                    {dbStats.totalClips}
+                  </div>
                 </div>
-              </div>
+              )}
               <Link
                 href="/dashboard"
                 className="px-4 py-2 btn-primary text-xs font-bold rounded-lg shadow whitespace-nowrap"
               >
-                Clip Now →
+                Open Studio →
               </Link>
             </div>
           </section>
         )}
 
         {/* ======================================================== */}
-        {/* TOP REGIONAL HUBS LEADERBOARD                            */}
+        {/* REAL ACTIVITY FEED (ACTUAL DATABASE CLIPS & CHANNELS)    */}
         {/* ======================================================== */}
-        <section className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Top Creator Hubs</h2>
-              <p className="text-xs sm:text-sm text-[#8c97a5]">
-                Countries driving the highest clip volume and viral distribution on TikTok, Reels & Shorts.
-              </p>
-            </div>
-            <span className="text-xs font-semibold text-[#8c97a5]">Ranked by Volume</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {topHubs.map((hub, index) => {
-              const isUser = hub.name === userCountry;
-              return (
-                <div
-                  key={hub.name}
-                  onClick={() => {
-                    setSelectedCountry(hub);
-                    setSearchQuery(hub.name);
-                    mapContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }}
-                  className={`bg-[#10151c] border rounded-2xl p-4 flex flex-col justify-between gap-3 cursor-pointer hover:border-[#dd2222]/50 hover:bg-[#151c27] transition-all group ${
-                    isUser ? 'border-[#dd2222] shadow-md shadow-[#dd2222]/10' : 'border-[#1e2634]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{hub.flag}</span>
-                      <div>
-                        <div className="text-xs font-bold text-white group-hover:text-[#dd2222] transition-colors">
-                          {hub.name}
-                        </div>
-                        <div className="text-[10px] text-[#718096]">{hub.city}</div>
-                      </div>
-                    </div>
-                    <span className="text-xs font-mono font-bold text-[#556375]">#{index + 1}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs pt-2 border-t border-[#1c2430]">
-                    <div>
-                      <div className="text-[10px] text-[#718096]">Clips</div>
-                      <div className="font-bold text-white">{hub.clips.toLocaleString()}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] text-[#718096]">Creators</div>
-                      <div className="font-bold text-[#f8caa1]">{hub.users.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ======================================================== */}
-        {/* LIVE REAL-TIME CREATOR ACTIVITY TICKER                   */}
-        {/* ======================================================== */}
-        <section className="bg-[#0f141a] border border-[#1d2532] rounded-2xl p-5 flex flex-col gap-3">
-          <div className="flex items-center justify-between border-b border-[#1c2430] pb-3">
+        <section className="bg-[#0b0f15] border border-[#18212c] rounded-2xl p-5 flex flex-col gap-3">
+          <div className="flex items-center justify-between border-b border-[#18212c] pb-3">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#22c55e] animate-pulse"></span>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Live Creator Activity Stream</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                Live Studio Activity (Real MongoDB Records)
+              </h3>
             </div>
-            <span className="text-[11px] text-[#6e7d91]">Updating live</span>
+            <span className="text-[11px] text-[#6e7d91]">Real Time</span>
           </div>
 
           <div className="flex flex-col gap-2">
-            {activityFeed.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between text-xs py-1.5 px-2 rounded-lg hover:bg-[#151c27] transition-colors"
-              >
-                <div className="flex items-center gap-2 text-[#d1d5db]">
-                  <span className="text-sm">{item.flag}</span>
-                  <span>{item.text}</span>
+            {liveActivity.length > 0 ? (
+              liveActivity.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between text-xs py-2 px-3 rounded-lg hover:bg-[#121822] transition-colors border border-transparent hover:border-[#1e293b]"
+                >
+                  <div className="flex items-center gap-2.5 text-[#d1d5db]">
+                    <span className="text-base">{item.icon}</span>
+                    <span className="font-semibold text-white">{item.title}</span>
+                    <span className="text-[#64748b]">•</span>
+                    <span className="text-[#94a3b8]">{item.action}</span>
+                    {item.duration && (
+                      <span className="px-1.5 py-0.5 rounded bg-[#1e293b] text-[10px] text-[#38bdf8] font-mono">
+                        {item.duration}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-[#6b7280] font-mono whitespace-nowrap ml-3">
+                    {item.timestamp}
+                  </span>
                 </div>
-                <span className="text-[10px] text-[#6b7280] font-mono whitespace-nowrap ml-3">
-                  {item.time}
-                </span>
+              ))
+            ) : (
+              <div className="text-xs text-[#718096] py-3 text-center">
+                Generating clips in the studio will immediately display here in real time.
               </div>
-            ))}
+            )}
           </div>
         </section>
 
         {/* ======================================================== */}
         {/* CALL TO ACTION                                           */}
         {/* ======================================================== */}
-        <section className="bg-[#12161d] border border-[#212a38] rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 shadow-xl">
+        <section className="bg-[#0e131b] border border-[#1d2736] rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-4 shadow-xl">
           <div className="w-12 h-12 rounded-2xl bg-[#360c0c] border border-[#dd2222]/50 flex items-center justify-center text-xl text-[#dd2222]">
-            🌍
+            🎬
           </div>
           <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            Put Your Content On The Map
+            Generate Real Viral Clips Now
           </h2>
           <p className="text-sm sm:text-base text-[#9aa4b2] max-w-xl">
-            Start clipping YouTube podcasts, webinars, and gaming streams into high-retention shorts.
-            Completely free forever with your own API keys.
+            Paste any YouTube video link, select duration and layouts (9:16 or blurred background), and let AI generate ready-to-publish shorts.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Link
@@ -891,10 +919,10 @@ export default function ImpactPage() {
               <span>→</span>
             </Link>
             <Link
-              href="/#features"
-              className="px-5 py-3 rounded-xl bg-[#18212c] hover:bg-[#1e2a39] text-xs font-semibold text-white border border-[#283649] transition-colors"
+              href="/workspaces"
+              className="px-5 py-3 rounded-xl bg-[#141b24] hover:bg-[#1b2533] text-xs font-semibold text-white border border-[#243142] transition-colors"
             >
-              Explore Features
+              View Workspaces
             </Link>
           </div>
         </section>
@@ -903,7 +931,7 @@ export default function ImpactPage() {
       {/* ======================================================== */}
       {/* FOOTER                                                   */}
       {/* ======================================================== */}
-      <footer className="w-full border-t border-[#1e2632] bg-[#0c1015] py-10 px-4 sm:px-6 lg:px-8 mt-12">
+      <footer className="w-full border-t border-[#18212c] bg-[#070a0e] py-10 px-4 sm:px-6 lg:px-8 mt-12">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-[#8c97a5]">
           <div className="flex items-center gap-3">
             <span className="font-extrabold text-white text-base">
@@ -932,7 +960,7 @@ export default function ImpactPage() {
           </div>
 
           <div className="text-[11px] text-[#64748b]">
-            &copy; {new Date().getFullYear()} clip.studio • Made for global creators
+            &copy; {new Date().getFullYear()} clip.studio • Live Real-Time Data
           </div>
         </div>
       </footer>
