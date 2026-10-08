@@ -3,7 +3,6 @@ import Clip from '@/models/Clip';
 import Project from '@/models/Project';
 import { downloadVideoClip, generateAssSubtitles, renderFinalShort } from '@/lib/video';
 import { extractServerConfig } from '@/lib/serverConfig';
-import { transliterateTranscript } from '@/lib/transliterate';
 import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
@@ -58,26 +57,12 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
     }
 
-    // Update status to rendering and store editor customization settings
+    // Update status to rendering and ensure subtitles are disabled
     clip.status = 'rendering';
-    if (typeof enableSubtitles === 'boolean') {
-      clip.enableSubtitles = enableSubtitles;
-    }
-    if (captionStyle) {
-      clip.captionStyle = captionStyle;
-      if (captionStyle === 'none') {
-        clip.enableSubtitles = false;
-      }
-    }
-    if (clip.enableSubtitles === false) {
-      clip.captionStyle = 'none';
-    }
+    clip.enableSubtitles = false;
+    clip.captionStyle = 'none';
     clip.cropFocus = cropFocus || clip.cropFocus || 'auto';
-    clip.captionLanguage = captionLanguage || clip.captionLanguage || 'original';
     clip.renderFormat = renderFormat || clip.renderFormat || 'vertical';
-
-    if (typeof captionYPercent === 'number') clip.captionYPercent = captionYPercent;
-    if (captionAlign) clip.captionAlign = captionAlign;
 
     if (typeof overlayText === 'string') clip.overlayText = overlayText;
     if (typeof overlayTextOpacity === 'number') clip.overlayTextOpacity = overlayTextOpacity;
@@ -86,15 +71,6 @@ export async function POST(req, { params }) {
     if (overlayTextSize) clip.overlayTextSize = overlayTextSize;
     if (typeof overlayTextBg === 'boolean') clip.overlayTextBg = overlayTextBg;
     
-    if (transcript) {
-      if (clip.captionLanguage === 'hinglish') {
-        clip.hinglishTranscript = transliterateTranscript(transcript);
-      } else if (clip.captionLanguage === 'english') {
-        clip.englishTranscript = transcript;
-      } else {
-        clip.transcript = transcript;
-      }
-    }
     await clip.save();
 
     // Ensure output directories exist in public folder
@@ -113,72 +89,59 @@ export async function POST(req, { params }) {
     const tempAssFileName = `sub-${id}.ass`;
     const tempVideoPath = path.join(tempDir, tempVideoFileName);
     const tempAssPath = path.join(tempDir, tempAssFileName);
-    const relativeAssPath = `public/temp/${tempAssFileName}`;
 
     const verticalFileName = `${id}-vertical.mp4`;
     const horizontalFileName = `${id}-horizontal.mp4`;
     const verticalPath = path.join(outputsDir, verticalFileName);
     const horizontalPath = path.join(outputsDir, horizontalFileName);
 
-    console.log(`RENDER API: Starting download section for clip ${id} (${clip.start}s to ${clip.end}s) using yt-dlp path: ${ytDlpPath}`);
-    // Step 1: Download clip section using yt-dlp
-    await downloadVideoClip(project.url, clip.start, clip.end, tempVideoPath, ytDlpPath, ffmpegPath);
+    // Speed Optimization: Reuse cached video clip if already downloaded for preview
+    const cachedPreviewFileName = `${id}-preview.mp4`;
+    const cachedPreviewPath = path.join(outputsDir, cachedPreviewFileName);
 
-    // Retrieve active transcript for captions
-    let activeTranscript = clip.transcript;
-    if (clip.captionLanguage === 'hinglish') {
-      const source = (clip.hinglishTranscript && clip.hinglishTranscript.length > 0)
-        ? clip.hinglishTranscript
-        : clip.transcript;
-      activeTranscript = transliterateTranscript(source);
-    } else if (clip.captionLanguage === 'english' && clip.englishTranscript && clip.englishTranscript.length > 0) {
-      activeTranscript = clip.englishTranscript;
+    if (fs.existsSync(cachedPreviewPath) && fs.statSync(cachedPreviewPath).size > 10000) {
+      console.log(`RENDER API: Reusing cached video segment ${cachedPreviewFileName} for instant rendering.`);
+      fs.copyFileSync(cachedPreviewPath, tempVideoPath);
+    } else {
+      console.log(`RENDER API: Downloading clip section for clip ${id} (${clip.start}s to ${clip.end}s)...`);
+      await downloadVideoClip(project.url, clip.start, clip.end, tempVideoPath, ytDlpPath, ffmpegPath);
+      try {
+        fs.copyFileSync(tempVideoPath, cachedPreviewPath);
+      } catch (cacheErr) {
+        // ignore
+      }
     }
 
-    const isSubtitlesEnabled = clip.enableSubtitles !== false && clip.captionStyle !== 'none';
-    const effectiveCaptionStyle = isSubtitlesEnabled ? (clip.captionStyle || 'hormozi') : 'none';
+    // Text Overlay options (if user added custom text overlay)
+    const hasOverlay = Boolean(clip.overlayText && clip.overlayText.trim());
+    const relativeAssPath = hasOverlay ? `public/temp/${tempAssFileName}` : null;
 
-    const assOptions = {
-      enableSubtitles: isSubtitlesEnabled,
-      captionYPercent: clip.captionYPercent,
-      captionAlign: clip.captionAlign,
-      overlayText: clip.overlayText,
-      overlayTextOpacity: clip.overlayTextOpacity,
-      overlayTextYPercent: clip.overlayTextYPercent,
-      overlayTextColor: clip.overlayTextColor,
-      overlayTextSize: clip.overlayTextSize,
-      overlayTextBg: clip.overlayTextBg
-    };
+    if (hasOverlay) {
+      const assOptions = {
+        enableSubtitles: false,
+        overlayText: clip.overlayText,
+        overlayTextOpacity: clip.overlayTextOpacity,
+        overlayTextYPercent: clip.overlayTextYPercent,
+        overlayTextColor: clip.overlayTextColor,
+        overlayTextSize: clip.overlayTextSize,
+        overlayTextBg: clip.overlayTextBg
+      };
 
-    // Step 2: Render Vertical Layout if selected (with auto speaker tracking)
+      const assContent = generateAssSubtitles([], clip.start, clip.end, 'none', false, assOptions);
+      fs.writeFileSync(tempAssPath, assContent, 'utf8');
+    }
+
+    // Step 2: Render Vertical Layout if selected (fast camera framing, no subtitles)
     if (clip.renderFormat === 'vertical' || clip.renderFormat === 'both') {
-      console.log(`RENDER API: Rendering vertical layout with cropFocus=${clip.cropFocus}, enableSubtitles=${isSubtitlesEnabled}...`);
-      const assContentVertical = generateAssSubtitles(
-        activeTranscript,
-        clip.start,
-        clip.end,
-        effectiveCaptionStyle,
-        false,
-        assOptions
-      );
-      fs.writeFileSync(tempAssPath, assContentVertical, 'utf8');
-      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, effectiveCaptionStyle, verticalPath, false, ffmpegPath);
+      console.log(`RENDER API: High-speed rendering vertical layout with cropFocus=${clip.cropFocus}...`);
+      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, 'none', verticalPath, false, ffmpegPath);
       clip.videoPathVertical = `/outputs/${verticalFileName}`;
     }
 
     // Step 3: Render Horizontal Layout if selected
     if (clip.renderFormat === 'horizontal' || clip.renderFormat === 'both') {
-      console.log(`RENDER API: Rendering horizontal layout with ffmpeg: ${ffmpegPath}, enableSubtitles=${isSubtitlesEnabled}...`);
-      const assContentHorizontal = generateAssSubtitles(
-        activeTranscript,
-        clip.start,
-        clip.end,
-        effectiveCaptionStyle,
-        true,
-        assOptions
-      );
-      fs.writeFileSync(tempAssPath, assContentHorizontal, 'utf8');
-      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, effectiveCaptionStyle, horizontalPath, true, ffmpegPath);
+      console.log(`RENDER API: High-speed rendering horizontal layout...`);
+      await renderFinalShort(tempVideoPath, relativeAssPath, clip.cropFocus, 'none', horizontalPath, true, ffmpegPath);
       clip.videoPathHorizontal = `/outputs/${horizontalFileName}`;
     }
 

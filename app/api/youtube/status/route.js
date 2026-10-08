@@ -20,15 +20,22 @@ export async function GET(req) {
 
     const account = await YouTubeAccount.findOne({ isConnected: true, userId: session.id });
 
+    const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+    const googleProjectId = googleClientId.includes('-') ? googleClientId.split('-')[0] : null;
+
     if (!account) {
       return NextResponse.json({
         connected: false,
         account: null,
+        isConfigured: Boolean(googleClientId && process.env.GOOGLE_CLIENT_SECRET),
+        googleProjectId,
       });
     }
 
     return NextResponse.json({
       connected: true,
+      isConfigured: Boolean(googleClientId && process.env.GOOGLE_CLIENT_SECRET),
+      googleProjectId,
       account: {
         channelId: account.channelId,
         channelTitle: account.channelTitle,

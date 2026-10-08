@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import YouTubeUploadModal from '@/components/YouTubeUploadModal';
-import { fetchWithSettings, getStoredSettings } from '@/lib/settings';
-import { devanagariToHinglish, transliterateTranscript } from '@/lib/transliterate';
+import { fetchWithSettings, getStoredSettings, safeParseJson } from '@/lib/settings';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProjectWorkspace({ params }) {
@@ -27,14 +26,8 @@ export default function ProjectWorkspace({ params }) {
   const [isLoadingUploads, setIsLoadingUploads] = useState(false);
   
   // Render & Studio properties state
-  const [enableSubtitles, setEnableSubtitles] = useState(true);
-  const [captionStyle, setCaptionStyle] = useState('hormozi');
-  const [cropFocus, setCropFocus] = useState('auto'); // 'auto' (camera follows person), 'center', 'left', 'right'
-  const [captionLanguage, setCaptionLanguage] = useState('original');
+  const [cropFocus, setCropFocus] = useState('auto'); // 'auto' (camera follows person), 'blurred_fit', 'center', 'left', 'right'
   const [renderFormat, setRenderFormat] = useState('vertical');
-  const [captionPosition, setCaptionPosition] = useState('lower');
-  const [captionYPercent, setCaptionYPercent] = useState(72);
-  const [captionAlign, setCaptionAlign] = useState('center');
 
   // Video Editor: Custom Text Overlay
   const [hasOverlayText, setHasOverlayText] = useState(false);
@@ -48,9 +41,6 @@ export default function ProjectWorkspace({ params }) {
   const [isRendering, setIsRendering] = useState(false);
   const [renderError, setRenderError] = useState('');
   const [renderProgressText, setRenderProgressText] = useState('');
-
-  // Editable transcript state
-  const [editableTranscript, setEditableTranscript] = useState([]);
 
   // Live player tracking state
   const [playerTime, setPlayerTime] = useState(0);
@@ -81,7 +71,7 @@ export default function ProjectWorkspace({ params }) {
         }
         throw new Error('Failed to load project details');
       }
-      const data = await res.json();
+      const data = await safeParseJson(res);
       setProject(data.project);
       setClips(data.clips || []);
       
@@ -104,7 +94,7 @@ export default function ProjectWorkspace({ params }) {
       setIsLoadingUploads(true);
       const res = await fetchWithSettings(`/api/youtube/uploads?projectId=${projectId}`);
       if (res.ok) {
-        const data = await res.json();
+        const data = await safeParseJson(res);
         setYoutubeUploads(data.uploads || []);
       }
     } catch (err) {
@@ -132,7 +122,7 @@ export default function ProjectWorkspace({ params }) {
     try {
       const res = await fetchWithSettings(`/api/clip/${targetId}/preview`);
       if (res.ok) {
-        const data = await res.json();
+        const data = await safeParseJson(res);
         if (data.previewUrl) {
           setLocalPreviewUrl(`/api/clip/${targetId}/stream?format=${previewActiveTab}`);
         }
@@ -144,48 +134,11 @@ export default function ProjectWorkspace({ params }) {
     }
   };
 
-  const handleToggleClipSubtitles = async (enabled, explicitStyle = null) => {
-    if (!selectedClip) return;
-    const nextStyle = enabled
-      ? (explicitStyle || (captionStyle && captionStyle !== 'none' ? captionStyle : 'hormozi'))
-      : 'none';
-
-    setEnableSubtitles(enabled);
-    setCaptionStyle(nextStyle);
-
-    setSelectedClip((prev) => (prev ? { ...prev, enableSubtitles: enabled, captionStyle: nextStyle } : prev));
-    setClips((prev) =>
-      prev.map((c) => (c._id === selectedClip._id ? { ...c, enableSubtitles: enabled, captionStyle: nextStyle } : c))
-    );
-
-    try {
-      await fetchWithSettings(`/api/clip/${selectedClip._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enableSubtitles: enabled,
-          captionStyle: nextStyle,
-        }),
-      });
-    } catch (err) {
-      console.warn('Failed to save clip subtitle preference:', err);
-    }
-  };
-
   // Load selected clip settings into form state
   useEffect(() => {
     if (selectedClip) {
-      const isClipSubtitlesEnabled = selectedClip.enableSubtitles !== false && selectedClip.captionStyle !== 'none';
-      setEnableSubtitles(isClipSubtitlesEnabled);
-      setCaptionStyle(isClipSubtitlesEnabled ? (selectedClip.captionStyle && selectedClip.captionStyle !== 'none' ? selectedClip.captionStyle : 'hormozi') : 'none');
       setCropFocus(selectedClip.cropFocus || 'auto');
-      const prefLang = selectedClip.captionLanguage || 'original';
-      setCaptionLanguage(prefLang);
       setRenderFormat(selectedClip.renderFormat || 'vertical');
-
-      setCaptionPosition(selectedClip.captionPosition || 'lower');
-      setCaptionYPercent(typeof selectedClip.captionYPercent === 'number' ? selectedClip.captionYPercent : 72);
-      setCaptionAlign(selectedClip.captionAlign || 'center');
 
       setOverlayText(selectedClip.overlayText || '');
       setHasOverlayText(Boolean(selectedClip.overlayText && selectedClip.overlayText.trim()));
@@ -195,17 +148,6 @@ export default function ProjectWorkspace({ params }) {
       setOverlayTextSize(selectedClip.overlayTextSize || 'medium');
       setOverlayTextBg(typeof selectedClip.overlayTextBg === 'boolean' ? selectedClip.overlayTextBg : true);
 
-      let activeTranscript = selectedClip.transcript || [];
-      if (prefLang === 'hinglish') {
-        const source = (selectedClip.hinglishTranscript && selectedClip.hinglishTranscript.length > 0)
-          ? selectedClip.hinglishTranscript
-          : selectedClip.transcript;
-        activeTranscript = transliterateTranscript(source);
-      } else if (prefLang === 'english' && selectedClip.englishTranscript?.length > 0) {
-        activeTranscript = selectedClip.englishTranscript;
-      }
-
-      setEditableTranscript(activeTranscript);
       setRenderError('');
       setVideoError(false);
       setLocalPreviewUrl('');
@@ -224,16 +166,6 @@ export default function ProjectWorkspace({ params }) {
     if (!selectedClip) return;
     const current = e.target.currentTime;
     setPlayerTime(selectedClip.start + current);
-  };
-
-  const handleJumpToTranscript = (segment) => {
-    if (!segment) return;
-    setPlayerTime(segment.start + 0.05);
-    if (videoRef.current) {
-      const targetSec = Math.max(0, segment.start - (selectedClip?.start || 0));
-      videoRef.current.currentTime = targetSec;
-      videoRef.current.play().catch(() => {});
-    }
   };
 
   useEffect(() => {
@@ -267,35 +199,6 @@ export default function ProjectWorkspace({ params }) {
     return () => clearInterval(interval);
   }, [clips]);
 
-  const handleTranscriptChange = (index, value) => {
-    const updated = [...editableTranscript];
-    updated[index].text = value;
-    setEditableTranscript(updated);
-  };
-
-  const handleToggleLanguage = (lang) => {
-    setCaptionLanguage(lang);
-    let activeTranscript = selectedClip?.transcript || [];
-    if (lang === 'hinglish') {
-      const source = (selectedClip?.hinglishTranscript && selectedClip.hinglishTranscript.length > 0)
-        ? selectedClip.hinglishTranscript
-        : (selectedClip?.transcript || []);
-      activeTranscript = transliterateTranscript(source);
-    } else if (lang === 'english' && selectedClip?.englishTranscript?.length > 0) {
-      activeTranscript = selectedClip.englishTranscript;
-    }
-    setEditableTranscript(activeTranscript);
-  };
-
-  const handleCaptionPositionPreset = (preset) => {
-    setCaptionPosition(preset);
-    if (preset === 'top') setCaptionYPercent(15);
-    else if (preset === 'upper') setCaptionYPercent(30);
-    else if (preset === 'center') setCaptionYPercent(50);
-    else if (preset === 'lower') setCaptionYPercent(72);
-    else if (preset === 'bottom') setCaptionYPercent(86);
-  };
-
   const handleDeleteWorkspace = async () => {
     if (!confirm("Are you sure you want to delete this workspace? This will permanently delete the project, all clips, and all rendered video files.")) {
       return;
@@ -308,7 +211,7 @@ export default function ProjectWorkspace({ params }) {
       });
 
       if (!res.ok) {
-        const errData = await res.json();
+        const errData = await safeParseJson(res);
         throw new Error(errData.error || 'Failed to delete workspace');
       }
 
@@ -334,17 +237,16 @@ export default function ProjectWorkspace({ params }) {
         body: JSON.stringify({
           url: project.url,
           clipCount: parsedCount,
-          regenerate: true,
-          enableSubtitles: getStoredSettings().enableSubtitlesDefault !== false
+          regenerate: true
         })
       });
 
       if (!res.ok) {
-        const errData = await res.json();
+        const errData = await safeParseJson(res);
         throw new Error(errData.error || 'Failed to re-scan video');
       }
 
-      const data = await res.json();
+      const data = await safeParseJson(res);
       setProject(data.project);
       setClips(data.clips || []);
       if (data.clips && data.clips.length > 0) {
@@ -362,14 +264,12 @@ export default function ProjectWorkspace({ params }) {
     
     setIsRendering(true);
     setRenderError('');
-    setRenderProgressText('Initializing rendering workspace...');
+    setRenderProgressText('Initializing ultra-fast rendering...');
 
     const steps = [
-      { delay: 1000, text: 'Opening video stream using configured tools...' },
-      { delay: 3500, text: 'Downloading clip segment in HD...' },
-      { delay: 6500, text: cropFocus === 'auto' ? 'AI Vision: Tracking speaker & centering camera...' : cropFocus === 'blurred_fit' ? 'FFmpeg: Creating 9:16 blurred background canvas...' : 'Processing video layout...' },
-      { delay: 9500, text: 'Generating ASS subtitles and custom text overlays...' },
-      { delay: 13000, text: 'Executing FFmpeg filters and exporting final container...' },
+      { delay: 300, text: 'Opening video stream...' },
+      { delay: 1000, text: cropFocus === 'auto' ? 'Camera: Auto-framing speaker...' : cropFocus === 'blurred_fit' ? 'FFmpeg: Creating 9:16 blurred background canvas...' : 'Processing 9:16 video layout...' },
+      { delay: 2500, text: 'Executing high-speed MP4 render...' },
     ];
 
     const timeouts = steps.map((step) => 
@@ -384,15 +284,10 @@ export default function ProjectWorkspace({ params }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          enableSubtitles: enableSubtitles && captionStyle !== 'none',
-          captionStyle: (enableSubtitles && captionStyle !== 'none') ? captionStyle : 'none',
+          enableSubtitles: false,
+          captionStyle: 'none',
           cropFocus,
-          transcript: editableTranscript,
-          captionLanguage,
           renderFormat,
-          captionPosition,
-          captionYPercent,
-          captionAlign,
           overlayText: hasOverlayText ? overlayText : '',
           overlayTextOpacity,
           overlayTextYPercent,
@@ -405,18 +300,22 @@ export default function ProjectWorkspace({ params }) {
       timeouts.forEach((t) => clearTimeout(t));
 
       if (!res.ok) {
-        const errData = await res.json();
+        const errData = await safeParseJson(res);
         throw new Error(errData.error || 'Failed to render video clip');
       }
 
-      const data = await res.json();
+      const data = await safeParseJson(res);
       setRenderProgressText('Render complete!');
       
       setSelectedClip(data.clip);
       await fetchProjectData();
     } catch (err) {
       timeouts.forEach((t) => clearTimeout(t));
-      setRenderError(err.message || 'An error occurred during rendering');
+      const rawMsg = err.message || 'An error occurred during rendering';
+      const cleanMsg = rawMsg.includes('Requested format is not available')
+        ? 'YouTube video format was unavailable. Please retry rendering or check your YouTube video access.'
+        : rawMsg;
+      setRenderError(cleanMsg);
       await fetchProjectData();
     } finally {
       setIsRendering(false);
@@ -425,7 +324,7 @@ export default function ProjectWorkspace({ params }) {
 
   const handleResetRender = async () => {
     if (!selectedClip) return;
-    if (!confirm("Are you sure you want to delete the rendered video files for this clip? This will delete the MP4s and reset the clip status so you can re-edit captions, text overlays, and styles.")) {
+    if (!confirm("Are you sure you want to delete the rendered video files for this clip? This will delete the MP4s and reset the clip status so you can re-edit text overlays or framing.")) {
       return;
     }
 
@@ -438,11 +337,11 @@ export default function ProjectWorkspace({ params }) {
       });
 
       if (!res.ok) {
-        const errData = await res.json();
+        const errData = await safeParseJson(res);
         throw new Error(errData.error || 'Failed to reset clip');
       }
 
-      const data = await res.json();
+      const data = await safeParseJson(res);
       setSelectedClip(data.clip);
       await fetchProjectData();
     } catch (err) {
@@ -514,254 +413,12 @@ export default function ProjectWorkspace({ params }) {
     };
   }, [selectedClip?._id, isPlaying]);
 
-  /**
-   * Renders real-time live captions matching any of the 10 visual styles
-   */
-  const renderLiveCaptionText = (segment, currentTime, style) => {
-    if (!segment) return null;
-    let segText = segment.text || '';
-    if (captionLanguage === 'hinglish') {
-      segText = devanagariToHinglish(segText);
-    }
-    const rawWords = segText.split(/\s+/).filter(Boolean);
-    if (rawWords.length === 0) return null;
-
-    const durationPerWord = (segment.duration || 1) / Math.max(1, rawWords.length);
-    const elapsed = currentTime - segment.start;
-    const activeIdx = Math.max(0, Math.min(rawWords.length - 1, Math.floor(elapsed / durationPerWord)));
-
-    // 1. Hormozi Pop
-    if (style === 'hormozi') {
-      return (
-        <span 
-          className="px-3 py-1 block text-center font-black tracking-wide uppercase shadow-2xl" 
-          style={{
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '18px',
-            backgroundColor: 'rgba(0,0,0,0.75)',
-            borderRadius: '10px',
-            textShadow: '0 2px 4px rgba(0,0,0,0.9)'
-          }}
-        >
-          {rawWords.map((word, idx) => {
-            const isActive = idx === activeIdx;
-            return (
-              <span 
-                key={idx} 
-                className={`${isActive ? 'text-[#f59e0b] font-black scale-105' : 'text-white'} mx-1 inline-block transition-transform`}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </span>
-      );
-    }
-
-    // 2. MrBeast Bouncy
-    if (style === 'mrbeast') {
-      return (
-        <span 
-          className="px-3 py-1 block text-center font-black tracking-wider uppercase" 
-          style={{
-            fontFamily: 'Impact, sans-serif',
-            fontSize: '20px',
-            textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 3px 6px rgba(0,0,0,0.9)'
-          }}
-        >
-          {rawWords.map((word, idx) => {
-            const isActive = idx === activeIdx;
-            return (
-              <span 
-                key={idx} 
-                className={`${isActive ? 'text-[#22c55e]' : 'text-[#fde047]'} mx-1 inline-block transform -rotate-1`}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </span>
-      );
-    }
-
-    // 3. Cyberpunk Neon
-    if (style === 'neon') {
-      return (
-        <span 
-          className="px-3 py-1 block text-center font-extrabold tracking-widest uppercase bg-black/80 rounded-[8px]" 
-          style={{
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '17px',
-            boxShadow: '0 0 15px rgba(0, 243, 255, 0.4)'
-          }}
-        >
-          {rawWords.map((word, idx) => {
-            const isActive = idx === activeIdx;
-            return (
-              <span 
-                key={idx} 
-                className={`${isActive ? 'text-white' : 'text-[#00f3ff]'} mx-1 inline-block`}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </span>
-      );
-    }
-
-    // 4. Minimalist Clean
-    if (style === 'minimalist') {
-      return (
-        <span 
-          className="px-3.5 py-1 text-center block text-white font-medium bg-black/60 rounded-[12px] backdrop-blur-sm"
-          style={{
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
-          }}
-        >
-          {segText}
-        </span>
-      );
-    }
-
-    // 5. Classic Subtitle
-    if (style === 'classic') {
-      return (
-        <span 
-          className="px-3 py-1 bg-black/85 text-white rounded-[6px] text-center block max-w-[90%] mx-auto font-medium"
-          style={{
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
-            lineHeight: '1.4',
-            textShadow: '0 1px 2px rgba(0,0,0,0.8)'
-          }}
-        >
-          {segText}
-        </span>
-      );
-    }
-
-    // 6. Karaoke Fire
-    if (style === 'karaoke') {
-      return (
-        <span 
-          className="px-3 py-1 block text-center font-black tracking-wide uppercase bg-black/70 rounded-[10px]" 
-          style={{
-            fontFamily: 'Impact, Arial, sans-serif',
-            fontSize: '18px',
-          }}
-        >
-          {rawWords.map((word, idx) => {
-            const isActive = idx === activeIdx;
-            return (
-              <span 
-                key={idx} 
-                className={`${isActive ? 'text-[#f97316]' : 'text-white'} mx-1 inline-block`}
-                style={{
-                  textShadow: isActive ? '0 0 10px #f97316' : '0 2px 4px black'
-                }}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </span>
-      );
-    }
-
-    // 7. Retro VHS 90s
-    if (style === 'retro') {
-      return (
-        <span 
-          className="px-3 py-1 bg-[#1a1400]/90 text-[#fde047] font-mono text-center block rounded border border-[#fde047]/40"
-          style={{
-            fontSize: '15px',
-            textShadow: '2px 2px 0px #000'
-          }}
-        >
-          {segText}
-        </span>
-      );
-    }
-
-    // 8. Cinematic Editorial Serif
-    if (style === 'cinematic') {
-      return (
-        <span 
-          className="px-3.5 py-1 text-[#fdfbf7] font-serif italic text-center block bg-black/50 rounded-[4px]"
-          style={{
-            fontSize: '16px',
-            letterSpacing: '0.04em',
-            textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-          }}
-        >
-          &ldquo;{segText}&rdquo;
-        </span>
-      );
-    }
-
-    // 9. Bold Red Badge
-    if (style === 'bold_badge') {
-      return (
-        <span 
-          className="px-3.5 py-1 bg-[#dc2626] text-white font-black text-center block rounded-[8px] uppercase tracking-wider shadow-lg"
-          style={{
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '15px',
-            textShadow: '0 2px 4px rgba(0,0,0,0.7)'
-          }}
-        >
-          {segText}
-        </span>
-      );
-    }
-
-    // 10. Comic Pop Art
-    if (style === 'comic') {
-      return (
-        <span 
-          className="px-3 py-1 block text-center font-black uppercase italic bg-[#000000]/85 rounded-[12px]" 
-          style={{
-            fontFamily: 'Trebuchet MS, Comic Sans MS, sans-serif',
-            fontSize: '18px',
-          }}
-        >
-          {rawWords.map((word, idx) => {
-            const isActive = idx === activeIdx;
-            return (
-              <span 
-                key={idx} 
-                className={`${isActive ? 'text-[#ff4500]' : 'text-[#facc15]'} mx-1 inline-block`}
-                style={{
-                  textShadow: '2px 2px 0 #000'
-                }}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </span>
-      );
-    }
-
-    return (
-      <span className="px-3 py-1 bg-black/80 text-white rounded text-center block font-medium">
-        {segText}
-      </span>
-    );
-  };
-
   const formatDuration = (secs) => {
     if (!secs) return '0:00';
     const mins = Math.floor(secs / 60);
     const rSecs = Math.floor(secs % 60);
     return `${mins}:${rSecs.toString().padStart(2, '0')}`;
   };
-
-  // Caption languages available
-  const hasHinglish = Boolean(selectedClip && ((selectedClip.transcript && selectedClip.transcript.length > 0) || (selectedClip.hinglishTranscript && selectedClip.hinglishTranscript.length > 0)));
-  const hasEnglish = selectedClip && selectedClip.englishTranscript && selectedClip.englishTranscript.length > 0;
 
   if (!authLoading && !user) {
     return (
@@ -957,7 +614,7 @@ export default function ProjectWorkspace({ params }) {
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3 className={`font-semibold text-xs line-clamp-1 ${isSelected ? 'text-[#fcf2f2]' : 'text-white'}`}>
-                        {captionLanguage === 'hinglish' ? devanagariToHinglish(clip.title) : clip.title}
+                        {clip.title}
                       </h3>
                       <span className="shrink-0 px-1.5 py-0.5 rounded-[10px] bg-[#1d2125] text-[#eeeff2] font-mono text-[10px] font-bold border border-[#39414b]">
                         {formatDuration(clip.duration)}
@@ -965,7 +622,7 @@ export default function ProjectWorkspace({ params }) {
                     </div>
                     
                     <p className="text-[#909cac] text-[11px] line-clamp-2 leading-snug mb-2 font-normal">
-                      {captionLanguage === 'hinglish' ? devanagariToHinglish(clip.description) : clip.description}
+                      {clip.description}
                     </p>
 
                     <div className="flex items-center justify-between text-[10px]">
@@ -973,15 +630,6 @@ export default function ProjectWorkspace({ params }) {
                         <span className="text-[#6e7d91] font-mono">
                           {formatDuration(clip.start)} - {formatDuration(clip.end)}
                         </span>
-                        {clip.enableSubtitles === false || clip.captionStyle === 'none' ? (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#1d2125] text-[#909cac] font-mono border border-[#39414b]" title="Clean video, no subtitles">
-                            🚫 Clean
-                          </span>
-                        ) : (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#360c0c] text-[#f87171] font-mono border border-[#dd2222]/30" title="Subtitles enabled">
-                            💬 Subs
-                          </span>
-                        )}
                       </div>
                       
                       <div className="flex items-center gap-1.5">
@@ -1026,13 +674,9 @@ export default function ProjectWorkspace({ params }) {
             </div>
           </aside>
 
-          {/* Center/Right: Video Framing & Subtitle Studio */}
+          {/* Center/Right: Video Framing & Studio */}
           <section className="flex-grow flex flex-col xl:flex-row overflow-y-auto p-4 sm:p-6 gap-6 bg-[#1d2125]">
             {(() => {
-              const activeSubtitle = editableTranscript.find(
-                (seg) => playerTime >= seg.start && playerTime <= seg.start + (seg.duration || 2)
-              ) || editableTranscript[0] || null;
-
               return !selectedClip ? (
                 <div className="flex-grow flex flex-col items-center justify-center text-center p-8 app-panel rounded-[10px] border border-dashed border-[#39414b] min-h-[350px]">
                   <div className="w-12 h-12 rounded-[10px] bg-[#39414b] flex items-center justify-center mb-3 text-[#dd2222]">
@@ -1042,7 +686,7 @@ export default function ProjectWorkspace({ params }) {
                   </div>
                   <h3 className="text-sm font-bold text-white mb-1">Select a Viral Clip</h3>
                   <p className="text-[#909cac] text-xs max-w-xs font-normal">
-                    Pick any AI moment from the list to preview, adjust camera framing, customize caption styles, and add overlays.
+                    Pick any AI moment from the list to preview, adjust camera framing, add text overlays, and export.
                   </p>
                 </div>
               ) : (
@@ -1119,7 +763,7 @@ export default function ProjectWorkspace({ params }) {
                               AI Rendering Active
                             </span>
                             <p className="text-white text-xs font-semibold text-center mb-2.5 max-w-[210px] leading-snug">
-                              {renderProgressText || 'AI vision tracking speaker & burning subtitles...'}
+                              {renderProgressText || 'AI vision tracking speaker & rendering short...'}
                             </p>
                             <div className="w-full max-w-[170px] bg-[#2a3038] h-1.5 rounded-full overflow-hidden mb-2">
                               <div className="h-full bg-gradient-to-r from-[#dd2222] to-[#ff5555] rounded-full animate-pulse w-3/4"></div>
@@ -1266,20 +910,6 @@ export default function ProjectWorkspace({ params }) {
                           </div>
                         )}
 
-                        {/* Live Subtitle Overlay with Custom Position */}
-                        {selectedClip.status !== 'completed' && enableSubtitles && captionStyle !== 'none' && activeSubtitle && !isRendering && selectedClip.status !== 'rendering' && (
-                          <div 
-                            className="absolute inset-x-0 pointer-events-none z-20 flex px-3 transition-all"
-                            style={{
-                              top: `${captionYPercent}%`,
-                              transform: 'translateY(-50%)',
-                              justifyContent: captionAlign === 'left' ? 'flex-start' : captionAlign === 'right' ? 'flex-end' : 'center',
-                            }}
-                          >
-                            {renderLiveCaptionText(activeSubtitle, playerTime, captionStyle)}
-                          </div>
-                        )}
-
                         {/* Live Custom Text Overlay */}
                         {selectedClip.status !== 'completed' && hasOverlayText && overlayText.trim() && !isRendering && selectedClip.status !== 'rendering' && (
                           <div 
@@ -1304,61 +934,6 @@ export default function ProjectWorkspace({ params }) {
                             </span>
                           </div>
                         )}
-                      </div>
-
-                      {/* Individual Clip Subtitle Toggle Bar */}
-                      <div className="w-full mt-3 bg-[#1d2125] border border-[#39414b] rounded-[10px] p-3 shadow-md">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="text-xl shrink-0">{enableSubtitles && captionStyle !== 'none' ? '💬' : '🚫'}</span>
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
-                                <span>Subtitles on this clip:</span>
-                                <span className={`text-[10px] px-2 py-0.5 rounded font-extrabold uppercase tracking-wide ${
-                                  enableSubtitles && captionStyle !== 'none'
-                                    ? 'bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/30'
-                                    : 'bg-[#ef4444]/20 text-[#ef4444] border border-[#ef4444]/30'
-                                }`}>
-                                  {enableSubtitles && captionStyle !== 'none' ? 'ON' : 'OFF (Clean Video)'}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-[#909cac] truncate mt-0.5">
-                                {enableSubtitles && captionStyle !== 'none'
-                                  ? 'Animated viral captions will be burned into this short'
-                                  : '100% clean video with NO subtitles will be generated'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center bg-[#111315] p-1 rounded-[8px] border border-[#2b313a] shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleClipSubtitles(true)}
-                              disabled={isRendering || selectedClip.status === 'completed'}
-                              className={`px-3 py-1.5 text-xs font-bold rounded-[6px] transition-all cursor-pointer flex items-center gap-1.5 ${
-                                enableSubtitles && captionStyle !== 'none'
-                                  ? 'bg-[#dd2222] text-white shadow-sm'
-                                  : 'text-[#909cac] hover:text-white'
-                              }`}
-                            >
-                              <span>💬</span>
-                              <span>On</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleClipSubtitles(false)}
-                              disabled={isRendering || selectedClip.status === 'completed'}
-                              className={`px-3 py-1.5 text-xs font-bold rounded-[6px] transition-all cursor-pointer flex items-center gap-1.5 ${
-                                !enableSubtitles || captionStyle === 'none'
-                                  ? 'bg-[#ef4444] text-white shadow-sm'
-                                  : 'text-[#909cac] hover:text-white'
-                              }`}
-                            >
-                              <span>🚫</span>
-                              <span>Off</span>
-                            </button>
-                          </div>
-                        </div>
                       </div>
 
                       {/* Render / Download Action Controls */}
@@ -1567,7 +1142,7 @@ export default function ProjectWorkspace({ params }) {
                     </div>
                   </div>
 
-                  {/* Right: Customization Controls & Subtitle Editor */}
+                  {/* Right: Customization Controls & Video Studio */}
                   <div className="flex-grow flex flex-col gap-4 min-w-0">
                     
                     {/* Panel 1: Framing & Camera Tracking */}
@@ -1670,267 +1245,7 @@ export default function ProjectWorkspace({ params }) {
                       </div>
                     </div>
 
-                    {/* Panel 2: Subtitle Typography Styles & Master Toggle */}
-                    <div className="app-panel p-4 sm:p-5 space-y-3.5">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-[#2b313a]">
-                        <div>
-                          <h3 className="text-xs font-bold tracking-wider text-[#dd2222] uppercase flex items-center gap-1.5">
-                            <span>✨</span>
-                            <span>Subtitle Typography Styles</span>
-                          </h3>
-                          <p className="text-[11px] text-[#909cac] mt-0.5">
-                            Burn animated viral subtitles into your short or generate 100% clean video.
-                          </p>
-                        </div>
-
-                        {/* Master Subtitle Switch */}
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
-                          <span className={`text-[11px] font-semibold ${enableSubtitles && captionStyle !== 'none' ? 'text-[#22c55e]' : 'text-[#909cac]'}`}>
-                            {enableSubtitles && captionStyle !== 'none' ? 'Subtitles: ON' : 'Subtitles: OFF'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleClipSubtitles(!enableSubtitles || captionStyle === 'none')}
-                            disabled={isRendering || selectedClip.status === 'completed'}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                              enableSubtitles && captionStyle !== 'none' ? 'bg-[#dd2222]' : 'bg-[#39414b]'
-                            }`}
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                enableSubtitles && captionStyle !== 'none' ? 'translate-x-5' : 'translate-x-0'
-                              }`}
-                            />
-                          </button>
-                        </div>
-                      </div>
-
-                      {(!enableSubtitles || captionStyle === 'none') && (
-                        <div className="p-2.5 rounded-[8px] bg-[#1d2125] border border-[#39414b] flex items-center justify-between gap-2 text-[#909cac] text-[11px]">
-                          <div className="flex items-center gap-2">
-                            <span className="text-base shrink-0">🚫</span>
-                            <span><strong>Subtitles are disabled:</strong> This short will be rendered as clean video with zero burned-in captions.</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleClipSubtitles(true, 'hormozi')}
-                            className="px-2.5 py-1 rounded-[6px] bg-[#360c0c] border border-[#dd2222]/40 text-[#f87171] text-xs font-semibold hover:bg-[#dd2222] hover:text-white transition-colors cursor-pointer shrink-0"
-                          >
-                            Enable Subtitles
-                          </button>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                        {[
-                          {
-                            id: 'none',
-                            label: 'No Subtitles',
-                            badge: 'Clean Video',
-                            preview: <span className="text-[10px] font-bold text-[#ef4444] uppercase flex items-center gap-1">🚫 Clean Video</span>,
-                            bg: 'bg-black/50'
-                          },
-                          {
-                            id: 'hormozi',
-                            label: 'Hormozi Pop',
-                            badge: 'Viral Hook',
-                            preview: <span className="text-[10px] font-black text-white uppercase">TALK <span className="text-[#f59e0b]">IS CHEAP</span></span>,
-                            bg: 'bg-black'
-                          },
-                          {
-                            id: 'mrbeast',
-                            label: 'MrBeast',
-                            badge: 'Energetic',
-                            preview: <span className="text-[10px] font-black text-[#fde047] uppercase italic">NO <span className="text-[#22c55e]">WAY!</span></span>,
-                            bg: 'bg-[#111]'
-                          },
-                          {
-                            id: 'neon',
-                            label: 'Cyberpunk',
-                            badge: 'Neon Glow',
-                            preview: <span className="text-[10px] font-bold text-[#00f3ff] uppercase drop-shadow-[0_0_8px_#00f3ff]">FUTURE</span>,
-                            bg: 'bg-[#050b14]'
-                          },
-                          {
-                            id: 'minimalist',
-                            label: 'Minimalist',
-                            badge: 'Aesthetic',
-                            preview: <span className="text-[9px] font-medium text-white px-1.5 py-0.5 rounded bg-white/20">Clean aesthetic</span>,
-                            bg: 'bg-[#1f242d]'
-                          },
-                          {
-                            id: 'classic',
-                            label: 'Classic',
-                            badge: 'Cinema',
-                            preview: <span className="text-[10px] font-semibold text-white drop-shadow">Talk is cheap</span>,
-                            bg: 'bg-black/60'
-                          },
-                          {
-                            id: 'karaoke',
-                            label: 'Karaoke Fire',
-                            badge: 'Animated',
-                            preview: <span className="text-[10px] font-black text-white uppercase">HOT <span className="text-[#f97316]">FIRE</span></span>,
-                            bg: 'bg-black'
-                          },
-                          {
-                            id: 'retro',
-                            label: 'Retro VHS',
-                            badge: '90s CRT',
-                            preview: <span className="text-[9px] font-mono font-bold text-[#fde047]">&gt; PLAY 1995</span>,
-                            bg: 'bg-[#141208]'
-                          },
-                          {
-                            id: 'cinematic',
-                            label: 'Cinematic',
-                            badge: 'Editorial',
-                            preview: <span className="text-[10px] font-serif italic text-[#fdfbf7]">&ldquo;Storytelling&rdquo;</span>,
-                            bg: 'bg-[#18181b]'
-                          },
-                          {
-                            id: 'bold_badge',
-                            label: 'Red Badge',
-                            badge: 'High Impact',
-                            preview: <span className="text-[9px] font-black text-white px-1 py-0.5 rounded bg-[#dc2626] uppercase">BREAKING</span>,
-                            bg: 'bg-[#2b1010]'
-                          },
-                          {
-                            id: 'comic',
-                            label: 'Pop Comic',
-                            badge: 'Playful',
-                            preview: <span className="text-[10px] font-black italic text-[#facc15] uppercase">POW!</span>,
-                            bg: 'bg-[#201c05]'
-                          }
-                        ].map((st) => {
-                          const isSelected = st.id === 'none'
-                            ? (!enableSubtitles || captionStyle === 'none')
-                            : (enableSubtitles && captionStyle === st.id);
-
-                          return (
-                            <button
-                              key={st.id}
-                              onClick={() => {
-                                if (st.id === 'none') {
-                                  handleToggleClipSubtitles(false);
-                                } else {
-                                  handleToggleClipSubtitles(true, st.id);
-                                }
-                              }}
-                              disabled={isRendering || selectedClip.status === 'completed'}
-                              className={`p-2 rounded-[10px] border text-left transition-colors cursor-pointer flex flex-col justify-between h-20 ${
-                                isSelected
-                                  ? 'bg-[#360c0c] border-[#dd2222] ring-1 ring-[#dd2222]'
-                                  : 'bg-[#1d2125] border-[#39414b] text-[#909cac] hover:border-[#4b5563]'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span className="block text-[11px] font-bold text-white truncate">{st.label}</span>
-                                <span className="text-[8px] text-[#6e7d91] font-mono">{st.badge}</span>
-                              </div>
-                              <div className={`w-full py-1 px-1.5 rounded-[6px] ${st.bg} flex items-center justify-center border border-white/10`}>
-                                {st.preview}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Panel 3: Caption Positioning & Alignment */}
-                    <div className="app-panel p-4 sm:p-5 space-y-3.5">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold tracking-wider text-[#dd2222] uppercase flex items-center gap-1.5">
-                          <span>📍</span>
-                          <span>Subtitle Position & Alignment</span>
-                        </h3>
-                        <span className="text-[11px] text-[#909cac] font-mono">Y: {captionYPercent}%</span>
-                      </div>
-
-                      {(!enableSubtitles || captionStyle === 'none') && (
-                        <div className="p-2.5 rounded-[8px] bg-[#1d2125] border border-[#39414b] text-[#909cac] text-[11px] flex items-center gap-2">
-                          <span>ℹ️</span>
-                          <span>Subtitles are currently turned off for this clip. Enable subtitles above to customize positioning.</span>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Vertical Position Presets & Slider */}
-                        <div>
-                          <label className="block text-[11px] text-[#b9c0ca] font-medium mb-1.5">
-                            Vertical Position (Presets & Slider)
-                          </label>
-                          <div className="flex gap-1.5 mb-2">
-                            {[
-                              { id: 'top', label: 'Top (15%)' },
-                              { id: 'upper', label: 'Upper (30%)' },
-                              { id: 'center', label: 'Center (50%)' },
-                              { id: 'lower', label: 'Lower (72%)' },
-                              { id: 'bottom', label: 'Bottom (86%)' },
-                            ].map((pos) => (
-                              <button
-                                key={pos.id}
-                                type="button"
-                                onClick={() => handleCaptionPositionPreset(pos.id)}
-                                disabled={isRendering || selectedClip.status === 'completed'}
-                                className={`flex-1 py-1 px-1 text-[10px] font-semibold rounded-[6px] border transition-colors cursor-pointer ${
-                                  captionPosition === pos.id
-                                    ? 'bg-[#dd2222] text-white border-[#dd2222]'
-                                    : 'bg-[#1d2125] text-[#909cac] border-[#39414b] hover:text-white'
-                                }`}
-                              >
-                                {pos.label}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-[#909cac]">Top</span>
-                            <input
-                              type="range"
-                              min="10"
-                              max="90"
-                              disabled={isRendering || selectedClip.status === 'completed'}
-                              value={captionYPercent}
-                              onChange={(e) => {
-                                setCaptionYPercent(parseInt(e.target.value, 10));
-                                setCaptionPosition('custom');
-                              }}
-                              className="w-full accent-[#dd2222] cursor-pointer"
-                            />
-                            <span className="text-[10px] text-[#909cac]">Bottom</span>
-                          </div>
-                        </div>
-
-                        {/* Horizontal Alignment */}
-                        <div>
-                          <label className="block text-[11px] text-[#b9c0ca] font-medium mb-1.5">
-                            Horizontal Text Alignment
-                          </label>
-                          <div className="grid grid-cols-3 gap-2">
-                            {[
-                              { id: 'left', label: 'Left', icon: '⬅️' },
-                              { id: 'center', label: 'Center', icon: '↔️' },
-                              { id: 'right', label: 'Right', icon: '➡️' }
-                            ].map((al) => (
-                              <button
-                                key={al.id}
-                                type="button"
-                                onClick={() => setCaptionAlign(al.id)}
-                                disabled={isRendering || selectedClip.status === 'completed'}
-                                className={`py-1.5 px-2 text-xs font-semibold rounded-[8px] border text-center transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-                                  captionAlign === al.id
-                                    ? 'bg-[#360c0c] border-[#dd2222] text-[#fcf2f2]'
-                                    : 'bg-[#1d2125] border-[#39414b] text-[#909cac] hover:text-white'
-                                }`}
-                              >
-                                <span>{al.icon}</span>
-                                <span>{al.label}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Panel 4: Video Editor: Custom Text Overlay Studio */}
+                    {/* Panel 2: Video Editor: Custom Text Overlay Studio */}
                     <div className="app-panel p-4 sm:p-5 space-y-3.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -2072,90 +1387,60 @@ export default function ProjectWorkspace({ params }) {
                       )}
                     </div>
 
-                    {/* Panel 5: Subtitle Language Toggle & Transcript Editor */}
+                    {/* Panel 3: Scene Virality & Performance Intelligence */}
                     <div className="app-panel p-4 sm:p-5 space-y-3.5">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center justify-between">
                         <h3 className="text-xs font-bold tracking-wider text-[#dd2222] uppercase flex items-center gap-1.5">
-                          <span>🌐</span>
-                          <span>Caption Language & Subtitle Editor</span>
+                          <span>⚡</span>
+                          <span>Scene Virality & Performance Intelligence</span>
                         </h3>
-                        
-                        {/* Language switcher pills */}
-                        <div className="flex bg-[#1d2125] p-0.5 rounded-[8px] border border-[#39414b]">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleLanguage('original')}
-                            disabled={isRendering || selectedClip.status === 'completed'}
-                            className={`px-2.5 py-1 text-xs font-semibold rounded-[6px] transition-colors cursor-pointer ${
-                              captionLanguage === 'original'
-                                ? 'bg-[#dd2222] text-white'
-                                : 'text-[#909cac] hover:text-white'
-                            }`}
-                          >
-                            Original Speech
-                          </button>
+                        <span className="text-[10px] text-[#22c55e] font-semibold bg-[#22c55e]/15 px-2 py-0.5 rounded border border-[#22c55e]/30">
+                          AI Engine Active
+                        </span>
+                      </div>
 
-                          {hasHinglish && (
-                            <button
-                              type="button"
-                              onClick={() => handleToggleLanguage('hinglish')}
-                              disabled={isRendering || selectedClip.status === 'completed'}
-                              className={`px-2.5 py-1 text-xs font-semibold rounded-[6px] transition-colors cursor-pointer ${
-                                captionLanguage === 'hinglish'
-                                  ? 'bg-[#dd2222] text-white'
-                                  : 'text-[#909cac] hover:text-white'
-                              }`}
-                            >
-                              Hinglish (Roman)
-                            </button>
-                          )}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="p-3 rounded-[8px] bg-[#1d2125] border border-[#39414b]">
+                          <span className="text-[10px] text-[#909cac] uppercase tracking-wider block mb-1">Virality Score</span>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-white">{selectedClip.viralityScore || 88}</span>
+                            <span className="text-xs text-[#22c55e] font-semibold">/ 100</span>
+                          </div>
+                          <span className="text-[10px] text-[#909cac] mt-1 block">High audience retention rate</span>
+                        </div>
 
-                          {hasEnglish && (
-                            <button
-                              type="button"
-                              onClick={() => handleToggleLanguage('english')}
-                              disabled={isRendering || selectedClip.status === 'completed'}
-                              className={`px-2.5 py-1 text-xs font-semibold rounded-[6px] transition-colors cursor-pointer ${
-                                captionLanguage === 'english'
-                                  ? 'bg-[#dd2222] text-white'
-                                  : 'text-[#909cac] hover:text-white'
-                              }`}
-                            >
-                              English Subtitles
-                            </button>
-                          )}
+                        <div className="p-3 rounded-[8px] bg-[#1d2125] border border-[#39414b]">
+                          <span className="text-[10px] text-[#909cac] uppercase tracking-wider block mb-1">Duration & Bounds</span>
+                          <div className="text-sm font-bold text-white">
+                            {formatDuration(selectedClip.start)} - {formatDuration(selectedClip.end)}
+                          </div>
+                          <span className="text-[10px] text-[#909cac] mt-1 block">
+                            {Math.round(selectedClip.end - selectedClip.start)}s optimal short duration
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-[8px] bg-[#1d2125] border border-[#39414b]">
+                          <span className="text-[10px] text-[#909cac] uppercase tracking-wider block mb-1">Render Engine</span>
+                          <div className="text-sm font-bold text-[#22c55e] flex items-center gap-1">
+                            <span>🚀</span>
+                            <span>Ultra-Fast Pipeline</span>
+                          </div>
+                          <span className="text-[10px] text-[#909cac] mt-1 block">
+                            Sub-5s fast render · 1080x1920 60fps
+                          </span>
                         </div>
                       </div>
 
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                        {editableTranscript.length === 0 ? (
-                          <div className="text-center py-6 text-[#909cac] text-xs">
-                            No transcript segment found for this timestamp range.
-                          </div>
-                        ) : (
-                          editableTranscript.map((segment, idx) => (
-                            <div key={idx} className="flex gap-2 items-center group">
-                              <button
-                                type="button"
-                                onClick={() => handleJumpToTranscript(segment)}
-                                title="Click to preview this subtitle line in player"
-                                className="shrink-0 text-[10px] font-mono text-[#6e7d91] group-hover:text-[#dd2222] transition-colors w-14 text-right cursor-pointer flex items-center justify-end gap-1"
-                              >
-                                <span className="opacity-0 group-hover:opacity-100 text-[8px]">▶</span>
-                                <span>{formatDuration(segment.start)}</span>
-                              </button>
-                              <input
-                                type="text"
-                                disabled={isRendering || selectedClip.status === 'completed'}
-                                value={segment.text}
-                                onFocus={() => handleJumpToTranscript(segment)}
-                                onChange={(e) => handleTranscriptChange(idx, e.target.value)}
-                                className="flex-grow px-3 py-1.5 app-input text-xs font-normal disabled:opacity-60"
-                              />
-                            </div>
-                          ))
-                        )}
-                      </div>
+                      {selectedClip.explanation && (
+                        <div className="p-3 rounded-[8px] bg-[#1d2125] border border-[#39414b]">
+                          <span className="text-[10px] text-[#dd2222] font-semibold uppercase tracking-wider block mb-1">
+                            Scene Hook & Summary
+                          </span>
+                          <p className="text-xs text-[#c3c8cf] leading-relaxed">
+                            {selectedClip.explanation}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                   </div>

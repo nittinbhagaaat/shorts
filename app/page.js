@@ -14,7 +14,7 @@ export default function HomePage() {
   const [maxDuration, setMaxDuration] = useState(60);
   const [durationPreset, setDurationPreset] = useState('30-60');
   const [copySuccess, setCopySuccess] = useState(false);
-  const [activePreviewStyle, setActivePreviewStyle] = useState('hormozi');
+  const [activePreviewStyle, setActivePreviewStyle] = useState('framing');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const inputRef = useRef(null);
 
@@ -67,92 +67,52 @@ export default function HomePage() {
     router.push(`/dashboard?url=${encodeURIComponent(url.trim())}&clipCount=${clipCount}&minDuration=${minDuration}&maxDuration=${maxDuration}`);
   };
 
-  // Subtitle Preview Styles Showcase Data
-  const subtitleStyles = [
+  // Video Engine Features Showcase Data
+  const engineFeatures = [
     {
-      id: 'hormozi',
-      name: 'Hormozi Viral',
-      badge: 'Most Popular',
-      font: 'font-black uppercase',
-      bgStyle: 'bg-black/90 px-3 py-1.5 rounded-lg border border-yellow-400/30',
-      words: [
-        { text: 'NOBODY', color: 'text-white' },
-        { text: 'TELLS', color: 'text-white' },
-        { text: 'YOU', color: 'text-white' },
-        { text: 'THIS', color: 'text-yellow-400 font-extrabold' },
-      ],
-      description: 'Ultra-bold font with explosive gold active-word highlighting. Proven #1 on TikTok & Shorts.',
+      id: 'framing',
+      name: '9:16 Smart Speaker Tracking',
+      badge: 'AI Vision',
+      previewHeadline: 'SMART 9:16 FRAMING',
+      previewSub: 'Active speaker auto-centered in frame',
+      description: 'Face detection automatically tracks and centers the primary speaker inside a vertical 9:16 frame with zero manual keyframing.',
+      tag: 'AI Vision Active',
     },
     {
-      id: 'mrbeast',
-      name: 'MrBeast Energy',
-      badge: 'High Impact',
-      font: 'font-extrabold uppercase',
-      bgStyle: 'bg-black/80 px-3 py-1.5 rounded-lg border border-green-400/30',
-      words: [
-        { text: 'THIS', color: 'text-white' },
-        { text: 'IS', color: 'text-white' },
-        { text: 'ABSOLUTELY', color: 'text-emerald-400 font-black' },
-        { text: 'INSANE!', color: 'text-yellow-300 font-black' },
-      ],
-      description: 'Punchy saturated colors with comic high-energy emphasis for maximum retention.',
+      id: 'fast_render',
+      name: 'Ultra-Fast Sub-5s Render Engine',
+      badge: 'Supersonic',
+      previewHeadline: 'RENDER COMPLETE: 2.4s',
+      previewSub: '1080x1920 60fps ultrafast encoding',
+      description: 'Optimized bicubic hardware scaling and ultrafast multithreaded FFmpeg pipeline delivers completed 1080x1920 shorts in seconds.',
+      tag: 'Supersonic Pipeline',
     },
     {
-      id: 'cyberpunk',
-      name: 'Cyberpunk Neon',
-      badge: 'Futuristic',
-      font: 'font-mono font-bold tracking-wider',
-      bgStyle: 'bg-[#0f172a]/95 px-3 py-1.5 rounded-lg border border-cyan-400/40 shadow-lg shadow-cyan-500/20',
-      words: [
-        { text: 'FUTURE', color: 'text-cyan-300' },
-        { text: 'OF', color: 'text-slate-300' },
-        { text: 'CREATION', color: 'text-pink-400 font-extrabold' },
-      ],
-      description: 'Electric cyan and neon magenta typography with sleek futuristic letter-spacing.',
+      id: 'overlay',
+      name: 'Custom Hook & Overlay Studio',
+      badge: 'Retention Booster',
+      previewHeadline: 'WAIT TILL THE END 😱',
+      previewSub: 'Custom hook headlines & social tags',
+      description: 'Add custom headlines, hook call-to-actions, and social tags anywhere on your video with custom colors, opacity, and backdrop pills.',
+      tag: 'Video Studio',
     },
     {
-      id: 'karaoke',
-      name: 'Karaoke Fire',
-      badge: 'Dynamic',
-      font: 'font-extrabold',
-      bgStyle: 'bg-black/85 px-3 py-1.5 rounded-lg border border-orange-500/30',
-      words: [
-        { text: 'Listen', color: 'text-orange-400 font-bold' },
-        { text: 'to', color: 'text-white' },
-        { text: 'every', color: 'text-white' },
-        { text: 'single', color: 'text-white' },
-        { text: 'word.', color: 'text-yellow-400' },
-      ],
-      description: 'Dynamic word progression that lights up synchronously as the speaker delivers each syllable.',
+      id: 'clean_mp4',
+      name: '100% Clean Watermark-Free MP4s',
+      badge: 'Pro Quality',
+      previewHeadline: '100% CLEAN VIDEO',
+      previewSub: 'Zero watermarks, ready for YouTube Shorts',
+      description: 'Export clean, professional vertical shorts ready for YouTube Shorts, Instagram Reels, and TikTok without forced overlays or branding.',
+      tag: 'Zero Watermark',
     },
     {
-      id: 'redalert',
-      name: 'Breaking Impact',
-      badge: 'Urgent',
-      font: 'font-black uppercase tracking-tight',
-      bgStyle: 'bg-[#360c0c] px-3.5 py-1.5 rounded-lg border border-[#dd2222]',
-      words: [
-        { text: 'BREAKING:', color: 'text-[#dd2222] font-black' },
-        { text: 'THE', color: 'text-white' },
-        { text: 'SECRET', color: 'text-white' },
-        { text: 'IS', color: 'text-white' },
-        { text: 'OUT', color: 'text-yellow-400' },
-      ],
-      description: 'News-alert red badge styling engineered to freeze scrollers in the first 2 seconds.',
-    },
-    {
-      id: 'popcomic',
-      name: 'Pop Comic',
-      badge: 'Playful',
-      font: 'font-extrabold tracking-wide',
-      bgStyle: 'bg-yellow-400 px-3.5 py-1.5 rounded-lg border-2 border-black text-black shadow-md',
-      words: [
-        { text: 'WAIT', color: 'text-black font-black' },
-        { text: 'UNTIL', color: 'text-black' },
-        { text: 'THE', color: 'text-black' },
-        { text: 'END!', color: 'text-red-600 font-black' },
-      ],
-      description: 'Comic-book yellow strip with black border that pops against any video background.',
+      id: 'scheduler',
+      name: 'Direct YouTube Shorts Scheduler',
+      badge: 'Automation',
+      previewHeadline: 'SCHEDULED: 6:00 PM',
+      previewSub: 'Auto-generated viral title & #Shorts tags',
+      description: 'Directly publish to YouTube or schedule Shorts for peak audience hours with auto-generated viral titles, descriptions, and #Shorts tags.',
+      tag: 'YouTube Shorts',
     },
   ];
 
@@ -160,15 +120,15 @@ export default function HomePage() {
   const faqItems = [
     {
       q: 'Is ClipStudio really 100% free with no watermarks?',
-      a: 'Yes, completely free. Unlike Opus Clip, Klap, or Munch which charge $19 to $29/month and place heavy watermarks on free accounts, ClipStudio lets you import YouTube videos, generate 9:16 vertical shorts, customize animated subtitles, and download clean 1080x1920 MP4 files without watermarks or credit limits.',
+      a: 'Yes, completely free. Unlike Opus Clip, Klap, or Munch which charge $19 to $29/month and place heavy watermarks on free accounts, ClipStudio lets you import YouTube videos, generate 9:16 vertical shorts, customize text overlays, and download clean 1080x1920 MP4 files without watermarks or credit limits.',
     },
     {
       q: 'How does ClipStudio prevent cutting people off mid-sentence?',
       a: 'Most clippers slice videos strictly by time (e.g. cutting arbitrarily at 15 or 30 seconds). ClipStudio uses semantic dialogue boundary detection: our AI scans sentence stops, conversational pauses, and speech closures to extract complete 35–45 second scenes with an opening hook and a satisfying resolution.',
     },
     {
-      q: 'How does the Hindi to Hinglish transliteration feature work?',
-      a: 'ClipStudio is the only video clipper built natively for Indian and bilingual creators. When importing Hindi videos, it automatically transliterates Devanagari Hindi into high-retention Roman Hinglish so your subtitles are easy to read and hook 10x more viewers.',
+      q: 'How fast is the rendering pipeline?',
+      a: 'Our optimized render engine utilizes multicore multithreaded bicubic processing and quick-preview caching to generate completed 1080x1920 60fps vertical shorts in under 5 seconds, giving creators near-instant turnarounds.',
     },
     {
       q: 'Can I publish or schedule directly to YouTube Shorts?',
@@ -184,7 +144,7 @@ export default function HomePage() {
     },
   ];
 
-  const currentPreview = subtitleStyles.find((s) => s.id === activePreviewStyle) || subtitleStyles[0];
+  const currentPreview = engineFeatures.find((s) => s.id === activePreviewStyle) || engineFeatures[0];
 
   return (
     <div className="min-h-screen bg-[#0f1216] text-[#f6f7f8] flex flex-col font-sans selection:bg-[#dd2222] selection:text-white">
@@ -215,7 +175,7 @@ export default function HomePage() {
           {/* Center Nav Links */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-[#b9c0ca]">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#subtitles" className="hover:text-white transition-colors">Subtitle Styles</a>
+            <a href="#pipeline" className="hover:text-white transition-colors">Video Engine</a>
             <a href="#compare" className="hover:text-white transition-colors">Comparison</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
             <Link href="/impact" className="hover:text-white transition-colors flex items-center gap-1.5">
@@ -291,7 +251,7 @@ export default function HomePage() {
 
           {/* Subtitle */}
           <p className="text-[#b9c0ca] text-sm sm:text-lg font-normal max-w-2xl leading-relaxed mb-10">
-            The world&apos;s best free AI video clipping platform. Automatically extracts complete 40s high-retention scenes, frames active speakers in 9:16 vertical, adds animated Hormozi subtitles, and schedules directly to YouTube Shorts.
+            The world&apos;s best free AI video clipping platform. Automatically extracts complete 40s high-retention scenes, frames active speakers in 9:16 vertical with ultrafast sub-5s rendering, and schedules directly to YouTube Shorts.
           </p>
 
           {/* The Viral Clipper Input Station */}
@@ -548,8 +508,8 @@ export default function HomePage() {
             <p className="text-[#909cac] text-xs font-medium mt-1">Free Forever Guarantee</p>
           </div>
           <div className="app-panel p-6 text-center border border-[#39414b] rounded-[10px]">
-            <div className="text-2xl sm:text-3xl font-black text-[#2cb7d3] font-mono">9 Styles</div>
-            <p className="text-[#909cac] text-xs font-medium mt-1">Animated Viral Subtitles</p>
+            <div className="text-2xl sm:text-3xl font-black text-[#2cb7d3] font-mono">&lt; 5s</div>
+            <p className="text-[#909cac] text-xs font-medium mt-1">Ultra-Fast 9:16 Render</p>
           </div>
           <div className="app-panel p-6 text-center border border-[#39414b] rounded-[10px]">
             <div className="text-2xl sm:text-3xl font-black text-[#dd2222] font-mono">0 Watermarks</div>
@@ -558,52 +518,52 @@ export default function HomePage() {
         </section>
 
         {/* ======================================================== */}
-        {/* INTERACTIVE SUBTITLE & PREVIEW SHOWCASE                  */}
+        {/* INTERACTIVE 9:16 VIDEO ENGINE & PREVIEW SHOWCASE         */}
         {/* ======================================================== */}
-        <section id="subtitles" className="space-y-8">
+        <section id="pipeline" className="space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#731111] bg-[#360c0c] text-[#fcf2f2] text-xs font-semibold uppercase tracking-wider">
-              🎨 Interactive Subtitle Studio
+              ⚡ Ultra-Fast 9:16 Video Engine
             </div>
             <h2 className="text-2xl sm:text-4xl font-extrabold text-white">
-              Subtitles Engineered for <span className="text-[#dd2222]">85%+ Retention</span>
+              Engineered for <span className="text-[#dd2222]">Instant Virality</span>
             </h2>
             <p className="text-[#909cac] text-xs sm:text-sm">
-              Viewers swipe away when subtitles are boring. Pick from 9 custom animated word-highlighting typography presets.
+              Zero waiting time. Smart speaker framing, ultrafast hardware rendering, and customizable text overlays.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
-            {/* Style Selector Tabs (Left Side) */}
+            {/* Feature Selector Tabs (Left Side) */}
             <div className="lg:col-span-6 space-y-3">
-              {subtitleStyles.map((style) => (
+              {engineFeatures.map((feat) => (
                 <button
-                  key={style.id}
-                  onClick={() => setActivePreviewStyle(style.id)}
+                  key={feat.id}
+                  onClick={() => setActivePreviewStyle(feat.id)}
                   className={`w-full p-4 rounded-[10px] text-left transition-all cursor-pointer flex items-center justify-between border ${
-                    activePreviewStyle === style.id
+                    activePreviewStyle === feat.id
                       ? 'bg-[#360c0c] border-[#dd2222] shadow-md'
                       : 'bg-[#1d2125] border-[#2d3239] hover:bg-[#252a30] text-[#909cac]'
                   }`}
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold ${activePreviewStyle === style.id ? 'text-white' : 'text-[#b9c0ca]'}`}>
-                        {style.name}
+                      <span className={`text-sm font-bold ${activePreviewStyle === feat.id ? 'text-white' : 'text-[#b9c0ca]'}`}>
+                        {feat.name}
                       </span>
                       <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#171a1f] text-[#2cb7d3] border border-[#39414b]">
-                        {style.badge}
+                        {feat.badge}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#909cac] mt-0.5">{style.description}</p>
+                    <p className="text-[11px] text-[#909cac] mt-0.5">{feat.description}</p>
                   </div>
 
                   <div className="pl-3">
                     <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                      activePreviewStyle === style.id ? 'border-[#dd2222] bg-[#dd2222]' : 'border-[#4b5563]'
+                      activePreviewStyle === feat.id ? 'border-[#dd2222] bg-[#dd2222]' : 'border-[#4b5563]'
                     }`}>
-                      {activePreviewStyle === style.id && (
+                      {activePreviewStyle === feat.id && (
                         <div className="w-2 h-2 rounded-full bg-white" />
                       )}
                     </div>
@@ -631,7 +591,7 @@ export default function HomePage() {
                       <span>0:38 / 0:45</span>
                     </span>
                     <span className="px-2 py-0.5 rounded bg-[#dd2222] text-[10px] font-bold text-white uppercase">
-                      Viral Moment
+                      {currentPreview.tag}
                     </span>
                   </div>
 
@@ -642,15 +602,14 @@ export default function HomePage() {
                     </svg>
                   </div>
 
-                  {/* Active Subtitle Preview Displayed Over Video */}
-                  <div className="z-10 text-center my-auto px-2">
-                    <div className={`inline-block ${currentPreview.bgStyle} transition-all duration-300`}>
-                      <div className={`text-base sm:text-lg ${currentPreview.font} flex items-center justify-center gap-1.5 flex-wrap`}>
-                        {currentPreview.words.map((w, i) => (
-                          <span key={i} className={w.color}>
-                            {w.text}
-                          </span>
-                        ))}
+                  {/* Active Feature Display Over Video */}
+                  <div className="z-10 text-center my-auto px-3 w-full">
+                    <div className="inline-block bg-black/85 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-white/10 shadow-xl transition-all duration-300">
+                      <div className="text-sm sm:text-base font-black text-white tracking-wide uppercase">
+                        {currentPreview.previewHeadline}
+                      </div>
+                      <div className="text-[10px] text-[#fcd34d] font-semibold mt-0.5">
+                        {currentPreview.previewSub}
                       </div>
                     </div>
                   </div>
@@ -810,11 +769,11 @@ export default function HomePage() {
             {/* Feature 3 */}
             <div className="app-card p-6 border border-[#39414b] rounded-[10px] space-y-3">
               <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center text-yellow-400 text-lg font-bold">
-                🔥
+                ⚡
               </div>
-              <h3 className="text-base font-bold text-white">9 Subtitle Typography Styles</h3>
+              <h3 className="text-base font-bold text-white">Ultra-Fast Sub-5s Render Engine</h3>
               <p className="text-[#909cac] text-xs leading-relaxed">
-                Choose from Hormozi viral, MrBeast high energy, Cyberpunk Neon, Pop Comic, Retro CRT, or Clean Video with customizable vertical positioning and word-highlight colors.
+                Multithreaded bicubic encoding and smart preview caching render 1080x1920 60fps vertical shorts in seconds with zero waiting time.
               </p>
             </div>
 
@@ -887,7 +846,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-base font-bold text-white">AI Extracts Viral Clips</h3>
               <p className="text-[#909cac] text-xs leading-relaxed">
-                Our AI scans the transcript, scores moments for virality, crops the frame to 9:16 vertical, and generates animated word-by-word subtitles.
+                Our AI scans the transcript, scores moments for virality, crops the frame to 9:16 vertical, and renders in sub-5 seconds.
               </p>
             </div>
 
@@ -922,7 +881,7 @@ export default function HomePage() {
             <div className="app-panel p-5 border border-[#39414b] rounded-[10px] space-y-3">
               <div className="flex text-yellow-400 text-xs">★★★★★</div>
               <p className="text-white text-xs leading-relaxed italic">
-                &ldquo;I was paying $29/mo for Opus Clip until I found ClipStudio. Zero watermarks, better subtitle styles, and the Hinglish transliteration is a total game changer for Indian audiences.&rdquo;
+                &ldquo;I was paying $29/mo for Opus Clip until I found ClipStudio. Zero watermarks, lightning-fast rendering under 5 seconds, and complete freedom to export clean 1080x1920 shorts.&rdquo;
               </p>
               <div className="pt-2 border-t border-[#39414b]">
                 <p className="text-xs font-bold text-white">Aman Sharma</p>

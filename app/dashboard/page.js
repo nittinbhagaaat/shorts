@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
-import { fetchWithSettings, getStoredSettings } from '@/lib/settings';
+import { fetchWithSettings, getStoredSettings, safeParseJson } from '@/lib/settings';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function DashboardPage() {
@@ -63,7 +63,7 @@ export default function DashboardPage() {
       try {
         const res = await fetchWithSettings('/api/project');
         if (!res.ok) throw new Error('Failed to fetch projects');
-        const data = await res.json();
+        const data = await safeParseJson(res);
         setProjects(data.projects || []);
       } catch (err) {
         console.error('Error loading projects:', err);
@@ -126,11 +126,11 @@ export default function DashboardPage() {
       timeouts.forEach((t) => clearTimeout(t));
 
       if (!res.ok) {
-        const errData = await res.json();
+        const errData = await safeParseJson(res);
         throw new Error(errData.error || 'Failed to process video');
       }
 
-      const data = await res.json();
+      const data = await safeParseJson(res);
       setStatusText('Workspace ready! Redirecting...');
 
       setTimeout(() => {
@@ -200,7 +200,7 @@ export default function DashboardPage() {
             </h1>
 
             <p className="text-[#b9c0ca] text-sm sm:text-base font-normal leading-relaxed">
-              Paste any long-form YouTube video URL. clip.studio analyzes the transcript, extracts 35–40s complete scenes with full meaningful dialogue, cuts to 9:16 vertical layout, and burns in custom subtitles.
+              Paste any long-form YouTube video URL. clip.studio analyzes the transcript, extracts 35–40s complete scenes with full meaningful dialogue, and cuts to high-retention 9:16 vertical layout.
             </p>
           </div>
 
@@ -432,9 +432,9 @@ export default function DashboardPage() {
               <p className="text-[#909cac] text-[11px] font-normal mt-0.5">Left/Center/Right framing</p>
             </div>
             <div className="p-3.5 rounded-[10px] bg-[#2d3239] border border-[#39414b] text-center">
-              <span className="text-base block mb-1">🔥</span>
-              <h4 className="text-white font-semibold text-xs">Hormozi Subtitles</h4>
-              <p className="text-[#909cac] text-[11px] font-normal mt-0.5">Animated highlighted words</p>
+              <span className="text-base block mb-1">⚡</span>
+              <h4 className="text-white font-semibold text-xs">Ultra-Fast 9:16 Render</h4>
+              <p className="text-[#909cac] text-[11px] font-normal mt-0.5">High-speed MP4 short export</p>
             </div>
             <div className="p-3.5 rounded-[10px] bg-[#2d3239] border border-[#39414b] text-center">
               <span className="text-base block mb-1">🌐</span>

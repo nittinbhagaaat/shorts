@@ -15,8 +15,8 @@ const ClipSchema = new mongoose.Schema({
   end: Number, // end time in original video (seconds)
   duration: Number, // length in seconds
   status: { type: String, enum: ['pending', 'rendering', 'completed', 'failed'], default: 'pending' },
-  enableSubtitles: { type: Boolean, default: true },
-  captionStyle: { type: String, default: 'hormozi' }, // hormozi, mrbeast, neon, minimalist, classic, karaoke, retro, cinematic, bold_badge, comic, none
+  enableSubtitles: { type: Boolean, default: false },
+  captionStyle: { type: String, default: 'none' },
   cropFocus: { type: String, default: 'auto' }, // auto (active speaker tracking), center, left, right
   captionPosition: { type: String, default: 'lower' }, // top, upper, center, lower, bottom, custom
   captionYPercent: { type: Number, default: 72 }, // 10 to 90 % from top

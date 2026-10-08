@@ -186,7 +186,7 @@ function LoginForm() {
 
         {/* Footer link to Signup */}
         <div className="mt-6 text-center text-xs text-[#909cac]">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link
             href={`/signup${returnTo !== '/workspaces' ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}
             className="text-[#dd2222] hover:underline font-semibold"

@@ -56,8 +56,9 @@ def analyze_speaker_tracking(video_path, fps_sample=1.5):
                 "message": "Video is already vertical"
             }
 
-        # Sample frames at fps_sample interval
-        sample_interval = max(1, int(fps / fps_sample))
+        # Sample at most 4 evenly spaced frames for ultra-fast, sub-second speaker tracking
+        target_samples = 4
+        sample_interval = max(1, int((duration * fps) / target_samples)) if duration > 0 else max(1, int(fps * 6))
         timestamps = []
         person_centers = []
 
@@ -117,6 +118,9 @@ def analyze_speaker_tracking(video_path, fps_sample=1.5):
                 else:
                     # No person detected in this frame, use last known center
                     person_centers.append(last_known_center)
+
+                if len(person_centers) >= target_samples:
+                    break
 
             frame_idx += 1
 

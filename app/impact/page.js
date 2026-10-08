@@ -280,7 +280,7 @@ export default function ImpactPage() {
           <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-[#9ca3af]">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
             <Link href="/#features" className="hover:text-white transition-colors">Features</Link>
-            <Link href="/#subtitles" className="hover:text-white transition-colors">Subtitles</Link>
+            <Link href="/#pipeline" className="hover:text-white transition-colors">Video Engine</Link>
             <Link href="/#how-it-works" className="hover:text-white transition-colors">How It Works</Link>
             <Link href="/impact" className="text-white font-bold flex items-center gap-1.5">
               <span>Our Impact</span>

@@ -133,7 +133,7 @@ export default function PlatformHistoryPage() {
             <div>
               <h3 className="text-lg font-bold text-white">Private Publishing History</h3>
               <p className="text-[#909cac] text-xs font-normal mt-1.5 max-w-sm mx-auto leading-relaxed">
-                Publishing records and scheduled Shorts are private to each creator's account. Sign in with Google or Email to access your publishing history.
+                Publishing records and scheduled Shorts are private to each creator&apos;s account. Sign in with Google or Email to access your publishing history.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">

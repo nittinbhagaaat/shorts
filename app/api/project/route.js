@@ -25,7 +25,7 @@ export async function POST(req) {
 
     const body = await req.json();
     const { url, clipCount = 5, regenerate = false, minDuration = 30, maxDuration = 60 } = body;
-    const isSubtitlesEnabled = typeof body.enableSubtitles === 'boolean' ? body.enableSubtitles : true;
+    const isSubtitlesEnabled = false;
     if (!url) {
       return NextResponse.json({ error: 'YouTube URL is required' }, { status: 400 });
     }
@@ -192,8 +192,8 @@ export async function POST(req) {
         end: c.end,
         duration: c.end - c.start,
         status: 'pending',
-        enableSubtitles: isSubtitlesEnabled,
-        captionStyle: isSubtitlesEnabled ? 'hormozi' : 'none',
+        enableSubtitles: false,
+        captionStyle: 'none',
         cropFocus: 'auto',
         captionPosition: 'lower',
         captionYPercent: 72,

@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const [isDisconnectingYt, setIsDisconnectingYt] = useState(false);
   const [ytBanner, setYtBanner] = useState(null);
   const [copiedRedirectUri, setCopiedRedirectUri] = useState(false);
+  const [ytMeta, setYtMeta] = useState({ isConfigured: true, googleProjectId: '79839125649' });
 
   const [showKeys, setShowKeys] = useState({
     mistral: false,
@@ -39,6 +40,10 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setYtAccount(data.connected ? data.account : null);
+        setYtMeta({
+          isConfigured: data.isConfigured !== false,
+          googleProjectId: data.googleProjectId || '79839125649',
+        });
       }
     } catch (err) {
       console.error('Failed to fetch YouTube status:', err);
@@ -648,6 +653,60 @@ export default function SettingsPage() {
                 </a>
               </div>
             )}
+
+            {/* Google OAuth Setup & 'This app is blocked' Troubleshooting Guide */}
+            <div className="p-4 rounded-[12px] bg-[#1d2125] border border-[#39414b] space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white flex items-center gap-2 text-xs">
+                  <span className="p-1 rounded bg-amber-500/10 text-amber-400">⚠️</span>
+                  <span>Why Google Shows &quot;This app is blocked&quot; &amp; How to Fix It</span>
+                </span>
+                <span className="text-[10px] text-[#f59e0b] bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono font-semibold">
+                  Project: {ytMeta.googleProjectId || '79839125649'}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-[8px] bg-[#171a1d] border border-[#2d3239] text-[#909cac] text-[11px] leading-relaxed space-y-1.5">
+                <p>
+                  <strong className="text-white">Why did Google block this?</strong> YouTube upload requires sensitive permissions (<code className="text-[#e2e8f0]">youtube.upload</code>). While your Google Cloud OAuth consent screen is in <strong>Testing</strong> mode, Google automatically blocks any Google account that is not explicitly registered under your project&apos;s <strong>Test users</strong> list.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[#b9c0ca] text-[11px] font-semibold">
+                  Follow these 3 quick steps in Google Cloud Console to unblock your account:
+                </p>
+                <ol className="list-decimal list-inside space-y-2 text-[#909cac] text-[11px] pl-1">
+                  <li className="leading-relaxed">
+                    <strong className="text-white">Add your email as a Test User:</strong> Open{' '}
+                    <a
+                      href={`https://console.cloud.google.com/apis/credentials/consent?project=${ytMeta.googleProjectId || '79839125649'}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#dd2222] hover:underline font-semibold"
+                    >
+                      OAuth consent screen (Project {ytMeta.googleProjectId || '79839125649'}) ↗
+                    </a>
+                    , scroll down to the <strong>Test users</strong> section, click <strong>+ ADD USERS</strong>, type the exact Gmail/Google email you are connecting with, and click <strong>Save</strong>.
+                  </li>
+                  <li className="leading-relaxed">
+                    <strong className="text-white">Verify YouTube API is enabled:</strong> Ensure{' '}
+                    <a
+                      href={`https://console.cloud.google.com/apis/library/youtube.googleapis.com?project=${ytMeta.googleProjectId || '79839125649'}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#dd2222] hover:underline font-semibold"
+                    >
+                      YouTube Data API v3 ↗
+                    </a>{' '}
+                    shows as <strong>ENABLED</strong> for your project.
+                  </li>
+                  <li className="leading-relaxed">
+                    <strong className="text-white">Connect and bypass the Unverified Warning:</strong> Return here and click <strong>Connect YouTube Channel</strong>. Select your test user Gmail. Google will show &quot;Google hasn&apos;t verified this app&quot;. Click <strong className="text-white">Advanced</strong> (at the bottom) &rarr; Click <strong className="text-white">Go to Shorts AI (unsafe)</strong> &rarr; Click <strong className="text-white">Continue</strong>.
+                  </li>
+                </ol>
+              </div>
+            </div>
 
             <div className="pt-3 border-t border-[#39414b] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#909cac]">
               <div className="flex items-center gap-2">

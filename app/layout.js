@@ -2,8 +2,8 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata = {
-  title: "clip.studio - AI Viral Moments & Subtitle Studio",
-  description: "Generate 35-40s vertical clips from YouTube videos with styled captions using Groq, Mistral, Gemini, and OpenAI.",
+  title: "clip.studio - Ultra-Fast AI Viral Shorts Studio",
+  description: "Extract 35-40s viral vertical 9:16 shorts from YouTube videos in seconds with smart speaker framing and custom text overlays.",
   verification: {
     google: "94RJZPLf9raobhEzHv0irDIvlb908Vwpv3WLRY_w1Nc",
   },
