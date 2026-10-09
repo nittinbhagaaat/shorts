@@ -7,6 +7,7 @@ import { getYouTubeVideoData, fetchTranscript } from '@/lib/youtube';
 import { identifyViralClips, generateIntelligentFallbackClips, transliterateHindiToHinglish, translateTranscriptToEnglish } from '@/lib/ai';
 import { devanagariToHinglish, transliterateTranscript } from '@/lib/transliterate';
 import { getAuthUser } from '@/lib/auth';
+import { cleanupExpiredClips } from '@/lib/storageCleanup';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
@@ -58,6 +59,9 @@ export async function GET(req, { params }) {
       await project.save();
       await Clip.updateMany({ projectId: project._id }, { $set: { userId: session.id } });
     }
+
+    // Auto-cleanup: Purge any clips rendered more than 10 minutes ago
+    await cleanupExpiredClips();
 
     let clips = await Clip.find({ projectId: project._id }).sort({ start: 1 });
 

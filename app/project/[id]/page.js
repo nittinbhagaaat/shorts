@@ -647,8 +647,12 @@ export default function ProjectWorkspace({ params }) {
                         )}
                         {clip.status === 'pending' && (
                           <span className="text-[#909cac] flex items-center gap-1 font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#6e7d91]"></span>
-                            Ready
+                            <span className={`w-1.5 h-1.5 rounded-full ${clip.purgedReason === 'expired_10min' ? 'bg-amber-400' : clip.purgedReason === 'uploaded_to_youtube' ? 'bg-emerald-400' : 'bg-[#6e7d91]'}`}></span>
+                            {clip.purgedReason === 'uploaded_to_youtube'
+                              ? 'Uploaded (Cleaned)'
+                              : clip.purgedReason === 'expired_10min'
+                              ? 'Expired (10m)'
+                              : 'Ready'}
                           </span>
                         )}
                         {clip.status === 'rendering' && (
@@ -940,6 +944,17 @@ export default function ProjectWorkspace({ params }) {
                       <div className="w-full mt-4 flex flex-col gap-2">
                         {selectedClip.status === 'completed' ? (
                           <>
+                            {/* Server Storage 10-minute auto-deletion banner */}
+                            <div className="flex items-center justify-between text-[11px] px-3 py-1.5 rounded-[8px] bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                              <span className="flex items-center gap-1.5 font-medium">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                <span>Server Storage Policy: Auto-deletes in 10 min</span>
+                              </span>
+                              <span className="text-[10px] text-amber-200/80 font-mono">
+                                Prevents server full
+                              </span>
+                            </div>
+
                             {((selectedClip.renderFormat || 'vertical') === 'vertical' || selectedClip.renderFormat === 'both') && (
                               <a
                                 href={`/api/clip/${selectedClip._id}/download?format=vertical`}
@@ -975,29 +990,58 @@ export default function ProjectWorkspace({ params }) {
                             </button>
                           </>
                         ) : (
-                          <button
-                            onClick={handleStartRender}
-                            disabled={isRendering}
-                            className="w-full py-3 btn-primary text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                          >
-                            {isRendering ? (
-                              <span className="flex items-center gap-2">
-                                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                                <span>Rendering Short...</span>
-                              </span>
-                            ) : (
-                              <>
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>Render Video Short</span>
-                              </>
+                          <>
+                            {/* Storage Policy Notice when purged */}
+                            {selectedClip.purgedReason === 'uploaded_to_youtube' && (
+                              <div className="p-3 rounded-[10px] bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200 space-y-1">
+                                <div className="flex items-center gap-1.5 font-bold text-white">
+                                  <span>💾 Server Storage Saved</span>
+                                </div>
+                                <p className="text-[11px] text-emerald-300/80 leading-relaxed">
+                                  Rendered MP4 file was automatically deleted from the server after YouTube upload. Click <strong>Rerender Video Short</strong> below if you want to preview or re-download locally.
+                                </p>
+                              </div>
                             )}
-                          </button>
+
+                            {selectedClip.purgedReason === 'expired_10min' && (
+                              <div className="p-3 rounded-[10px] bg-amber-950/40 border border-amber-500/30 text-xs text-amber-200 space-y-1">
+                                <div className="flex items-center gap-1.5 font-bold text-white">
+                                  <span>⏱️ Video Expired (10-Minute Policy)</span>
+                                </div>
+                                <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                                  Rendered MP4 was automatically deleted after 10 minutes to prevent server storage overflow. Click <strong>Rerender Video Short</strong> below to regenerate anytime.
+                                </p>
+                              </div>
+                            )}
+
+                            <button
+                              onClick={handleStartRender}
+                              disabled={isRendering}
+                              className="w-full py-3 btn-primary text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              {isRendering ? (
+                                <span className="flex items-center gap-2">
+                                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                  </svg>
+                                  <span>Rendering Short...</span>
+                                </span>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span>
+                                    {selectedClip.purgedReason && selectedClip.purgedReason !== 'none'
+                                      ? 'Rerender Video Short'
+                                      : 'Render Video Short'}
+                                  </span>
+                                </>
+                              )}
+                            </button>
+                          </>
                         )}
 
                         {/* Upload to YouTube Short Button - Just after Preview Action */}

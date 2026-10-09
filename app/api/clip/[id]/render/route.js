@@ -2,6 +2,7 @@ import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
 import Project from '@/models/Project';
 import { downloadVideoClip, generateAssSubtitles, renderFinalShort } from '@/lib/video';
+import { scheduleClipAutoCleanup, deleteClipVideoFiles } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
@@ -157,11 +158,17 @@ export async function POST(req, { params }) {
       console.warn(`RENDER API: Failed to clean up some temporary files:`, cleanupError.message);
     }
 
-    // Step 5: Update clip in database to completed
+    // Step 5: Update clip in database to completed with renderedAt timestamp
     clip.status = 'completed';
+    clip.renderedAt = new Date();
+    clip.purgedAt = null;
+    clip.purgedReason = 'none';
     await clip.save();
 
-    console.log(`RENDER API: Clip ${id} successfully rendered and completed!`);
+    // Step 6: Automatically schedule file deletion in 10 minutes to save server storage
+    scheduleClipAutoCleanup(clip._id);
+
+    console.log(`RENDER API: Clip ${id} successfully rendered! Auto-deletion scheduled in 10 minutes.`);
     return NextResponse.json({ clip });
   } catch (error) {
     console.error('RENDER API: Error rendering clip:', error);
@@ -193,39 +200,11 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: 'Clip not found' }, { status: 404 });
     }
 
-    // List of possible rendered output files
-    const filePaths = [
-      clip.videoPath,
-      clip.videoPathVertical,
-      clip.videoPathHorizontal,
-      `/outputs/${id}-vertical.mp4`,
-      `/outputs/${id}-horizontal.mp4`,
-      `/outputs/${id}.mp4`
-    ].filter(Boolean);
-
-    // Unlink each file from public outputs directory if it exists
-    filePaths.forEach(relativeFilePath => {
-      const absoluteFilePath = path.join(process.cwd(), 'public', relativeFilePath);
-      try {
-        if (fs.existsSync(absoluteFilePath)) {
-          fs.unlinkSync(absoluteFilePath);
-          console.log(`RENDER API: Deleted output file: ${absoluteFilePath}`);
-        }
-      } catch (err) {
-        console.warn(`RENDER API: Failed to delete file: ${absoluteFilePath}`, err.message);
-      }
-    });
-
-    // Reset clip fields in database
-    clip.status = 'pending';
-    clip.videoPath = undefined;
-    clip.videoPathVertical = undefined;
-    clip.videoPathHorizontal = undefined;
-    
-    await clip.save();
+    // Purge all files using shared storage cleaner
+    const updatedClip = await deleteClipVideoFiles(id, clip, 'manual');
 
     console.log(`RENDER API: Clip ${id} rendering has been reset and files deleted.`);
-    return NextResponse.json({ success: true, clip });
+    return NextResponse.json({ success: true, clip: updatedClip || clip });
   } catch (error) {
     console.error('RENDER API: Error resetting clip render:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

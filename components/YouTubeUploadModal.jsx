@@ -101,7 +101,11 @@ export default function YouTubeUploadModal({
     }
 
     if (!isRendered) {
-      setUploadError('Please render the vertical Short first so the MP4 video is ready for upload.');
+      setUploadError(
+        clip.purgedReason && clip.purgedReason !== 'none'
+          ? 'Video files were purged to save server storage. Please close this modal and click "Rerender Video Short" first.'
+          : 'Please render the vertical Short first so the MP4 video is ready for upload.'
+      );
       return;
     }
 
@@ -311,6 +315,14 @@ export default function YouTubeUploadModal({
                 </p>
               </div>
 
+              {/* Storage Cleaned Alert Banner */}
+              <div className="p-3 rounded-[10px] bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200 flex items-center justify-center gap-2">
+                <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>💾 <strong>Server Storage Cleaned:</strong> Rendered video files were automatically purged from the server to save disk space.</span>
+              </div>
+
               {uploadSuccess.shortUrl && (
                 <div className="pt-2">
                   <a
@@ -347,7 +359,13 @@ export default function YouTubeUploadModal({
                     <svg className="w-4 h-4 shrink-0 text-[#dd2222]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <span>This Short must be rendered in 9:16 vertical format before uploading.</span>
+                    <span>
+                      {clip.purgedReason === 'uploaded_to_youtube'
+                        ? 'Rendered video was deleted after YouTube upload. Please re-render if you wish to upload again.'
+                        : clip.purgedReason === 'expired_10min'
+                        ? 'Video expired after 10 minutes and was deleted to save server storage. Please re-render first.'
+                        : 'This Short must be rendered in 9:16 vertical format before uploading.'}
+                    </span>
                   </div>
                   {onRequestRender && (
                     <button
@@ -359,7 +377,7 @@ export default function YouTubeUploadModal({
                       disabled={isRenderingParent}
                       className="px-3 py-1 bg-[#dd2222] hover:bg-[#b91c1c] text-white text-xs font-bold rounded-[8px] transition-colors shrink-0 cursor-pointer disabled:opacity-50"
                     >
-                      {isRenderingParent ? 'Rendering...' : 'Render Now'}
+                      {isRenderingParent ? 'Rendering...' : clip.purgedReason && clip.purgedReason !== 'none' ? 'Rerender Now' : 'Render Now'}
                     </button>
                   )}
                 </div>

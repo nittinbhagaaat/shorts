@@ -5,11 +5,13 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import { getStoredSettings, saveStoredSettings, DEFAULT_SETTINGS, fetchWithSettings } from '@/lib/settings';
 import { useAuth } from '@/contexts/AuthContext';
+import ApiKeyModal from '@/components/ApiKeyModal';
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [saveStatus, setSaveStatus] = useState('');
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   
   // YouTube integration state
   const [ytAccount, setYtAccount] = useState(null);
@@ -212,20 +214,12 @@ export default function SettingsPage() {
       keyField: 'groqKey',
       modelField: 'groqModel',
       models: [
-        { label: 'openai/gpt-oss-120b (Recommended - OpenAI 120B)', value: 'openai/gpt-oss-120b' },
-        { label: 'openai/gpt-oss-20b (OpenAI 20B)', value: 'openai/gpt-oss-20b' },
-        { label: 'openai/gpt-oss-safeguard-20b', value: 'openai/gpt-oss-safeguard-20b' },
-        { label: 'qwen/qwen3.6-27b (Alibaba Cloud 27B)', value: 'qwen/qwen3.6-27b' },
-        { label: 'qwen/qwen3.8-27b (Alibaba Cloud 27B)', value: 'qwen/qwen3.8-27b' },
-        { label: 'groq/compound (Groq Compound)', value: 'groq/compound' },
-        { label: 'groq/compound-mini (Groq Compound Mini)', value: 'groq/compound-mini' },
-        { label: 'canopylabs/orpheus-v1-english (Canopy Labs)', value: 'canopylabs/orpheus-v1-english' },
-        { label: 'canopylabs/orpheus-arabic-saudi (Canopy Labs)', value: 'canopylabs/orpheus-arabic-saudi' },
-        { label: 'meta-llama/llama-prompt-guard-2-86m', value: 'meta-llama/llama-prompt-guard-2-86m' },
-        { label: 'meta-llama/llama-prompt-guard-2-22m', value: 'meta-llama/llama-prompt-guard-2-22m' },
-        { label: 'llama-3.3-70b-versatile (Meta Llama 3.3)', value: 'llama-3.3-70b-versatile' },
-        { label: 'llama3-8b-8192 (Meta Llama 3 8B)', value: 'llama3-8b-8192' },
+        { label: 'llama-3.3-70b-versatile (Recommended - Meta Llama 3.3)', value: 'llama-3.3-70b-versatile' },
+        { label: 'openai/gpt-oss-120b (OpenAI GPT-OSS 120B)', value: 'openai/gpt-oss-120b' },
+        { label: 'llama3-8b-8192 (Fast - Meta Llama 3 8B)', value: 'llama3-8b-8192' },
         { label: 'mixtral-8x7b-32768 (Mixtral 8x7B)', value: 'mixtral-8x7b-32768' },
+        { label: 'openai/gpt-oss-20b (OpenAI 20B)', value: 'openai/gpt-oss-20b' },
+        { label: 'qwen/qwen3.6-27b (Alibaba Cloud 27B)', value: 'qwen/qwen3.6-27b' },
       ],
       placeholder: 'gsk_...',
       docsUrl: 'https://console.groq.com/keys',
@@ -282,7 +276,7 @@ export default function SettingsPage() {
   ];
 
   // Active selected provider object
-  const activeProvider = providers.find((p) => p.id === (settings.aiProvider || 'mistral')) || providers[1];
+  const activeProvider = providers.find((p) => p.id === (settings.aiProvider || 'groq')) || providers[0];
   const activeTestState = testStates[activeProvider.id];
 
   return (
@@ -418,14 +412,25 @@ export default function SettingsPage() {
                       ACTIVE
                     </span>
                   </h4>
-                  <a
-                    href={activeProvider.docsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] text-[#2cb7d3] hover:underline font-normal"
-                  >
-                    Get API Key from {activeProvider.name} →
-                  </a>
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                    <a
+                      href={activeProvider.docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-[#2cb7d3] hover:underline font-normal"
+                    >
+                      Get API Key from {activeProvider.name} →
+                    </a>
+                    {activeProvider.id === 'groq' && (
+                      <button
+                        type="button"
+                        onClick={() => setIsGuideOpen(true)}
+                        className="text-[11px] text-[#dd2222] hover:text-[#ff4444] font-bold underline cursor-pointer"
+                      >
+                        📖 Step-by-Step Setup Guide
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -775,6 +780,16 @@ export default function SettingsPage() {
         </section>
 
       </div>
+
+      {/* Guide Modal */}
+      <ApiKeyModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        onSuccess={() => {
+          setSettings(getStoredSettings());
+        }}
+        initialReason="Follow this step-by-step guide to get your free Groq API key in 60 seconds."
+      />
     </DashboardLayout>
   );
 }

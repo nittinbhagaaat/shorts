@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
+import { deleteClipVideoFiles } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { getAuthUser } from '@/lib/auth';
 import fs from 'fs';
@@ -55,8 +56,11 @@ export async function GET(req, { params }) {
     }
 
     if (!fs.existsSync(filePath)) {
+      if (clip.status === 'completed') {
+        await deleteClipVideoFiles(id, clip, 'expired_10min');
+      }
       console.warn(`STREAM API: File not found on disk: ${filePath}`);
-      return new Response('Video file not found on disk', { status: 404 });
+      return new Response('Video file has expired or was removed to save server storage. Please rerender.', { status: 404 });
     }
 
     const stat = fs.statSync(filePath);

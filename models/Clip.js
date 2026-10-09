@@ -58,6 +58,10 @@ const ClipSchema = new mongoose.Schema({
   youtubeVideoId: { type: String, default: '' },
   youtubeVideoUrl: { type: String, default: '' },
   youtubeScheduledTime: { type: Date, default: null },
+  // Storage Management & Auto-cleanup (Deletes local file after 10 min or YouTube upload)
+  renderedAt: { type: Date, default: null },
+  purgedAt: { type: Date, default: null },
+  purgedReason: { type: String, enum: ['none', 'uploaded_to_youtube', 'expired_10min', 'manual'], default: 'none' },
   createdAt: { type: Date, default: Date.now }
 });
 

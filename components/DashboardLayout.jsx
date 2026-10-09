@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { getStoredSettings } from '@/lib/settings';
+import { getStoredSettings, hasConfiguredApiKey } from '@/lib/settings';
 import { useAuth } from '@/contexts/AuthContext';
+import ApiKeyModal from '@/components/ApiKeyModal';
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
@@ -12,6 +13,8 @@ export default function DashboardLayout({ children }) {
   const [settings, setSettings] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [modalReason, setModalReason] = useState('');
 
   useEffect(() => {
     setSettings(getStoredSettings());
@@ -20,8 +23,17 @@ export default function DashboardLayout({ children }) {
       setSettings(e.detail);
     };
 
+    const handleOpenApiKeyModal = (e) => {
+      setModalReason(e.detail?.reason || '');
+      setIsApiKeyModalOpen(true);
+    };
+
     window.addEventListener('shorts_settings_updated', handleSettingsUpdate);
-    return () => window.removeEventListener('shorts_settings_updated', handleSettingsUpdate);
+    window.addEventListener('shorts_open_api_key_modal', handleOpenApiKeyModal);
+    return () => {
+      window.removeEventListener('shorts_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('shorts_open_api_key_modal', handleOpenApiKeyModal);
+    };
   }, []);
 
   const navItems = [
@@ -95,13 +107,8 @@ export default function DashboardLayout({ children }) {
     groq: 'Groq LPU',
   };
 
-  const currentProvider = settings?.aiProvider || 'mistral';
-  const hasKey = Boolean(
-    (currentProvider === 'groq' && settings?.groqKey) ||
-    (currentProvider === 'mistral' && settings?.mistralKey) ||
-    (currentProvider === 'gemini' && settings?.geminiKey) ||
-    (currentProvider === 'openai' && settings?.openaiKey)
-  );
+  const currentProvider = settings?.aiProvider || 'groq';
+  const hasKey = hasConfiguredApiKey(settings);
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
 
@@ -301,10 +308,10 @@ export default function DashboardLayout({ children }) {
                   className={`px-2 py-0.5 rounded-[10px] text-[10px] font-bold uppercase tracking-wider ${
                     hasKey
                       ? 'bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30'
-                      : 'bg-[#f59e0b]/15 text-[#f59e0b] border border-[#f59e0b]/30'
+                      : 'bg-[#dd2222]/15 text-[#dd2222] border border-[#dd2222]/30 animate-pulse'
                   }`}
                 >
-                  {hasKey ? 'Ready' : 'Fallback'}
+                  {hasKey ? 'Ready' : 'Setup Key'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -312,25 +319,42 @@ export default function DashboardLayout({ children }) {
                   <span className="w-2 h-2 rounded-full bg-[#dd2222]"></span>
                   {providerNames[currentProvider] || currentProvider}
                 </span>
-                <Link
-                  href="/settings"
-                  className="text-[11px] text-[#2cb7d3] hover:underline"
-                >
-                  Configure
-                </Link>
+                {hasKey ? (
+                  <Link
+                    href="/settings"
+                    className="text-[11px] text-[#2cb7d3] hover:underline"
+                  >
+                    Configure
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalReason('Connect your free Groq key in 60 seconds (no credit card required).');
+                      setIsApiKeyModalOpen(true);
+                    }}
+                    className="text-[11px] text-[#dd2222] hover:text-[#ff4444] font-bold underline cursor-pointer"
+                  >
+                    Setup Free Key
+                  </button>
+                )}
               </div>
               <div className="text-[10px] text-[#6e7d91] truncate font-mono">
-                Workspaces: Isolated & Private
+                {hasKey ? 'Workspaces: Isolated & Private' : 'Free Groq key needed'}
               </div>
             </div>
           ) : (
-            <Link
-              href="/settings"
-              className="w-10 h-10 mx-auto rounded-[10px] bg-[#1d2125] border border-[#39414b] flex items-center justify-center text-[#2cb7d3] hover:bg-[#39414b] transition-all"
-              title="Configure Settings"
+            <button
+              type="button"
+              onClick={() => {
+                setModalReason('Connect your free Groq key in 60 seconds.');
+                setIsApiKeyModalOpen(true);
+              }}
+              className="w-10 h-10 mx-auto rounded-[10px] bg-[#1d2125] border border-[#39414b] flex items-center justify-center text-[#2cb7d3] hover:bg-[#39414b] transition-all cursor-pointer"
+              title={hasKey ? "AI Engine Ready" : "Setup Free AI Key"}
             >
-              <div className="w-2.5 h-2.5 rounded-full bg-[#22c55e]"></div>
-            </Link>
+              <div className={`w-2.5 h-2.5 rounded-full ${hasKey ? 'bg-[#22c55e]' : 'bg-[#dd2222] animate-ping'}`}></div>
+            </button>
           )}
 
           {!isCollapsed && (
@@ -403,14 +427,28 @@ export default function DashboardLayout({ children }) {
             ))}
           </nav>
           <div className="pt-2 border-t border-[#39414b] flex items-center justify-between text-xs text-[#909cac]">
-            <span>Engine: {providerNames[currentProvider]}</span>
-            <Link
-              href="/settings"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-[#2cb7d3] underline font-medium"
-            >
-              Settings
-            </Link>
+            <span>Engine: {providerNames[currentProvider] || currentProvider}</span>
+            {hasKey ? (
+              <Link
+                href="/settings"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-[#2cb7d3] underline font-medium"
+              >
+                Settings
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setModalReason('Connect your free Groq key in 60 seconds.');
+                  setIsApiKeyModalOpen(true);
+                }}
+                className="text-[#dd2222] font-bold underline cursor-pointer"
+              >
+                Setup Free Key
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -419,6 +457,16 @@ export default function DashboardLayout({ children }) {
       <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-y-auto">
         {children}
       </div>
+
+      {/* Global API Key Configuration Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
+        initialReason={modalReason}
+        onSuccess={() => {
+          setSettings(getStoredSettings());
+        }}
+      />
     </div>
   );
 }

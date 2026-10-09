@@ -4,6 +4,7 @@ import Clip from '@/models/Clip';
 import Project from '@/models/Project';
 import YouTubeUpload from '@/models/YouTubeUpload';
 import { uploadShortToYouTube } from '@/lib/youtubeClient';
+import { deleteClipVideoFiles } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
@@ -149,7 +150,10 @@ export async function POST(req) {
     clip.seoKeywords = Array.isArray(seoKeywords) ? seoKeywords : clip.seoKeywords;
     await clip.save();
 
-    console.log(`API YOUTUBE UPLOAD: Successfully processed ${uploadResult.status} Short for clip ${clipId}`);
+    // Auto-clean storage: Purge local video files from server immediately after YouTube upload to prevent disk overflow
+    await deleteClipVideoFiles(clip._id, clip, 'uploaded_to_youtube');
+
+    console.log(`API YOUTUBE UPLOAD: Successfully processed ${uploadResult.status} Short for clip ${clipId}. Local video files purged to free disk space.`);
 
     return NextResponse.json({
       success: true,
@@ -157,9 +161,10 @@ export async function POST(req) {
       clip,
       shortUrl: uploadResult.shortUrl,
       isScheduled: uploadResult.isScheduled,
+      purged: true,
       message: uploadResult.isScheduled
-        ? `Short successfully scheduled for ${new Date(uploadResult.scheduledPublishTime).toLocaleString()}`
-        : 'Short successfully published to YouTube!',
+        ? `Short successfully scheduled for ${new Date(uploadResult.scheduledPublishTime).toLocaleString()}. Local video file was purged to save server disk space.`
+        : 'Short successfully published to YouTube! Local video file was purged to save server disk space.',
     });
   } catch (err) {
     console.error('API YOUTUBE UPLOAD: Error uploading short:', err);

@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { deleteClipVideoFiles } from '@/lib/storageCleanup';
 import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
@@ -24,7 +25,9 @@ export async function GET(req, { params }) {
 
     const clip = await Clip.findById(id);
     if (!clip || clip.status !== 'completed') {
-      return NextResponse.json({ error: 'Video clip not ready or not found' }, { status: 404 });
+      return NextResponse.json({ 
+        error: 'Video clip is not rendered or has been deleted to save server storage. Please click Rerender Video.' 
+      }, { status: 404 });
     }
 
     if (clip.userId && session.id !== clip.userId.toString()) {
@@ -44,7 +47,10 @@ export async function GET(req, { params }) {
 
     const filePath = path.join(process.cwd(), 'public', relativePath);
     if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: 'Video file does not exist on disk' }, { status: 404 });
+      await deleteClipVideoFiles(id, clip, 'expired_10min');
+      return NextResponse.json({ 
+        error: 'Video file was automatically deleted after 10 minutes to save server storage. Please click Rerender Video to regenerate.' 
+      }, { status: 410 });
     }
 
     // Create a read stream from the file

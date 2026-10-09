@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
-import { fetchWithSettings, getStoredSettings, safeParseJson } from '@/lib/settings';
+import { fetchWithSettings, getStoredSettings, safeParseJson, hasConfiguredApiKey } from '@/lib/settings';
 import { useAuth } from '@/contexts/AuthContext';
+import ApiKeyModal from '@/components/ApiKeyModal';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -21,6 +22,8 @@ export default function DashboardPage() {
   const [isFetchingProjects, setIsFetchingProjects] = useState(true);
   const [error, setError] = useState('');
   const [settings, setSettings] = useState(null);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [apiKeyModalReason, setApiKeyModalReason] = useState('');
 
   // Pre-fill URL, clipCount, minDuration, and maxDuration from query parameters
   useEffect(() => {
@@ -86,9 +89,33 @@ export default function DashboardPage() {
     return () => window.removeEventListener('shorts_settings_updated', handleSettingsUpdate);
   }, [user, authLoading]);
 
+  // Prompt unconfigured users with popup on load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = getStoredSettings();
+      if (!hasConfiguredApiKey(stored)) {
+        const dismissed = sessionStorage.getItem('shorts_apikey_popup_dismissed');
+        if (!dismissed) {
+          const timer = setTimeout(() => {
+            setApiKeyModalReason('To create viral shorts from YouTube videos, connect your free Groq AI key in 60 seconds (no credit card required).');
+            setIsApiKeyModalOpen(true);
+          }, 600);
+          return () => clearTimeout(timer);
+        }
+      }
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!url.trim()) return;
+
+    // Check if user has configured their API key
+    if (!hasConfiguredApiKey(settings)) {
+      setApiKeyModalReason('To analyze this YouTube video and generate viral shorts, you need a free Groq API key. Follow the 60-second guide below to get started!');
+      setIsApiKeyModalOpen(true);
+      return;
+    }
 
     if (!user) {
       router.push(`/login?returnTo=${encodeURIComponent(`/?url=${encodeURIComponent(url.trim())}`)}`);
@@ -174,7 +201,7 @@ export default function DashboardPage() {
     return `${mins}:${rSecs.toString().padStart(2, '0')}`;
   };
 
-  const currentProvider = settings?.aiProvider || 'mistral';
+  const currentProvider = settings?.aiProvider || 'groq';
   const providerDisplay = {
     mistral: 'Mistral AI',
     gemini: 'Google Gemini',
@@ -188,11 +215,44 @@ export default function DashboardPage() {
         {/* Main Content Area */}
         <main className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col items-center">
           
+          {/* Unconfigured API Key Alert Banner */}
+          {!hasConfiguredApiKey(settings) && (
+            <div className="w-full max-w-2xl mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#360c0c] via-[#282d33] to-[#1d2125] border-2 border-[#dd2222]/70 shadow-xl shadow-[#dd2222]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#dd2222] text-white flex items-center justify-center font-black text-lg shrink-0 shadow-md shadow-[#dd2222]/30 mt-0.5">
+                  ⚡
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-bold text-white">Free Groq API Key Required</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#22c55e]/15 border border-[#22c55e]/30 text-[#86efac]">
+                      100% FREE • NO CREDIT CARD
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#b9c0ca] mt-1 leading-relaxed">
+                    You haven’t configured an API key yet. Connect your <strong>free Groq key in 60 seconds</strong> to unlock AI viral clip extraction.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setApiKeyModalReason('Connect your free Groq key in 60 seconds to enable automatic viral shorts creation.');
+                  setIsApiKeyModalOpen(true);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-[#dd2222] hover:bg-[#c81e1e] text-white text-xs font-bold transition-all shadow-md shadow-[#dd2222]/20 cursor-pointer shrink-0 self-start sm:self-auto flex items-center gap-1.5"
+              >
+                <span>Setup Free Key (60s)</span>
+                <span className="text-sm">→</span>
+              </button>
+            </div>
+          )}
+
           {/* Top Hero Banner */}
           <div className="text-center mb-8 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[10px] border border-[#731111] bg-[#360c0c] text-[#fcf2f2] text-xs font-semibold uppercase tracking-wider mb-3">
               <span className="w-2 h-2 rounded-full bg-[#dd2222]"></span>
-              Powered by {providerDisplay[currentProvider]} Engine
+              Powered by {providerDisplay[currentProvider] || currentProvider} Engine
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-3 text-white">
@@ -574,6 +634,22 @@ export default function DashboardPage() {
           </p>
         </footer>
       </div>
+
+      {/* Dashboard In-Page API Key Configuration Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => {
+          setIsApiKeyModalOpen(false);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('shorts_apikey_popup_dismissed', 'true');
+          }
+        }}
+        initialReason={apiKeyModalReason}
+        onSuccess={() => {
+          const fresh = getStoredSettings();
+          setSettings(fresh);
+        }}
+      />
     </DashboardLayout>
   );
 }
