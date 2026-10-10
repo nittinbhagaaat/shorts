@@ -103,9 +103,13 @@ export async function POST(req, { params }) {
     if (fs.existsSync(cachedPreviewPath) && fs.statSync(cachedPreviewPath).size > 10000) {
       console.log(`RENDER API: Reusing cached video segment ${cachedPreviewFileName} for instant rendering.`);
       fs.copyFileSync(cachedPreviewPath, tempVideoPath);
-    } else {
       console.log(`RENDER API: Downloading clip section for clip ${id} (${clip.start}s to ${clip.end}s)...`);
-      await downloadVideoClip(project.url, clip.start, clip.end, tempVideoPath, ytDlpPath, ffmpegPath);
+      const videoId = project.videoId ||
+        (project.url?.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/)?.[1]) ||
+        (clip.projectId?.includes('_') ? clip.projectId.split('_').pop() : (clip.projectId?.length === 11 ? clip.projectId : null));
+      const sourceVideoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : project.url;
+
+      await downloadVideoClip(sourceVideoUrl, clip.start, clip.end, tempVideoPath, ytDlpPath, ffmpegPath);
       try {
         fs.copyFileSync(tempVideoPath, cachedPreviewPath);
       } catch (cacheErr) {

@@ -195,9 +195,41 @@ export default function ProjectWorkspace({ params }) {
         fetchProjectData();
       }, 3000);
     }
-    
+
     return () => clearInterval(interval);
   }, [clips]);
+
+  const getYouTubeWatchUrl = (startSeconds = 0) => {
+    let videoId = project?.videoId;
+    if (!videoId && project?.url) {
+      const match = project.url.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
+      if (match && match[1]) {
+        videoId = match[1];
+      }
+    }
+    if (!videoId && project?._id) {
+      const parts = String(project._id).split('_');
+      const cand = parts[parts.length - 1];
+      if (cand && cand.length === 11) {
+        videoId = cand;
+      } else if (project._id.length === 11) {
+        videoId = project._id;
+      }
+    }
+    if (!videoId && projectId) {
+      const parts = String(projectId).split('_');
+      const cand = parts[parts.length - 1];
+      if (cand && cand.length === 11) {
+        videoId = cand;
+      }
+    }
+
+    if (videoId) {
+      const sec = Math.max(0, Math.floor(startSeconds || 0));
+      return `https://www.youtube.com/watch?v=${videoId}&t=${sec}s`;
+    }
+    return project?.url || '#';
+  };
 
   const handleDeleteWorkspace = async () => {
     if (!confirm("Are you sure you want to delete this workspace? This will permanently delete the project, all clips, and all rendered video files.")) {
@@ -903,7 +935,7 @@ export default function ProjectWorkspace({ params }) {
                               </button>
 
                               <a
-                                href={`https://www.youtube.com/watch?v=${project._id}&t=${Math.floor(selectedClip.start)}s`}
+                                href={getYouTubeWatchUrl(selectedClip?.start || 0)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-[10px] text-[#909cac] hover:text-white flex items-center gap-1 underline underline-offset-2 transition-colors cursor-pointer"

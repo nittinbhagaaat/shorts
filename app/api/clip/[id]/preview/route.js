@@ -63,7 +63,12 @@ export async function GET(req, { params }) {
     }
 
     console.log(`PREVIEW API: Downloading quick raw preview for clip ${id} (${clip.start}s - ${clip.end}s)...`);
-    await downloadVideoClip(project.url, clip.start, clip.end, previewFilePath, ytDlpPath, ffmpegPath);
+    const videoId = project.videoId ||
+      (project.url?.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/)?.[1]) ||
+      (clip.projectId?.includes('_') ? clip.projectId.split('_').pop() : (clip.projectId?.length === 11 ? clip.projectId : null));
+    const sourceVideoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : project.url;
+
+    await downloadVideoClip(sourceVideoUrl, clip.start, clip.end, previewFilePath, ytDlpPath, ffmpegPath);
 
     return NextResponse.json({
       success: true,

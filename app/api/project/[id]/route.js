@@ -63,22 +63,37 @@ export async function GET(req, { params }) {
     // Auto-cleanup: Purge any clips rendered more than 10 minutes ago
     await cleanupExpiredClips();
 
+    // Safely resolve canonical YouTube video ID and clean URL
+    const targetVideoId = project.videoId ||
+      (project.url?.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/)?.[1]) ||
+      (id.includes('_') ? id.split('_').pop() : (id.length === 11 ? id : null));
+
+    const targetVideoUrl = targetVideoId 
+      ? `https://www.youtube.com/watch?v=${targetVideoId}`
+      : (project.url || null);
+
+    if (targetVideoId && !project.videoId) {
+      project.videoId = targetVideoId;
+      await project.save();
+    }
+
     let clips = await Clip.find({ projectId: project._id }).sort({ start: 1 });
 
     // Self-healing: If workspace has 0 clips or default/empty metadata, automatically generate and save them
     if (clips.length === 0 || project.title === 'Untitled Video' || !project.duration || project.duration === 0) {
       console.log(`API PROJECT DETAIL: Self-healing workspace for ${id} (clips=${clips.length}, title="${project.title}")...`);
       try {
-        const videoData = await getYouTubeVideoData(project.url || `https://www.youtube.com/watch?v=${id}`, ytDlpPath);
+        const videoData = await getYouTubeVideoData(targetVideoUrl || project.url, ytDlpPath);
         if (videoData.title && videoData.title !== 'Untitled Video') project.title = videoData.title;
         if (videoData.channel && videoData.channel !== 'Unknown Channel') project.channel = videoData.channel;
         if (videoData.duration > 0) project.duration = videoData.duration;
         if (videoData.thumbnail) project.thumbnail = videoData.thumbnail;
+        if (videoData.videoId && !project.videoId) project.videoId = videoData.videoId;
 
         let transcript = (project.transcript && project.transcript.length > 0) ? project.transcript : [];
         if (transcript.length === 0) {
           try {
-            transcript = await fetchTranscript(videoData.captionTracks, id, ytDlpPath);
+            transcript = await fetchTranscript(videoData.captionTracks, videoData.videoId || targetVideoId, ytDlpPath);
             project.transcript = transcript;
           } catch (_) {}
         }
@@ -112,7 +127,7 @@ export async function GET(req, { params }) {
           });
         }
 
-        await Clip.deleteMany({ projectId: id });
+        await Clip.deleteMany({ projectId: project._id });
         clips = await Promise.all(rawClips.map(c => {
           const clipSegments = transcript.filter(s => {
             const segEnd = (s.start || 0) + (s.duration || 2);
@@ -126,11 +141,11 @@ export async function GET(req, { params }) {
           }, {
             title: project.title,
             channel: project.channel,
-            url: project.url || `https://www.youtube.com/watch?v=${id}`
+            url: targetVideoUrl || project.url
           });
 
           return Clip.create({
-            projectId: id,
+            projectId: project._id,
             title: devanagariToHinglish(c.title),
             description: devanagariToHinglish(c.description),
             start: c.start,
