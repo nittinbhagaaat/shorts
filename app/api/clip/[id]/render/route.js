@@ -103,6 +103,7 @@ export async function POST(req, { params }) {
     if (fs.existsSync(cachedPreviewPath) && fs.statSync(cachedPreviewPath).size > 10000) {
       console.log(`RENDER API: Reusing cached video segment ${cachedPreviewFileName} for instant rendering.`);
       fs.copyFileSync(cachedPreviewPath, tempVideoPath);
+    } else {
       console.log(`RENDER API: Downloading clip section for clip ${id} (${clip.start}s to ${clip.end}s)...`);
       const videoId = project.videoId ||
         (project.url?.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/)?.[1]) ||
@@ -115,6 +116,10 @@ export async function POST(req, { params }) {
       } catch (cacheErr) {
         // ignore
       }
+    }
+
+    if (!fs.existsSync(tempVideoPath) || fs.statSync(tempVideoPath).size < 1000) {
+      throw new Error(`Failed to extract video segment: input file ${tempVideoFileName} does not exist or is empty.`);
     }
 
     // Text Overlay options (if user added custom text overlay)
