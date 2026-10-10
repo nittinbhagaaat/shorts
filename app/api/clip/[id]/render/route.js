@@ -109,10 +109,17 @@ export async function POST(req, { params }) {
         (project.url?.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/)?.[1]) ||
         (clip.projectId?.includes('_') ? clip.projectId.split('_').pop() : (clip.projectId?.length === 11 ? clip.projectId : null));
       const sourceVideoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : project.url;
+      console.log(`RENDER API: Resolved sourceVideoUrl="${sourceVideoUrl}" (videoId=${videoId}) for clip ${id}`);
+
+      if (!sourceVideoUrl) {
+        throw new Error(`Cannot render clip: Parent project has no YouTube URL or Video ID (project._id=${project._id})`);
+      }
 
       await downloadVideoClip(sourceVideoUrl, clip.start, clip.end, tempVideoPath, ytDlpPath, ffmpegPath);
       try {
-        fs.copyFileSync(tempVideoPath, cachedPreviewPath);
+        if (fs.existsSync(tempVideoPath) && fs.statSync(tempVideoPath).size > 10000) {
+          fs.copyFileSync(tempVideoPath, cachedPreviewPath);
+        }
       } catch (cacheErr) {
         // ignore
       }

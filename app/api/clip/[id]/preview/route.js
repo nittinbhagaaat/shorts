@@ -67,6 +67,9 @@ export async function GET(req, { params }) {
       (project.url?.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/)?.[1]) ||
       (clip.projectId?.includes('_') ? clip.projectId.split('_').pop() : (clip.projectId?.length === 11 ? clip.projectId : null));
     const sourceVideoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : project.url;
+    if (!sourceVideoUrl) {
+      return NextResponse.json({ error: 'Parent project has no YouTube URL or Video ID' }, { status: 400 });
+    }
 
     await downloadVideoClip(sourceVideoUrl, clip.start, clip.end, previewFilePath, ytDlpPath, ffmpegPath);
 
