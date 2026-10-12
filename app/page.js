@@ -156,7 +156,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3 group" title="clip.studio" aria-label="clip.studio">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0 group" title="clip.studio" aria-label="clip.studio">
             <img
               src="/logo.png"
               alt="clip.studio logo"
@@ -164,7 +164,7 @@ export default function HomePage() {
             />
             {/* Plain text app name for Google OAuth verification & web crawlers */}
             <span className="sr-only">clip.studio</span>
-            <div aria-hidden="true">
+            <div aria-hidden="true" className="flex items-center">
               <span className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
                 clip<span className="text-[#dd2222]">.studio</span>
               </span>
@@ -175,21 +175,15 @@ export default function HomePage() {
           </Link>
 
           {/* Center Nav Links */}
-          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs font-semibold text-[#b9c0ca]">
-            <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#pipeline" className="hover:text-white transition-colors">Video Engine</a>
-            <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
-            <Link href="/impact" className="hover:text-white transition-colors flex items-center gap-1.5">
-              <span>Our Impact</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#dd2222]"></span>
-            </Link>
-            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-[#b9c0ca]">
+            <a href="#features" className="whitespace-nowrap hover:text-white transition-colors">Features</a>
+            <a href="#pipeline" className="whitespace-nowrap hover:text-white transition-colors">Video Engine</a>
+            <a href="#how-it-works" className="whitespace-nowrap hover:text-white transition-colors">How It Works</a>
+            <a href="#faq" className="whitespace-nowrap hover:text-white transition-colors">FAQ</a>
           </nav>
 
           {/* Right Action Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {user ? (
               <div className="flex items-center gap-3">
                 <Link
@@ -1066,11 +1060,6 @@ export default function HomePage() {
                   <a href="#how-it-works" className="hover:text-white transition-colors">
                     How It Works
                   </a>
-                </li>
-                <li>
-                  <Link href="/impact" className="hover:text-white transition-colors">
-                    Our Global Impact
-                  </Link>
                 </li>
                 <li>
                   <a href="#faq" className="hover:text-white transition-colors">

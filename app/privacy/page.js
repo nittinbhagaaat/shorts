@@ -16,13 +16,13 @@ export default function PrivacyPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3 group" title="clip.studio" aria-label="clip.studio">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0 group" title="clip.studio" aria-label="clip.studio">
             <img
               src="/logo.png"
               alt="clip.studio logo"
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] object-cover border border-[#dd2222]/50 shadow-md group-hover:scale-105 transition-transform"
             />
-            <div>
+            <div className="flex items-center">
               <span className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
                 clip<span className="text-[#dd2222]">.studio</span>
               </span>
@@ -30,16 +30,16 @@ export default function PrivacyPage() {
           </Link>
 
           {/* Nav Links */}
-          <nav className="flex items-center gap-4 sm:gap-6 text-xs font-semibold text-[#b9c0ca]">
-            <Link href="/" className="hover:text-white transition-colors">
+          <nav className="flex items-center gap-4 sm:gap-6 text-xs font-semibold text-[#b9c0ca] shrink-0">
+            <Link href="/" className="whitespace-nowrap hover:text-white transition-colors">
               Home
             </Link>
-            <Link href="/terms" className="hover:text-white transition-colors">
+            <Link href="/terms" className="whitespace-nowrap hover:text-white transition-colors">
               Terms of Service
             </Link>
             <Link
               href="/dashboard"
-              className="px-4 py-2 rounded-lg bg-[#dd2222] hover:bg-[#b91c1c] text-white font-bold transition-colors shadow-md"
+              className="whitespace-nowrap px-4 py-2 rounded-lg bg-[#dd2222] hover:bg-[#b91c1c] text-white font-bold transition-colors shadow-md"
             >
               Open Studio
             </Link>
