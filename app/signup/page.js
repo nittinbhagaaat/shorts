@@ -233,10 +233,21 @@ function SignupForm() {
         </div>
       </div>
 
-      <div className="mt-6 relative z-10 text-center">
-        <Link href="/" className="text-xs text-[#6e7d91] hover:text-white transition-colors">
-          ← Back to clip.studio
-        </Link>
+      <div className="mt-6 relative z-10 text-center space-y-2">
+        <div className="flex items-center justify-center gap-3 text-[11px] text-[#6e7d91]">
+          <Link href="/privacy" className="hover:text-white transition-colors">
+            Privacy Policy
+          </Link>
+          <span>•</span>
+          <Link href="/terms" className="hover:text-white transition-colors">
+            Terms of Service
+          </Link>
+        </div>
+        <div>
+          <Link href="/" className="text-xs text-[#6e7d91] hover:text-white transition-colors">
+            ← Back to clip.studio
+          </Link>
+        </div>
       </div>
     </div>
   );

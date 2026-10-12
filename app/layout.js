@@ -2,8 +2,15 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata = {
-  title: "clip.studio - Ultra-Fast AI Viral Shorts Studio",
+  title: "clip.studio",
+  applicationName: "clip.studio",
   description: "Extract 35-40s viral vertical 9:16 shorts from YouTube videos in seconds with smart speaker framing and custom text overlays.",
+  openGraph: {
+    siteName: "clip.studio",
+    title: "clip.studio",
+    description: "Extract 15-60s viral vertical 9:16 shorts from YouTube videos in seconds with smart speaker framing and custom text overlays.",
+    type: "website",
+  },
   verification: {
     google: "94RJZPLf9raobhEzHv0irDIvlb908Vwpv3WLRY_w1Nc",
   },

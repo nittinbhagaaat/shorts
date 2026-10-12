@@ -358,8 +358,10 @@ export default function DashboardLayout({ children }) {
           )}
 
           {!isCollapsed && (
-            <div className="text-[11px] text-[#6e7d91] text-center font-normal">
-              clip.studio • private cloud
+            <div className="text-[11px] text-[#6e7d91] text-center font-normal flex items-center justify-center gap-2">
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <span>•</span>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             </div>
           )}
         </div>

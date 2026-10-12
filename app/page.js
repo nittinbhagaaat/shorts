@@ -156,13 +156,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/" className="flex items-center gap-3 group" title="clip.studio" aria-label="clip.studio">
             <img
               src="/logo.png"
               alt="clip.studio logo"
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] object-cover border border-[#dd2222]/50 shadow-md group-hover:scale-105 transition-transform"
             />
-            <div>
+            {/* Plain text app name for Google OAuth verification & web crawlers */}
+            <span className="sr-only">clip.studio</span>
+            <div aria-hidden="true">
               <span className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
                 clip<span className="text-[#dd2222]">.studio</span>
               </span>
@@ -173,11 +175,12 @@ export default function HomePage() {
           </Link>
 
           {/* Center Nav Links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-[#b9c0ca]">
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs font-semibold text-[#b9c0ca]">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#pipeline" className="hover:text-white transition-colors">Video Engine</a>
-            <a href="#compare" className="hover:text-white transition-colors">Comparison</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
             <Link href="/impact" className="hover:text-white transition-colors flex items-center gap-1.5">
               <span>Our Impact</span>
               <span className="w-1.5 h-1.5 rounded-full bg-[#dd2222]"></span>
@@ -238,11 +241,12 @@ export default function HomePage() {
           {/* Top Pill Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#731111] bg-[#360c0c]/80 text-[#fcf2f2] text-xs font-semibold uppercase tracking-wider mb-6 backdrop-blur-sm">
             <span className="w-2 h-2 rounded-full bg-[#dd2222] animate-pulse"></span>
-            <span>The #1 Free YouTube Clipping Platform • 0$ Forever • No Watermarks</span>
+            <span>clip.studio • Upload, Schedule & Manage YouTube Videos • 100% Free</span>
           </div>
 
           {/* Main Headline */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white max-w-4xl leading-[1.1] mb-6">
+            <span className="sr-only">clip.studio - </span>
             Turn Long YouTube Videos into{' '}
             <span className="text-[#dd2222]">
               Viral Shorts in 1 Click
@@ -251,7 +255,7 @@ export default function HomePage() {
 
           {/* Subtitle */}
           <p className="text-[#b9c0ca] text-sm sm:text-lg font-normal max-w-2xl leading-relaxed mb-10">
-            The world&apos;s best free AI video clipping platform. Automatically extracts complete 40s high-retention scenes, frames active speakers in 9:16 vertical with ultrafast sub-5s rendering, and schedules directly to YouTube Shorts.
+            clip.studio is an AI video clipping and automation platform that allows you to turn long-form videos into viral 9:16 vertical Shorts, schedule releases, and <strong className="text-white font-semibold">upload and manage your YouTube videos</strong> directly to your YouTube channel with smart speaker framing, subtitles, and SEO optimization.
           </p>
 
           {/* The Viral Clipper Input Station */}
@@ -793,9 +797,9 @@ export default function HomePage() {
               <div className="w-10 h-10 rounded-xl bg-[#dd2222]/10 border border-[#dd2222]/30 flex items-center justify-center text-[#dd2222] text-lg font-bold">
                 🚀
               </div>
-              <h3 className="text-base font-bold text-white">Direct YouTube Shorts Upload</h3>
+              <h3 className="text-base font-bold text-white">Upload &amp; Manage YouTube Videos</h3>
               <p className="text-[#909cac] text-xs leading-relaxed">
-                Schedule or publish directly to your connected YouTube channel right from your workspace. Generates viral titles, SEO tags, and descriptions automatically.
+                Connect your YouTube channel securely with Google OAuth. Directly upload and manage your YouTube videos and Shorts, customize privacy settings (public, unlisted, private), configure titles and #Shorts tags, and schedule publishing times with one click.
               </p>
             </div>
 
@@ -855,9 +859,9 @@ export default function HomePage() {
               <div className="w-9 h-9 rounded-full bg-[#dd2222] text-white font-mono font-bold flex items-center justify-center text-sm shadow-md">
                 3
               </div>
-              <h3 className="text-base font-bold text-white">Download or Publish</h3>
+              <h3 className="text-base font-bold text-white">Upload &amp; Manage YouTube Videos</h3>
               <p className="text-[#909cac] text-xs leading-relaxed">
-                Export pristine 1080x1920 MP4 files without watermarks, or push directly to your YouTube channel with auto-generated hashtags and titles.
+                Export clean 1080x1920 MP4 files without watermarks, or upload and manage your YouTube videos and Shorts directly on your channel with one click, complete with auto-generated hashtags, SEO titles, and scheduled release times.
               </p>
             </div>
 
@@ -999,34 +1003,159 @@ export default function HomePage() {
       {/* ======================================================== */}
       {/* FOOTER                                                   */}
       {/* ======================================================== */}
-      <footer className="w-full border-t border-[#2d3239] bg-[#12151a] py-10 px-4 sm:px-6 lg:px-8 mt-20">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-[#909cac]">
-          <div className="flex items-center gap-3">
-            <span className="font-extrabold text-white text-base">
-              clip<span className="text-[#dd2222]">.studio</span>
-            </span>
-            <span className="text-[#6e7d91]">|</span>
-            <span>The #1 Free YouTube Clipping Platform</span>
+      <footer className="w-full border-t border-[#2d3239] bg-[#12151a] pt-14 pb-10 px-4 sm:px-6 lg:px-8 mt-20">
+        <div className="max-w-7xl mx-auto space-y-10">
+          
+          {/* Main Footer Navigation Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-[#2d3239]">
+            
+            {/* Col 1: Brand Info */}
+            <div className="space-y-3 md:col-span-1">
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/logo.png"
+                  alt="clip.studio logo"
+                  className="w-8 h-8 rounded-[8px] object-cover border border-[#dd2222]/50"
+                />
+                <span className="font-extrabold text-white text-lg">
+                  clip<span className="text-[#dd2222]">.studio</span>
+                </span>
+              </div>
+              <p className="text-xs text-[#909cac] leading-relaxed">
+                The free AI video clipping &amp; automation studio. Turn long videos into high-retention 9:16 vertical shorts, schedule releases, and upload &amp; manage your YouTube videos directly.
+              </p>
+              <div className="pt-1">
+                <span className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase bg-[#360c0c] text-[#dd2222] border border-[#731111]/50">
+                  100% Free Forever
+                </span>
+              </div>
+            </div>
+
+            {/* Col 2: Studio & Features */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">Platform</h4>
+              <ul className="space-y-2 text-xs text-[#909cac]">
+                <li>
+                  <Link href="/dashboard" className="hover:text-white transition-colors">
+                    Studio Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/workspaces" className="hover:text-white transition-colors">
+                    Workspaces
+                  </Link>
+                </li>
+                <li>
+                  <a href="#pipeline" className="hover:text-white transition-colors">
+                    Video Render Engine
+                  </a>
+                </li>
+                <li>
+                  <Link href="/settings" className="hover:text-white transition-colors">
+                    Settings &amp; API Keys
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 3: Resources & Community */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">Resources</h4>
+              <ul className="space-y-2 text-xs text-[#909cac]">
+                <li>
+                  <a href="#how-it-works" className="hover:text-white transition-colors">
+                    How It Works
+                  </a>
+                </li>
+                <li>
+                  <Link href="/impact" className="hover:text-white transition-colors">
+                    Our Global Impact
+                  </Link>
+                </li>
+                <li>
+                  <a href="#faq" className="hover:text-white transition-colors">
+                    Frequently Asked Questions
+                  </a>
+                </li>
+                <li>
+                  <Link href="/login" className="hover:text-white transition-colors">
+                    Sign In
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 4: Legal & Compliance (Required for Google OAuth Verification) */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">Legal &amp; Compliance</h4>
+              <ul className="space-y-2 text-xs text-[#909cac]">
+                <li>
+                  <Link
+                    href="/privacy"
+                    className="hover:text-white transition-colors font-medium text-white/90 underline decoration-[#dd2222]/50 hover:decoration-[#dd2222]"
+                  >
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/terms"
+                    className="hover:text-white transition-colors font-medium text-white/90 underline decoration-[#dd2222]/50 hover:decoration-[#dd2222]"
+                  >
+                    Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <a
+                    href="https://developers.google.com/terms/api-services-user-data-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors"
+                  >
+                    Google Limited Use Policy
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://www.youtube.com/t/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors"
+                  >
+                    YouTube Terms of Service
+                  </a>
+                </li>
+              </ul>
+            </div>
+
           </div>
 
-          <div className="flex items-center gap-6">
-            <Link href="/impact" className="hover:text-white transition-colors">
-              Our Impact
-            </Link>
-            <Link href="/dashboard" className="text-white hover:text-[#dd2222] transition-colors font-semibold">
-              Studio Dashboard
-            </Link>
-            <Link href="/workspaces" className="hover:text-white transition-colors">
-              Workspaces
-            </Link>
-            <Link href="/settings" className="hover:text-white transition-colors">
-              Settings & API Keys
-            </Link>
+          {/* Bottom Copyright & Direct Legal Links Row */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#909cac]">
+            <div>
+              &copy; {new Date().getFullYear()} <strong className="text-white">clip.studio</strong> • All rights reserved.
+            </div>
+
+            <div className="flex items-center gap-4 text-xs">
+              <Link href="/privacy" className="hover:text-white transition-colors">
+                Privacy Policy
+              </Link>
+              <span className="text-[#39414b]">•</span>
+              <Link href="/terms" className="hover:text-white transition-colors">
+                Terms of Service
+              </Link>
+              <span className="text-[#39414b]">•</span>
+              <a
+                href="https://myaccount.google.com/permissions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                Google Permissions
+              </a>
+            </div>
           </div>
 
-          <div className="text-[11px] text-[#6e7d91]">
-            &copy; {new Date().getFullYear()} clip.studio • Free & Open Source
-          </div>
         </div>
       </footer>
 
