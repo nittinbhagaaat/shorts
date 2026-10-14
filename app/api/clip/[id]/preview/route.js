@@ -2,6 +2,7 @@ import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
 import Project from '@/models/Project';
 import { downloadVideoClip } from '@/lib/video';
+import { scheduleClipAutoCleanup } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
@@ -72,6 +73,9 @@ export async function GET(req, { params }) {
     }
 
     await downloadVideoClip(sourceVideoUrl, clip.start, clip.end, previewFilePath, ytDlpPath, ffmpegPath);
+
+    // Schedule auto-cleanup so preview video files do not accumulate indefinitely
+    scheduleClipAutoCleanup(clip._id);
 
     return NextResponse.json({
       success: true,
