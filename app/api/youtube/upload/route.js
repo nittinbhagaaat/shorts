@@ -7,6 +7,7 @@ import { uploadShortToYouTube } from '@/lib/youtubeClient';
 import { deleteClipVideoFiles } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { getAuthUser } from '@/lib/auth';
+import { formatFriendlyError } from '@/lib/formatError';
 import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
@@ -168,6 +169,6 @@ export async function POST(req) {
     });
   } catch (err) {
     console.error('API YOUTUBE UPLOAD: Error uploading short:', err);
-    return NextResponse.json({ error: err.message || 'Failed to upload short to YouTube.' }, { status: 500 });
+    return NextResponse.json({ error: formatFriendlyError(err) }, { status: 500 });
   }
 }

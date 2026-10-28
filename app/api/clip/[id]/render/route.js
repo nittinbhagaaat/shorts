@@ -5,6 +5,7 @@ import { downloadVideoClip, generateAssSubtitles, renderFinalShort } from '@/lib
 import { scheduleClipAutoCleanup, deleteClipVideoFiles } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { getAuthUser } from '@/lib/auth';
+import { formatFriendlyError } from '@/lib/formatError';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
@@ -200,7 +201,7 @@ export async function POST(req, { params }) {
       console.error('RENDER API: Failed to update error status in DB:', dbError.message);
     }
 
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: formatFriendlyError(error) }, { status: 500 });
   }
 }
 
@@ -223,6 +224,6 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({ success: true, clip: updatedClip || clip });
   } catch (error) {
     console.error('RENDER API: Error resetting clip render:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: formatFriendlyError(error) }, { status: 500 });
   }
 }

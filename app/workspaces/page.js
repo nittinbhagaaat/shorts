@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import { fetchWithSettings } from '@/lib/settings';
+import { formatFriendlyError } from '@/lib/formatError';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function WorkspacesPage() {
@@ -53,7 +54,7 @@ export default function WorkspacesPage() {
       setDeleteModalId(null);
     } catch (err) {
       console.error(err);
-      alert('Error deleting workspace: ' + err.message);
+      alert(formatFriendlyError(err));
     } finally {
       setDeletingId(null);
     }

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import YouTubeUploadModal from '@/components/YouTubeUploadModal';
 import { fetchWithSettings, getStoredSettings, safeParseJson } from '@/lib/settings';
+import { formatFriendlyError } from '@/lib/formatError';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProjectWorkspace({ params }) {
@@ -250,7 +251,7 @@ export default function ProjectWorkspace({ params }) {
       window.location.href = '/workspaces';
     } catch (err) {
       console.error(err);
-      alert(err.message || 'An error occurred while deleting the workspace');
+      alert(formatFriendlyError(err));
       setIsDeleting(false);
     }
   };
@@ -285,7 +286,7 @@ export default function ProjectWorkspace({ params }) {
         setSelectedClip(data.clips[0]);
       }
     } catch (err) {
-      alert(err.message || 'Error re-generating moments');
+      alert(formatFriendlyError(err));
     } finally {
       setIsRegenerating(false);
     }
@@ -343,11 +344,7 @@ export default function ProjectWorkspace({ params }) {
       await fetchProjectData();
     } catch (err) {
       timeouts.forEach((t) => clearTimeout(t));
-      const rawMsg = err.message || 'An error occurred during rendering';
-      const cleanMsg = rawMsg.includes('Requested format is not available')
-        ? 'YouTube video format was unavailable. Please retry rendering or check your YouTube video access.'
-        : rawMsg;
-      setRenderError(cleanMsg);
+      setRenderError(formatFriendlyError(err));
       await fetchProjectData();
     } finally {
       setIsRendering(false);
@@ -378,7 +375,7 @@ export default function ProjectWorkspace({ params }) {
       await fetchProjectData();
     } catch (err) {
       console.error(err);
-      setRenderError(err.message || 'An error occurred while resetting the clip');
+      setRenderError(formatFriendlyError(err));
     } finally {
       setIsResetting(false);
     }
@@ -1231,7 +1228,7 @@ export default function ProjectWorkspace({ params }) {
                         <span className="text-[10px] text-[#909cac]">Follow speaking person</span>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                      <div className="grid grid-cols-2 gap-3">
                         {[
                           { 
                             id: 'auto', 
@@ -1246,27 +1243,6 @@ export default function ProjectWorkspace({ params }) {
                             badge: 'Viral 9:16',
                             desc: '16:9 on blurred BG',
                             icon: '🖼️' 
-                          },
-                          { 
-                            id: 'center', 
-                            label: 'Center Crop', 
-                            badge: 'Static',
-                            desc: 'Fixed 9:16 center',
-                            icon: '⏹️' 
-                          },
-                          { 
-                            id: 'left', 
-                            label: 'Left Focus', 
-                            badge: 'Static',
-                            desc: 'Fixed 9:16 left',
-                            icon: '◀️' 
-                          },
-                          { 
-                            id: 'right', 
-                            label: 'Right Focus', 
-                            badge: 'Static',
-                            desc: 'Fixed 9:16 right',
-                            icon: '▶️' 
                           }
                         ].map((focus) => (
                           <button
@@ -1463,61 +1439,7 @@ export default function ProjectWorkspace({ params }) {
                       )}
                     </div>
 
-                    {/* Panel 3: Scene Virality & Performance Intelligence */}
-                    <div className="app-panel p-4 sm:p-5 space-y-3.5">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold tracking-wider text-[#dd2222] uppercase flex items-center gap-1.5">
-                          <span>⚡</span>
-                          <span>Scene Virality & Performance Intelligence</span>
-                        </h3>
-                        <span className="text-[10px] text-[#22c55e] font-semibold bg-[#22c55e]/15 px-2 py-0.5 rounded border border-[#22c55e]/30">
-                          AI Engine Active
-                        </span>
-                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="p-3 rounded-[8px] bg-[#1d2125] border border-[#39414b]">
-                          <span className="text-[10px] text-[#909cac] uppercase tracking-wider block mb-1">Virality Score</span>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black text-white">{selectedClip.viralityScore || 88}</span>
-                            <span className="text-xs text-[#22c55e] font-semibold">/ 100</span>
-                          </div>
-                          <span className="text-[10px] text-[#909cac] mt-1 block">High audience retention rate</span>
-                        </div>
-
-                        <div className="p-3 rounded-[8px] bg-[#1d2125] border border-[#39414b]">
-                          <span className="text-[10px] text-[#909cac] uppercase tracking-wider block mb-1">Duration & Bounds</span>
-                          <div className="text-sm font-bold text-white">
-                            {formatDuration(selectedClip.start)} - {formatDuration(selectedClip.end)}
-                          </div>
-                          <span className="text-[10px] text-[#909cac] mt-1 block">
-                            {Math.round(selectedClip.end - selectedClip.start)}s optimal short duration
-                          </span>
-                        </div>
-
-                        <div className="p-3 rounded-[8px] bg-[#1d2125] border border-[#39414b]">
-                          <span className="text-[10px] text-[#909cac] uppercase tracking-wider block mb-1">Render Engine</span>
-                          <div className="text-sm font-bold text-[#22c55e] flex items-center gap-1">
-                            <span>🚀</span>
-                            <span>Ultra-Fast Pipeline</span>
-                          </div>
-                          <span className="text-[10px] text-[#909cac] mt-1 block">
-                            Sub-5s fast render · 1080x1920 60fps
-                          </span>
-                        </div>
-                      </div>
-
-                      {selectedClip.explanation && (
-                        <div className="p-3 rounded-[8px] bg-[#1d2125] border border-[#39414b]">
-                          <span className="text-[10px] text-[#dd2222] font-semibold uppercase tracking-wider block mb-1">
-                            Scene Hook & Summary
-                          </span>
-                          <p className="text-xs text-[#c3c8cf] leading-relaxed">
-                            {selectedClip.explanation}
-                          </p>
-                        </div>
-                      )}
-                    </div>
 
                   </div>
                 </>

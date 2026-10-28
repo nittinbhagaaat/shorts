@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +16,19 @@ export default function HomePage() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [activePreviewStyle, setActivePreviewStyle] = useState('framing');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [totalShortsCount, setTotalShortsCount] = useState(null);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then((res) => res.json())
+      .then((data) => {
+        if (typeof data?.totalShorts === 'number') {
+          setTotalShortsCount(data.totalShorts);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Sample videos for quick 1-click test
   const sampleVideos = [
@@ -79,13 +91,13 @@ export default function HomePage() {
       tag: 'AI Vision Active',
     },
     {
-      id: 'fast_render',
-      name: 'Ultra-Fast Sub-5s Render Engine',
-      badge: 'Supersonic',
-      previewHeadline: 'RENDER COMPLETE: 2.4s',
-      previewSub: '1080x1920 60fps ultrafast encoding',
-      description: 'Optimized bicubic hardware scaling and ultrafast multithreaded FFmpeg pipeline delivers completed 1080x1920 shorts in seconds.',
-      tag: 'Supersonic Pipeline',
+      id: 'hd_quality',
+      name: '1080p Studio HD Rendering',
+      badge: 'Pro Quality',
+      previewHeadline: '1080x1920 60FPS',
+      previewSub: 'Studio-grade bitrate & color depth',
+      description: 'High-definition 1080x1920 vertical video rendering with crisp audio normalization, accurate color reproduction, and clean exports.',
+      tag: 'Studio HD Pipeline',
     },
     {
       id: 'overlay',
@@ -498,7 +510,9 @@ export default function HomePage() {
         {/* ======================================================== */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 w-full">
           <div className="app-panel p-6 text-center border border-[#39414b] rounded-[10px]">
-            <div className="text-2xl sm:text-3xl font-black text-white font-mono">50,000+</div>
+            <div className="text-2xl sm:text-3xl font-black text-white font-mono">
+              {totalShortsCount !== null ? totalShortsCount.toLocaleString() : '...'}
+            </div>
             <p className="text-[#909cac] text-xs font-medium mt-1">Shorts Generated</p>
           </div>
           <div className="app-panel p-6 text-center border border-[#39414b] rounded-[10px]">
@@ -506,8 +520,8 @@ export default function HomePage() {
             <p className="text-[#909cac] text-xs font-medium mt-1">Free Forever Guarantee</p>
           </div>
           <div className="app-panel p-6 text-center border border-[#39414b] rounded-[10px]">
-            <div className="text-2xl sm:text-3xl font-black text-[#2cb7d3] font-mono">&lt; 5s</div>
-            <p className="text-[#909cac] text-xs font-medium mt-1">Ultra-Fast 9:16 Render</p>
+            <div className="text-2xl sm:text-3xl font-black text-[#2cb7d3] font-mono">1080p</div>
+            <p className="text-[#909cac] text-xs font-medium mt-1">Full HD Quality</p>
           </div>
           <div className="app-panel p-6 text-center border border-[#39414b] rounded-[10px]">
             <div className="text-2xl sm:text-3xl font-black text-[#dd2222] font-mono">0 Watermarks</div>
@@ -521,13 +535,13 @@ export default function HomePage() {
         <section id="pipeline" className="space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#731111] bg-[#360c0c] text-[#fcf2f2] text-xs font-semibold uppercase tracking-wider">
-              ⚡ Ultra-Fast 9:16 Video Engine
+              ⚡ AI-Powered 9:16 Video Engine
             </div>
             <h2 className="text-2xl sm:text-4xl font-extrabold text-white">
               Engineered for <span className="text-[#dd2222]">Instant Virality</span>
             </h2>
             <p className="text-[#909cac] text-xs sm:text-sm">
-              Zero waiting time. Smart speaker framing, ultrafast hardware rendering, and customizable text overlays.
+              Smart speaker framing, high-definition video rendering, and customizable text overlays.
             </p>
           </div>
 
@@ -767,11 +781,11 @@ export default function HomePage() {
             {/* Feature 3 */}
             <div className="app-card p-6 border border-[#39414b] rounded-[10px] space-y-3">
               <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center text-yellow-400 text-lg font-bold">
-                ⚡
+                ✨
               </div>
-              <h3 className="text-base font-bold text-white">Ultra-Fast Sub-5s Render Engine</h3>
+              <h3 className="text-base font-bold text-white">1080p Studio HD Rendering</h3>
               <p className="text-[#909cac] text-xs leading-relaxed">
-                Multithreaded bicubic encoding and smart preview caching render 1080x1920 60fps vertical shorts in seconds with zero waiting time.
+                Multithreaded bicubic encoding and smart preview caching render crystal-clear 1080x1920 60fps vertical shorts with professional color and normalized audio.
               </p>
             </div>
 

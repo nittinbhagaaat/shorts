@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { fetchWithSettings } from '@/lib/settings';
+import { formatFriendlyError } from '@/lib/formatError';
 
 export default function YouTubeUploadModal({
   isOpen,
@@ -191,7 +192,7 @@ export default function YouTubeUploadModal({
     } catch (err) {
       clearInterval(stepInterval);
       console.error(err);
-      setUploadError(err.message || 'An error occurred during YouTube upload.');
+      setUploadError(formatFriendlyError(err));
     } finally {
       setIsUploading(false);
     }

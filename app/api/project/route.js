@@ -7,6 +7,7 @@ import { devanagariToHinglish, transliterateTranscript } from '@/lib/translitera
 import { generateShortMetadata } from '@/lib/youtubeMetadata';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { getAuthUser } from '@/lib/auth';
+import { formatFriendlyError } from '@/lib/formatError';
 import { NextResponse } from 'next/server';
 
 export async function POST(req) {
@@ -222,7 +223,7 @@ export async function POST(req) {
     return NextResponse.json({ project, clips });
   } catch (error) {
     console.error('API PROJECT: Error processing video:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: formatFriendlyError(error) }, { status: 500 });
   }
 }
 

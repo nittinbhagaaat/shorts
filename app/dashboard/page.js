@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import { fetchWithSettings, getStoredSettings, safeParseJson, hasConfiguredApiKey } from '@/lib/settings';
+import { formatFriendlyError } from '@/lib/formatError';
 import { useAuth } from '@/contexts/AuthContext';
 import ApiKeyModal from '@/components/ApiKeyModal';
 
@@ -165,7 +166,7 @@ export default function DashboardPage() {
       }, 400);
     } catch (err) {
       timeouts.forEach((t) => clearTimeout(t));
-      setError(err.message || 'An error occurred during analysis');
+      setError(formatFriendlyError(err));
       setIsLoading(false);
     }
   };
@@ -184,7 +185,7 @@ export default function DashboardPage() {
       setProjects((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
       console.error('Error deleting project:', err);
-      alert(err.message || 'Failed to delete workspace');
+      alert(formatFriendlyError(err));
     }
   };
 
@@ -492,9 +493,9 @@ export default function DashboardPage() {
               <p className="text-[#909cac] text-[11px] font-normal mt-0.5">Left/Center/Right framing</p>
             </div>
             <div className="p-3.5 rounded-[10px] bg-[#2d3239] border border-[#39414b] text-center">
-              <span className="text-base block mb-1">⚡</span>
-              <h4 className="text-white font-semibold text-xs">Ultra-Fast 9:16 Render</h4>
-              <p className="text-[#909cac] text-[11px] font-normal mt-0.5">High-speed MP4 short export</p>
+              <span className="text-base block mb-1">✨</span>
+              <h4 className="text-white font-semibold text-xs">1080p Studio Quality</h4>
+              <p className="text-[#909cac] text-[11px] font-normal mt-0.5">Crisp 1080x1920 MP4 export</p>
             </div>
             <div className="p-3.5 rounded-[10px] bg-[#2d3239] border border-[#39414b] text-center">
               <span className="text-base block mb-1">🌐</span>
