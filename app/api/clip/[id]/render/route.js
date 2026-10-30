@@ -4,6 +4,7 @@ import Project from '@/models/Project';
 import { downloadVideoClip, generateAssSubtitles, renderFinalShort } from '@/lib/video';
 import { scheduleClipAutoCleanup, deleteClipVideoFiles } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { extractVideoId } from '@/lib/youtube';
 import { getAuthUser } from '@/lib/auth';
 import { formatFriendlyError } from '@/lib/formatError';
 import { NextResponse } from 'next/server';
@@ -65,6 +66,9 @@ export async function POST(req, { params }) {
     clip.captionStyle = 'none';
     clip.cropFocus = cropFocus || clip.cropFocus || 'auto';
     clip.renderFormat = renderFormat || clip.renderFormat || 'vertical';
+    clip.purgedReason = 'none';
+    clip.purgedAt = null;
+    clip.errorMessage = null;
 
     if (typeof overlayText === 'string') clip.overlayText = overlayText;
     if (typeof overlayTextOpacity === 'number') clip.overlayTextOpacity = overlayTextOpacity;
@@ -106,10 +110,8 @@ export async function POST(req, { params }) {
       fs.copyFileSync(cachedPreviewPath, tempVideoPath);
     } else {
       console.log(`RENDER API: Downloading clip section for clip ${id} (${clip.start}s to ${clip.end}s)...`);
-      const videoId = project.videoId ||
-        (project.url?.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/)?.[1]) ||
-        (clip.projectId?.includes('_') ? clip.projectId.split('_').pop() : (clip.projectId?.length === 11 ? clip.projectId : null));
-      const sourceVideoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : project.url;
+      const videoId = extractVideoId(project.url || project.videoId, clip.projectId || project._id);
+      const sourceVideoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : (project.url || `https://www.youtube.com/watch?v=${project.videoId}`);
       console.log(`RENDER API: Resolved sourceVideoUrl="${sourceVideoUrl}" (videoId=${videoId}) for clip ${id}`);
 
       if (!sourceVideoUrl) {
@@ -196,7 +198,12 @@ export async function POST(req, { params }) {
       await dbConnect(mongodbUri);
       const resolvedParams = await params;
       const { id } = resolvedParams;
-      await Clip.findByIdAndUpdate(id, { status: 'failed' });
+      await Clip.findByIdAndUpdate(id, {
+        status: 'failed',
+        purgedReason: 'none',
+        purgedAt: null,
+        errorMessage: formatFriendlyError(error),
+      });
     } catch (dbError) {
       console.error('RENDER API: Failed to update error status in DB:', dbError.message);
     }

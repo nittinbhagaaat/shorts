@@ -201,27 +201,31 @@ export default function ProjectWorkspace({ params }) {
   }, [clips]);
 
   const getYouTubeWatchUrl = (startSeconds = 0) => {
-    let videoId = project?.videoId;
-    if (!videoId && project?.url) {
-      const match = project.url.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
-      if (match && match[1]) {
-        videoId = match[1];
+    let videoId = null;
+    const candidates = [project?.url, project?.videoId, project?._id, projectId];
+    for (const cand of candidates) {
+      if (!cand || typeof cand !== 'string') continue;
+      const urlMatch = cand.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
+      if (urlMatch && urlMatch[1]) {
+        videoId = urlMatch[1];
+        break;
       }
-    }
-    if (!videoId && project?._id) {
-      const parts = String(project._id).split('_');
-      const cand = parts[parts.length - 1];
-      if (cand && cand.length === 11) {
-        videoId = cand;
-      } else if (project._id.length === 11) {
-        videoId = project._id;
+      const objMatch = cand.match(/^[0-9a-fA-F]{24}_([a-zA-Z0-9_-]{11})$/);
+      if (objMatch && objMatch[1]) {
+        videoId = objMatch[1];
+        break;
       }
-    }
-    if (!videoId && projectId) {
-      const parts = String(projectId).split('_');
-      const cand = parts[parts.length - 1];
-      if (cand && cand.length === 11) {
+      if (cand.includes('_')) {
+        const firstUnderscore = cand.indexOf('_');
+        const rest = cand.substring(firstUnderscore + 1);
+        if (rest.length === 11) {
+          videoId = rest;
+          break;
+        }
+      }
+      if (/^[a-zA-Z0-9_-]{11}$/.test(cand)) {
         videoId = cand;
+        break;
       }
     }
 
@@ -310,8 +314,13 @@ export default function ProjectWorkspace({ params }) {
     );
 
     try {
-      setSelectedClip((prev) => ({ ...prev, status: 'rendering' }));
-      setClips((prev) => prev.map((c) => (c._id === selectedClip._id ? { ...c, status: 'rendering' } : c)));
+      setSelectedClip((prev) => ({
+        ...prev,
+        status: 'rendering',
+        purgedReason: 'none',
+        purgedAt: null,
+      }));
+      setClips((prev) => prev.map((c) => (c._id === selectedClip._id ? { ...c, status: 'rendering', purgedReason: 'none', purgedAt: null } : c)));
 
       const res = await fetchWithSettings(`/api/clip/${selectedClip._id}/render`, {
         method: 'POST',
@@ -1021,7 +1030,7 @@ export default function ProjectWorkspace({ params }) {
                         ) : (
                           <>
                             {/* Storage Policy Notice when purged */}
-                            {selectedClip.purgedReason === 'uploaded_to_youtube' && (
+                            {selectedClip.status !== 'failed' && selectedClip.purgedReason === 'uploaded_to_youtube' && (
                               <div className="p-3 rounded-[10px] bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200 space-y-1">
                                 <div className="flex items-center gap-1.5 font-bold text-white">
                                   <span>💾 Server Storage Saved</span>
@@ -1032,7 +1041,7 @@ export default function ProjectWorkspace({ params }) {
                               </div>
                             )}
 
-                            {selectedClip.purgedReason === 'expired_10min' && (
+                            {selectedClip.status !== 'failed' && selectedClip.purgedReason === 'expired_10min' && (
                               <div className="p-3 rounded-[10px] bg-amber-950/40 border border-amber-500/30 text-xs text-amber-200 space-y-1">
                                 <div className="flex items-center gap-1.5 font-bold text-white">
                                   <span>⏱️ Video Expired (10-Minute Policy)</span>
@@ -1063,7 +1072,9 @@ export default function ProjectWorkspace({ params }) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                   <span>
-                                    {selectedClip.purgedReason && selectedClip.purgedReason !== 'none'
+                                    {selectedClip.status === 'failed'
+                                      ? 'Retry Render Short'
+                                      : selectedClip.purgedReason && selectedClip.purgedReason !== 'none'
                                       ? 'Rerender Video Short'
                                       : 'Render Video Short'}
                                   </span>

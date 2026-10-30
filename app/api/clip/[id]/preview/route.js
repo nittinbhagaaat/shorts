@@ -4,6 +4,7 @@ import Project from '@/models/Project';
 import { downloadVideoClip } from '@/lib/video';
 import { scheduleClipAutoCleanup } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
+import { extractVideoId } from '@/lib/youtube';
 import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
@@ -64,10 +65,8 @@ export async function GET(req, { params }) {
     }
 
     console.log(`PREVIEW API: Downloading quick raw preview for clip ${id} (${clip.start}s - ${clip.end}s)...`);
-    const videoId = project.videoId ||
-      (project.url?.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/)?.[1]) ||
-      (clip.projectId?.includes('_') ? clip.projectId.split('_').pop() : (clip.projectId?.length === 11 ? clip.projectId : null));
-    const sourceVideoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : project.url;
+    const videoId = extractVideoId(project.url || project.videoId, clip.projectId || project._id);
+    const sourceVideoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : (project.url || `https://www.youtube.com/watch?v=${project.videoId}`);
     if (!sourceVideoUrl) {
       return NextResponse.json({ error: 'Parent project has no YouTube URL or Video ID' }, { status: 400 });
     }

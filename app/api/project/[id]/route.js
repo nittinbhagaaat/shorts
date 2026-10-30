@@ -3,7 +3,7 @@ import Project from '@/models/Project';
 import Clip from '@/models/Clip';
 import { generateShortMetadata } from '@/lib/youtubeMetadata';
 import { extractServerConfig } from '@/lib/serverConfig';
-import { getYouTubeVideoData, fetchTranscript } from '@/lib/youtube';
+import { getYouTubeVideoData, fetchTranscript, extractVideoId } from '@/lib/youtube';
 import { identifyViralClips, generateIntelligentFallbackClips, transliterateHindiToHinglish, translateTranscriptToEnglish } from '@/lib/ai';
 import { devanagariToHinglish, transliterateTranscript } from '@/lib/transliterate';
 import { getAuthUser } from '@/lib/auth';
@@ -64,15 +64,16 @@ export async function GET(req, { params }) {
     await cleanupExpiredClips();
 
     // Safely resolve canonical YouTube video ID and clean URL
-    const targetVideoId = project.videoId ||
-      (project.url?.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11})/)?.[1]) ||
-      (id.includes('_') ? id.split('_').pop() : (id.length === 11 ? id : null));
+    const targetVideoId = extractVideoId(
+      project.url || (project.videoId && project.videoId.length === 11 ? project.videoId : null),
+      id || project._id
+    );
 
     const targetVideoUrl = targetVideoId 
       ? `https://www.youtube.com/watch?v=${targetVideoId}`
       : (project.url || null);
 
-    if (targetVideoId && !project.videoId) {
+    if (targetVideoId && project.videoId !== targetVideoId) {
       project.videoId = targetVideoId;
       await project.save();
     }
