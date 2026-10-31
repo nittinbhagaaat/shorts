@@ -48,9 +48,11 @@ const UserSchema = new mongoose.Schema({
   },
 });
 
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'nitinbhagatxyz@gmail.com').toLowerCase().trim();
+
 UserSchema.pre('save', function (next) {
   this.updatedAt = new Date();
-  if (this.email && this.email.toLowerCase().trim() === 'nitinbhagatxyz@gmail.com') {
+  if (this.email && this.email.toLowerCase().trim() === ADMIN_EMAIL) {
     this.role = 'admin';
   }
   if (typeof next === 'function') next();

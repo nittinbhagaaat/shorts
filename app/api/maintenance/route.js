@@ -18,9 +18,7 @@ export async function GET(req) {
       message: config.message,
       estimatedTime: config.estimatedTime,
       updatedAt: config.updatedAt,
-      updatedBy: config.updatedBy,
       isAdmin,
-      adminEmail: ADMIN_EMAIL,
     });
   } catch (err) {
     console.error('API MAINTENANCE GET: Error:', err);
@@ -38,7 +36,7 @@ export async function POST(req) {
 
     if (!isAdmin) {
       return NextResponse.json(
-        { error: `Forbidden: Admin access required. Only ${ADMIN_EMAIL} can toggle maintenance mode.` },
+        { error: 'Forbidden: Admin access required.' },
         { status: 403 }
       );
     }

@@ -359,8 +359,8 @@ export default function SettingsPage() {
                   <span className="px-2.5 py-0.5 rounded-full bg-[#dd2222] text-white text-[10px] font-extrabold uppercase tracking-wider">
                     👑 ADMIN SYSTEM CONTROL
                   </span>
-                  <span className="text-xs text-[#fca5a5] font-mono">
-                    nitinbhagatxyz@gmail.com
+                  <span className="text-xs text-[#fca5a5] font-medium">
+                    Authorized Administrator
                   </span>
                 </div>
                 <h2 className="text-lg font-bold text-white">Platform Maintenance Mode</h2>

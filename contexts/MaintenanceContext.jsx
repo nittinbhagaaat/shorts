@@ -31,12 +31,13 @@ export function MaintenanceProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
   const [bypassMaintenance, setBypassMaintenance] = useState(false);
+  const [serverIsAdmin, setServerIsAdmin] = useState(false);
 
-  // Check if active user is admin (specifically nitinbhagatxyz@gmail.com or role admin)
+  // Check if active user has administrative privileges
   const isAdmin = Boolean(
-    (user?.email && user.email.toLowerCase().trim() === 'nitinbhagatxyz@gmail.com') ||
     user?.isAdmin ||
-    user?.role === 'admin'
+    user?.role === 'admin' ||
+    serverIsAdmin
   );
 
   const refreshMaintenance = useCallback(async () => {
@@ -46,6 +47,9 @@ export function MaintenanceProvider({ children }) {
       });
       if (res.ok) {
         const data = await res.json();
+        if (typeof data.isAdmin === 'boolean') {
+          setServerIsAdmin(data.isAdmin);
+        }
         setMaintenance({
           enabled: Boolean(data.enabled),
           message: data.message || '',

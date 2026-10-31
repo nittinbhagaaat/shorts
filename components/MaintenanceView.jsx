@@ -59,9 +59,8 @@ export default function MaintenanceView() {
     setLoginLoading(true);
     try {
       const data = await login(adminEmailInput, adminPasswordInput);
-      const loggedEmail = (data?.user?.email || adminEmailInput).toLowerCase().trim();
-      if (loggedEmail !== 'nitinbhagatxyz@gmail.com' && !data?.user?.isAdmin) {
-        setLoginError('Access denied: Only nitinbhagatxyz@gmail.com has administrative access during maintenance.');
+      if (!data?.user?.isAdmin && data?.user?.role !== 'admin') {
+        setLoginError('Access denied: Administrator privileges required.');
       } else {
         setShowAdminLoginModal(false);
       }
@@ -104,8 +103,7 @@ export default function MaintenanceView() {
           {isAdmin ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#241515] border border-[#731111] text-[#fca5a5] text-xs font-bold">
               <span>👑</span>
-              <span className="hidden md:inline font-mono text-[11px]">nitinbhagatxyz@gmail.com</span>
-              <span className="md:hidden text-[11px]">Admin</span>
+              <span className="text-[11px]">Administrator</span>
             </div>
           ) : (
             <button
@@ -185,7 +183,7 @@ export default function MaintenanceView() {
                   <span className="text-sm font-bold text-white">Maintenance Switch</span>
                 </div>
                 <p className="text-xs text-[#909cac]">
-                  Visible exclusively to <span className="text-white font-mono font-medium">nitinbhagatxyz@gmail.com</span>
+                  Visible exclusively to authorized administrators.
                 </p>
               </div>
 
@@ -328,7 +326,7 @@ export default function MaintenanceView() {
               <h3 className="text-lg font-bold text-white">Admin Authentication</h3>
             </div>
             <p className="text-xs text-[#909cac] mb-5">
-              Sign in with your admin credentials (<span className="text-white font-mono font-medium">nitinbhagatxyz@gmail.com</span>) to manage maintenance controls.
+              Sign in with your administrator credentials to manage maintenance controls.
             </p>
 
             {loginError && (
@@ -347,7 +345,7 @@ export default function MaintenanceView() {
                   required
                   value={adminEmailInput}
                   onChange={(e) => setAdminEmailInput(e.target.value)}
-                  placeholder="nitinbhagatxyz@gmail.com"
+                  placeholder="admin@example.com"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#111417] border border-[#2b333c] text-white text-sm focus:outline-none focus:border-[#dd2222]"
                 />
               </div>
