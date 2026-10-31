@@ -5,10 +5,15 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import { getStoredSettings, saveStoredSettings, DEFAULT_SETTINGS, fetchWithSettings } from '@/lib/settings';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMaintenance } from '@/contexts/MaintenanceContext';
 import ApiKeyModal from '@/components/ApiKeyModal';
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
+  const { maintenance, toggleMaintenance, isAdmin } = useMaintenance();
+  const [adminMaintenanceMsg, setAdminMaintenanceMsg] = useState('');
+  const [adminSavingMaint, setAdminSavingMaint] = useState(false);
+  const [adminMaintSuccess, setAdminMaintSuccess] = useState('');
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [saveStatus, setSaveStatus] = useState('');
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -73,6 +78,41 @@ export default function SettingsPage() {
       setYtBanner({ type: 'error', message: 'Failed to disconnect YouTube account.' });
     } finally {
       setIsDisconnectingYt(false);
+    }
+  };
+
+  useEffect(() => {
+    if (maintenance?.message) {
+      setAdminMaintenanceMsg(maintenance.message);
+    }
+  }, [maintenance?.message]);
+
+  const handleAdminToggleMaintenance = async (nextState) => {
+    setAdminSavingMaint(true);
+    setAdminMaintSuccess('');
+    try {
+      await toggleMaintenance(nextState, adminMaintenanceMsg);
+      setAdminMaintSuccess(`Maintenance mode ${nextState ? 'enabled' : 'disabled'} successfully.`);
+      setTimeout(() => setAdminMaintSuccess(''), 4000);
+    } catch (err) {
+      alert(err.message || 'Failed to update maintenance mode');
+    } finally {
+      setAdminSavingMaint(false);
+    }
+  };
+
+  const handleAdminSaveMaintenanceMsg = async (e) => {
+    e.preventDefault();
+    setAdminSavingMaint(true);
+    setAdminMaintSuccess('');
+    try {
+      await toggleMaintenance(maintenance.enabled, adminMaintenanceMsg);
+      setAdminMaintSuccess('Maintenance announcement message saved.');
+      setTimeout(() => setAdminMaintSuccess(''), 4000);
+    } catch (err) {
+      alert(err.message || 'Failed to save announcement message');
+    } finally {
+      setAdminSavingMaint(false);
     }
   };
 
@@ -214,8 +254,8 @@ export default function SettingsPage() {
       keyField: 'groqKey',
       modelField: 'groqModel',
       models: [
-        { label: 'llama-3.3-70b-versatile (Recommended - Meta Llama 3.3)', value: 'llama-3.3-70b-versatile' },
-        { label: 'openai/gpt-oss-120b (OpenAI GPT-OSS 120B)', value: 'openai/gpt-oss-120b' },
+        { label: 'openai/gpt-oss-120b (Recommended - OpenAI GPT-OSS 120B)', value: 'openai/gpt-oss-120b' },
+        { label: 'llama-3.3-70b-versatile (Meta Llama 3.3)', value: 'llama-3.3-70b-versatile' },
         { label: 'llama3-8b-8192 (Fast - Meta Llama 3 8B)', value: 'llama3-8b-8192' },
         { label: 'mixtral-8x7b-32768 (Mixtral 8x7B)', value: 'mixtral-8x7b-32768' },
         { label: 'openai/gpt-oss-20b (OpenAI 20B)', value: 'openai/gpt-oss-20b' },
@@ -309,6 +349,95 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
+
+        {/* Admin-Only Maintenance Control Section */}
+        {isAdmin && (
+          <div className="p-6 rounded-2xl bg-[#201515] border-2 border-[#dd2222] shadow-xl shadow-[#dd2222]/15 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#dd2222]/30">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#dd2222] text-white text-[10px] font-extrabold uppercase tracking-wider">
+                    👑 ADMIN SYSTEM CONTROL
+                  </span>
+                  <span className="text-xs text-[#fca5a5] font-mono">
+                    nitinbhagatxyz@gmail.com
+                  </span>
+                </div>
+                <h2 className="text-lg font-bold text-white">Platform Maintenance Mode</h2>
+                <p className="text-xs text-[#b9c0ca] mt-0.5">
+                  When enabled, regular visitors see only the maintenance page. Only you have admin access.
+                </p>
+              </div>
+
+              {/* Interactive Toggle Switch */}
+              <div className="flex items-center gap-3">
+                <span
+                  className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
+                    maintenance.enabled
+                      ? 'bg-[#dd2222]/30 text-[#fca5a5] border border-[#dd2222]/50 animate-pulse'
+                      : 'bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30'
+                  }`}
+                >
+                  {maintenance.enabled ? 'ACTIVE (BLOCKING)' : 'OFF (PUBLIC)'}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={adminSavingMaint}
+                  onClick={() => handleAdminToggleMaintenance(!maintenance.enabled)}
+                  className={`relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#dd2222] disabled:opacity-50 ${
+                    maintenance.enabled ? 'bg-[#dd2222]' : 'bg-[#39414b]'
+                  }`}
+                  role="switch"
+                  aria-checked={maintenance.enabled}
+                  title={`Click to turn ${maintenance.enabled ? 'OFF' : 'ON'} maintenance mode`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      maintenance.enabled ? 'translate-x-8' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Custom Announcement Message Form */}
+            <form onSubmit={handleAdminSaveMaintenanceMsg} className="space-y-3">
+              <label className="block text-xs font-semibold text-[#fca5a5]">
+                Custom Visitor Announcement Message:
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={adminMaintenanceMsg}
+                  onChange={(e) => setAdminMaintenanceMsg(e.target.value)}
+                  placeholder="clip.studio is currently undergoing scheduled maintenance..."
+                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#14171a] border border-[#39414b] text-white text-xs focus:outline-none focus:border-[#dd2222]"
+                />
+                <button
+                  type="submit"
+                  disabled={adminSavingMaint}
+                  className="px-5 py-2.5 rounded-xl bg-[#dd2222] hover:bg-[#c81e1e] text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  {adminSavingMaint ? 'Saving...' : 'Update Announcement'}
+                </button>
+                <Link
+                  href="/maintenance"
+                  target="_blank"
+                  className="px-4 py-2.5 rounded-xl bg-[#282d33] hover:bg-[#39414b] text-gray-200 text-xs font-medium border border-[#4b5563] transition-all text-center shrink-0"
+                >
+                  Preview Page ↗
+                </Link>
+              </div>
+            </form>
+
+            {adminMaintSuccess && (
+              <div className="p-3 rounded-xl bg-[#22c55e]/15 border border-[#22c55e]/30 text-[#86efac] text-xs font-semibold">
+                ✓ {adminMaintSuccess}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* YouTube Connection Status Banner */}
         {ytBanner && (

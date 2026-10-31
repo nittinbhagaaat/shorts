@@ -1,5 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { MaintenanceProvider } from "@/contexts/MaintenanceContext";
+import MaintenanceGuard from "@/components/MaintenanceGuard";
 
 export const metadata = {
   title: "clip.studio",
@@ -36,7 +38,11 @@ export default function RootLayout({ children }) {
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#1d2125] text-[#f6f7f8]">
         <AuthProvider>
-          {children}
+          <MaintenanceProvider>
+            <MaintenanceGuard>
+              {children}
+            </MaintenanceGuard>
+          </MaintenanceProvider>
         </AuthProvider>
       </body>
     </html>

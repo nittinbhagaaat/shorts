@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
-import { createAuthToken, getAuthCookieOptions } from '@/lib/auth';
+import { createAuthToken, getAuthCookieOptions, isUserAdmin } from '@/lib/auth';
 import { extractServerConfig } from '@/lib/serverConfig';
 
 export async function POST(req) {
@@ -40,12 +40,20 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
     }
 
+    const isAdmin = isUserAdmin(user);
+    if (isAdmin && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save().catch(() => {});
+    }
+
     const userPayload = {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
       image: user.image || '',
       provider: user.provider || 'credentials',
+      role: isAdmin ? 'admin' : (user.role || 'user'),
+      isAdmin,
     };
 
     // Create JWT

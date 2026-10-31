@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
-import { createAuthToken, getAuthCookieOptions } from '@/lib/auth';
+import { createAuthToken, getAuthCookieOptions, isUserAdmin, ADMIN_EMAIL } from '@/lib/auth';
 import { extractServerConfig } from '@/lib/serverConfig';
 
 export async function POST(req) {
@@ -45,12 +45,14 @@ export async function POST(req) {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
+    const isAdmin = cleanEmail === ADMIN_EMAIL;
     const newUser = await User.create({
       name: name.trim(),
       email: cleanEmail,
       password: hashedPassword,
       provider: 'credentials',
       image: '',
+      role: isAdmin ? 'admin' : 'user',
     });
 
     const userPayload = {
@@ -59,6 +61,8 @@ export async function POST(req) {
       email: newUser.email,
       image: newUser.image || '',
       provider: newUser.provider,
+      role: isAdmin ? 'admin' : 'user',
+      isAdmin,
     };
 
     // Create JWT

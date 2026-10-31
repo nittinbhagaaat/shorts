@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
-import { createAuthToken, getAuthCookieOptions } from '@/lib/auth';
+import { createAuthToken, getAuthCookieOptions, isUserAdmin, ADMIN_EMAIL } from '@/lib/auth';
 import { extractServerConfig } from '@/lib/serverConfig';
 
 function getAppBaseUrl(req) {
@@ -72,9 +72,14 @@ export async function GET(req) {
       $or: [{ email: cleanEmail }, { googleId: profile.id }],
     });
 
+    const isAdmin = cleanEmail === ADMIN_EMAIL;
     if (user) {
       // Update googleId and profile image if not already set
       let needsSave = false;
+      if (isAdmin && user.role !== 'admin') {
+        user.role = 'admin';
+        needsSave = true;
+      }
       if (!user.googleId) {
         user.googleId = profile.id;
         needsSave = true;
@@ -94,6 +99,7 @@ export async function GET(req) {
         image: profile.picture || '',
         provider: 'google',
         googleId: profile.id,
+        role: isAdmin ? 'admin' : 'user',
       });
     }
 
@@ -103,6 +109,8 @@ export async function GET(req) {
       email: user.email,
       image: user.image || '',
       provider: user.provider || 'google',
+      role: isAdmin ? 'admin' : (user.role || 'user'),
+      isAdmin,
     };
 
     // Generate JWT

@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getStoredSettings, hasConfiguredApiKey } from '@/lib/settings';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMaintenance } from '@/contexts/MaintenanceContext';
 import ApiKeyModal from '@/components/ApiKeyModal';
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const { user, loading: authLoading, logout } = useAuth();
+  const { maintenance, toggleMaintenance, isAdmin } = useMaintenance();
   const [settings, setSettings] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -290,6 +292,61 @@ export default function DashboardLayout({ children }) {
             )
           )}
 
+          {/* Admin Maintenance Control Widget (Visible ONLY to Admin) */}
+          {isAdmin && (
+            !isCollapsed ? (
+              <div className="p-3 rounded-xl bg-[#2a1313] border border-[#dd2222]/60 space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <span className="text-amber-400">👑</span> Admin Control
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider ${
+                      maintenance.enabled
+                        ? 'bg-[#dd2222]/30 text-[#fca5a5] border border-[#dd2222]/50 animate-pulse'
+                        : 'bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30'
+                    }`}
+                  >
+                    {maintenance.enabled ? 'Maint: ON' : 'Maint: OFF'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[#f6f7f8]">Maintenance</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleMaintenance(!maintenance.enabled)}
+                    className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                      maintenance.enabled ? 'bg-[#dd2222]' : 'bg-[#39414b]'
+                    }`}
+                    title={`Click to turn ${maintenance.enabled ? 'OFF' : 'ON'} maintenance mode`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        maintenance.enabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <div className="text-[10px] text-[#fca5a5]/70 truncate font-mono">
+                  {maintenance.enabled ? 'Visitors see maintenance page' : 'Public live access active'}
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => toggleMaintenance(!maintenance.enabled)}
+                className={`w-10 h-10 mx-auto rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                  maintenance.enabled
+                    ? 'bg-[#dd2222]/20 border-[#dd2222] text-[#fca5a5]'
+                    : 'bg-[#1d2125] border-[#39414b] text-[#909cac] hover:text-white'
+                }`}
+                title={`Admin Maintenance: ${maintenance.enabled ? 'ON' : 'OFF'}. Click to toggle.`}
+              >
+                <span className="text-sm">👑</span>
+              </button>
+            )
+          )}
+
           {/* AI Status */}
           {!isCollapsed ? (
             <div className="p-3 rounded-[10px] bg-[#1d2125] border border-[#39414b] space-y-2">
@@ -399,6 +456,33 @@ export default function DashboardLayout({ children }) {
               >
                 Sign Up
               </Link>
+            </div>
+          )}
+
+          {/* Admin Mobile Maintenance Toggle (Visible ONLY to Admin) */}
+          {isAdmin && (
+            <div className="p-3 rounded-xl bg-[#2a1313] border border-[#dd2222]/50 flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span className="text-amber-400">👑</span> Maintenance Mode
+                </div>
+                <div className="text-[10px] text-[#fca5a5]">
+                  {maintenance.enabled ? 'ACTIVE (Visitors blocked)' : 'DISABLED (Public live)'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => toggleMaintenance(!maintenance.enabled)}
+                className={`relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                  maintenance.enabled ? 'bg-[#dd2222]' : 'bg-[#39414b]'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    maintenance.enabled ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
           )}
 

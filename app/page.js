@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMaintenance } from '@/contexts/MaintenanceContext';
 
 export default function HomePage() {
   const router = useRouter();
   const { user, loginWithGoogle } = useAuth();
+  const { maintenance, toggleMaintenance, isAdmin } = useMaintenance();
   const [url, setUrl] = useState('');
   const [clipCount, setClipCount] = useState(5);
   const [minDuration, setMinDuration] = useState(30);
@@ -196,6 +198,28 @@ export default function HomePage() {
 
           {/* Right Action Buttons */}
           <div className="flex items-center gap-3 shrink-0">
+            {isAdmin && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#2a1313] border border-[#dd2222]/60 text-xs">
+                <span className="text-amber-400 font-bold hidden sm:inline">👑 Maintenance:</span>
+                <span className={`text-[10px] font-extrabold uppercase ${maintenance.enabled ? 'text-[#fca5a5]' : 'text-[#86efac]'}`}>
+                  {maintenance.enabled ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => toggleMaintenance(!maintenance.enabled)}
+                  className={`relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out ${
+                    maintenance.enabled ? 'bg-[#dd2222]' : 'bg-[#39414b]'
+                  }`}
+                  title={`Toggle maintenance mode (Current: ${maintenance.enabled ? 'ON' : 'OFF'})`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      maintenance.enabled ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
             {user ? (
               <div className="flex items-center gap-3">
                 <Link

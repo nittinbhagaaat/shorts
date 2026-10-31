@@ -1,6 +1,6 @@
 // app/api/auth/me/route.js
 import { NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/auth';
+import { getAuthUser, isUserAdmin } from '@/lib/auth';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import { extractServerConfig } from '@/lib/serverConfig';
@@ -20,6 +20,12 @@ export async function GET(req) {
       return NextResponse.json({ user: null });
     }
 
+    const isAdmin = isUserAdmin(user);
+    if (isAdmin && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save().catch(() => {});
+    }
+
     return NextResponse.json({
       user: {
         id: user._id.toString(),
@@ -27,6 +33,8 @@ export async function GET(req) {
         email: user.email,
         image: user.image || '',
         provider: user.provider || 'credentials',
+        role: isAdmin ? 'admin' : (user.role || 'user'),
+        isAdmin,
         createdAt: user.createdAt,
       },
     });
