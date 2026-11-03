@@ -5,6 +5,7 @@ import { downloadVideoClip } from '@/lib/video';
 import { scheduleClipAutoCleanup } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { extractVideoId } from '@/lib/youtube';
+import { formatFriendlyError } from '@/lib/formatError';
 import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
@@ -83,6 +84,6 @@ export async function GET(req, { params }) {
     });
   } catch (err) {
     console.error('PREVIEW API: Error generating preview:', err);
-    return NextResponse.json({ error: err.message || 'Failed to generate preview' }, { status: 500 });
+    return NextResponse.json({ error: formatFriendlyError(err) }, { status: 500 });
   }
 }
