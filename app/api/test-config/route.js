@@ -1,6 +1,46 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import { runCommandLine } from '@/lib/video';
+import { runCommandLine, getCookiesStatus } from '@/lib/video';
+
+export async function GET() {
+  const cookies = getCookiesStatus();
+  let ytDlpVersion = 'Not found';
+  let ffmpegVersion = 'Not found';
+
+  try {
+    const ytCandidates = ['/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp', 'yt-dlp'];
+    for (const p of ytCandidates) {
+      try {
+        const out = await runCommandLine(p, ['--version'], 3000);
+        ytDlpVersion = out.trim();
+        break;
+      } catch (_) {}
+    }
+  } catch (e) {
+    ytDlpVersion = e.message;
+  }
+
+  try {
+    const ffCandidates = ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', 'ffmpeg'];
+    for (const p of ffCandidates) {
+      try {
+        const out = await runCommandLine(p, ['-version'], 3000);
+        ffmpegVersion = out.split('\n')[0] || 'Unknown';
+        break;
+      } catch (_) {}
+    }
+  } catch (e) {
+    ffmpegVersion = e.message;
+  }
+
+  return NextResponse.json({
+    status: 'ok',
+    cookies,
+    ytDlp: { version: ytDlpVersion },
+    ffmpeg: { version: ffmpegVersion },
+    serverTime: new Date().toISOString()
+  });
+}
 
 export async function POST(req) {
   try {
@@ -60,6 +100,24 @@ export async function POST(req) {
         return NextResponse.json({
           success: false,
           error: `yt-dlp executable not found or failed at path "${targetPath}": ${err.message}`
+        }, { status: 400 });
+      }
+    }
+
+    // 3b. Test Cookies File
+    if (type === 'cookies') {
+      const status = getCookiesStatus();
+      if (status.found) {
+        return NextResponse.json({
+          success: true,
+          message: `Cookies file verified at "${status.path}" (${status.size} bytes, ${status.cookieCount} cookies, auth: ${status.hasAuthCookies})`,
+          status
+        });
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: `No valid cookies.txt file detected on server. Checked paths: ${status.checkedPaths.join(', ')}`,
+          status
         }, { status: 400 });
       }
     }
