@@ -16,7 +16,7 @@ SYSTEM_BIN_TARGET="/usr/local/bin/vps-storage-cleanup.sh"
 
 # Function to install the cron job automatically
 install_cron() {
-    local cron_schedule="0 4,16 * * *" # Runs at 04:00 and 16:00 every day
+    local cron_schedule="0 */6 * * *" # Runs every 6 hours (00:00, 06:00, 12:00, 18:00)
     local cron_file="/etc/cron.d/vps-storage-cleanup"
 
     echo "$LOG_TAG Installing script to $SYSTEM_BIN_TARGET..."
@@ -24,13 +24,13 @@ install_cron() {
     cp "$CURRENT_SCRIPT" "$SYSTEM_BIN_TARGET"
     chmod +x "$SYSTEM_BIN_TARGET"
 
-    echo "$LOG_TAG Installing twice-daily cron job (at 04:00 & 16:00)..."
+    echo "$LOG_TAG Installing cron job (every 6 hours: 00:00, 06:00, 12:00, 18:00)..."
 
     # Write system-level cron definition
     cat <<EOF > "$cron_file"
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-# Runs twice daily at 4:00 AM and 4:00 PM
+# Runs 4 times a day (every 6 hours at 00:00, 06:00, 12:00, 18:00)
 $cron_schedule root $SYSTEM_BIN_TARGET >> /var/log/vps-cleanup.log 2>&1
 EOF
 
