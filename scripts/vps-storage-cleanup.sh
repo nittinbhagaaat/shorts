@@ -105,18 +105,23 @@ run_cleanup() {
     # 9. Clean Next.js build cache across active projects (frees 1-3GB cache, keeps prod build)
     find /root /home -maxdepth 4 -type d -path "*/.next/cache" -exec rm -rf {} + 2>/dev/null || true
 
-    # 10. Flush PM2 logs and reload nginx error logs to release open file handles
+    # 10. Flush PM2 logs, reload PM2 apps, and restart logging daemons to release open file handles
     if command -v pm2 >/dev/null 2>&1; then
         pm2 flush >/dev/null 2>&1 || true
+        pm2 reload all >/dev/null 2>&1 || true
     elif [ -x "/usr/local/bin/pm2" ]; then
         /usr/local/bin/pm2 flush >/dev/null 2>&1 || true
+        /usr/local/bin/pm2 reload all >/dev/null 2>&1 || true
     else
         NVM_PM2=$(find /root/.nvm/versions/node -name pm2 -type f 2>/dev/null | head -n 1)
         if [ -n "$NVM_PM2" ] && [ -x "$NVM_PM2" ]; then
             "$NVM_PM2" flush >/dev/null 2>&1 || true
+            "$NVM_PM2" reload all >/dev/null 2>&1 || true
         fi
     fi
     systemctl reload nginx >/dev/null 2>&1 || true
+    systemctl restart rsyslog >/dev/null 2>&1 || true
+    systemctl restart systemd-journald >/dev/null 2>&1 || true
 
     # 11. Clear root user cache and npm cache
     rm -rf /root/.cache/* 2>/dev/null || true
