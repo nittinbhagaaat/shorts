@@ -159,6 +159,28 @@ export default function PlatformHistoryPage() {
           </div>
         ) : (
           <>
+            {/* Daily Quota Limit Banner */}
+            {channelStatus?.uploadQuotaExceeded && (
+              <div className="p-4 rounded-xl bg-gradient-to-r from-[#2c1313] via-[#381616] to-[#200e0e] border border-[#f59e0b]/60 flex items-start justify-between gap-3 shadow-lg animate-in fade-in">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl shrink-0">⏳</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-[#f59e0b] text-black text-[10px] font-black uppercase tracking-wider">
+                        Upload Limit Reached
+                      </span>
+                      <span className="text-xs font-bold text-[#fde68a]">
+                        Today&apos;s upload limit has been reached!
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#fca5a5] mt-1">
+                      YouTube Data API limits video uploads per day. You can do it again tomorrow!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-4 rounded-[12px] bg-[#2d3239] border border-[#39414b]">

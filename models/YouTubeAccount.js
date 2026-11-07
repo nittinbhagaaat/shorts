@@ -17,6 +17,9 @@ const YouTubeAccountSchema = new mongoose.Schema({
   clientId: { type: String, default: '' },
   clientSecret: { type: String, default: '' },
   isConnected: { type: Boolean, default: true },
+  uploadQuotaExceeded: { type: Boolean, default: false },
+  uploadQuotaExceededAt: { type: Date, default: null },
+  uploadQuotaResetAt: { type: Date, default: null },
   connectedAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

@@ -732,20 +732,34 @@ export default function SettingsPage() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-bold text-sm text-white truncate">{ytAccount.channelTitle}</h3>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Connected
-                      </span>
+                      {ytAccount.uploadQuotaExceeded ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#f59e0b]/20 border border-[#f59e0b]/50 text-[#fcd34d] text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shrink-0" title="Today's upload limit has been reached! You can do it again tomorrow.">
+                          <span>⏳</span>
+                          <span>Upload Limit Reached</span>
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                          Connected
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-[#909cac] truncate mt-0.5">
                       {ytAccount.channelHandle ? `@${ytAccount.channelHandle.replace(/^@/, '')}` : `ID: ${ytAccount.channelId}`}
                       {ytAccount.subscriberCount && ` · ${Number(ytAccount.subscriberCount).toLocaleString()} subscribers`}
                     </p>
-                    <p className="text-[10px] text-[#6e7d91] mt-0.5">
-                      Ready for direct Shorts upload and schedule publishing (max 90s vertical 9:16).
-                    </p>
+                    {ytAccount.uploadQuotaExceeded ? (
+                      <p className="text-[11px] text-[#fca5a5] mt-1 font-medium flex items-center gap-1">
+                        <span>⚠️</span>
+                        <span>Today&apos;s upload limit has been reached! You can do it again tomorrow.</span>
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-[#6e7d91] mt-0.5">
+                        Ready for direct Shorts upload and schedule publishing (max 90s vertical 9:16).
+                      </p>
+                    )}
                   </div>
                 </div>
 

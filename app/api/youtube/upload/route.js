@@ -3,7 +3,12 @@ import dbConnect from '@/lib/db';
 import Clip from '@/models/Clip';
 import Project from '@/models/Project';
 import YouTubeUpload from '@/models/YouTubeUpload';
-import { uploadShortToYouTube } from '@/lib/youtubeClient';
+import {
+  uploadShortToYouTube,
+  isYouTubeQuotaExceededError,
+  markYouTubeQuotaExceeded,
+  getYouTubeQuotaStatus,
+} from '@/lib/youtubeClient';
 import { deleteClipVideoFiles } from '@/lib/storageCleanup';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { getAuthUser } from '@/lib/auth';
@@ -20,6 +25,19 @@ export async function POST(req) {
     const session = await getAuthUser(req);
     if (!session?.id) {
       return NextResponse.json({ error: 'Please sign in to upload YouTube Shorts.' }, { status: 401 });
+    }
+
+    // Pre-check if daily upload quota limit is already reached
+    const quotaStatus = await getYouTubeQuotaStatus(session.id, mongodbUri);
+    if (quotaStatus.isExceeded) {
+      return NextResponse.json(
+        {
+          error: "Today's upload limit has been reached! You can do it again tomorrow.",
+          quotaExceeded: true,
+          resetAt: quotaStatus.resetAt,
+        },
+        { status: 429 }
+      );
     }
 
     const body = await req.json();
@@ -169,6 +187,17 @@ export async function POST(req) {
     });
   } catch (err) {
     console.error('API YOUTUBE UPLOAD: Error uploading short:', err);
+    if (err.quotaExceeded || isYouTubeQuotaExceededError(err)) {
+      const resetAt = err.resetAt || (await markYouTubeQuotaExceeded(session?.id, mongodbUri));
+      return NextResponse.json(
+        {
+          error: "Today's upload limit has been reached! You can do it again tomorrow.",
+          quotaExceeded: true,
+          resetAt,
+        },
+        { status: 429 }
+      );
+    }
     return NextResponse.json({ error: formatFriendlyError(err) }, { status: 500 });
   }
 }

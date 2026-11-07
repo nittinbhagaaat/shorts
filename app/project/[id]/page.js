@@ -25,6 +25,8 @@ export default function ProjectWorkspace({ params }) {
   const [isYouTubeUploadOpen, setIsYouTubeUploadOpen] = useState(false);
   const [youtubeUploads, setYoutubeUploads] = useState([]);
   const [isLoadingUploads, setIsLoadingUploads] = useState(false);
+  const [ytQuotaExceeded, setYtQuotaExceeded] = useState(false);
+  const [ytQuotaResetAt, setYtQuotaResetAt] = useState(null);
   
   // Render & Studio properties state
   const [cropFocus, setCropFocus] = useState('auto'); // 'auto' (camera follows person), 'blurred_fit', 'center', 'left', 'right'
@@ -93,10 +95,24 @@ export default function ProjectWorkspace({ params }) {
     if (!projectId) return;
     try {
       setIsLoadingUploads(true);
-      const res = await fetchWithSettings(`/api/youtube/uploads?projectId=${projectId}`);
-      if (res.ok) {
-        const data = await safeParseJson(res);
+      const [uploadsRes, statusRes] = await Promise.all([
+        fetchWithSettings(`/api/youtube/uploads?projectId=${projectId}`),
+        fetchWithSettings('/api/youtube/status'),
+      ]);
+
+      if (uploadsRes.ok) {
+        const data = await safeParseJson(uploadsRes);
         setYoutubeUploads(data.uploads || []);
+      }
+
+      if (statusRes.ok) {
+        const statusData = await safeParseJson(statusRes);
+        if (statusData?.uploadQuotaExceeded || statusData?.account?.uploadQuotaExceeded) {
+          setYtQuotaExceeded(true);
+          setYtQuotaResetAt(statusData.uploadQuotaResetAt || statusData.account?.uploadQuotaResetAt);
+        } else {
+          setYtQuotaExceeded(false);
+        }
       }
     } catch (err) {
       console.error('Failed to load YouTube uploads for project:', err);
@@ -1086,15 +1102,48 @@ export default function ProjectWorkspace({ params }) {
 
                         {/* Upload to YouTube Short Button - Just after Preview Action */}
                         <div className="pt-1.5 flex flex-col gap-2">
+                          {/* Daily Upload Limit Exceeded Badge */}
+                          {ytQuotaExceeded && (
+                            <div className="p-3 rounded-[10px] bg-gradient-to-r from-[#2c1313] via-[#381616] to-[#200e0e] border border-[#f59e0b]/60 shadow-lg flex items-start gap-2.5 animate-in fade-in">
+                              <span className="text-base shrink-0">⏳</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded bg-[#f59e0b] text-black text-[10px] font-black uppercase tracking-wider">
+                                    Upload Limit Reached
+                                  </span>
+                                  {ytQuotaResetAt && (
+                                    <span className="text-[10px] font-mono text-[#fcd34d]">
+                                      Resets {new Date(ytQuotaResetAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs font-semibold text-white mt-1">
+                                  Today&apos;s upload limit has been reached!
+                                </p>
+                                <p className="text-[11px] text-[#fca5a5] mt-0.5">
+                                  You can do it again tomorrow.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => setIsYouTubeUploadOpen(true)}
-                            className="w-full py-3 px-4 rounded-[10px] bg-gradient-to-r from-[#dd2222] to-[#b91c1c] hover:from-[#e52d27] hover:to-[#b31217] text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-red-900/30 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                            className={`w-full py-3 px-4 rounded-[10px] text-white font-bold text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all transform cursor-pointer ${
+                              ytQuotaExceeded
+                                ? 'bg-gradient-to-r from-[#3a2020] to-[#2b1818] border border-[#f59e0b]/40 text-[#fde68a] hover:-translate-y-0.5'
+                                : 'bg-gradient-to-r from-[#dd2222] to-[#b91c1c] hover:from-[#e52d27] hover:to-[#b31217] shadow-red-900/30 hover:-translate-y-0.5 active:translate-y-0'
+                            }`}
                           >
                             <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
                               <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                             </svg>
-                            <span>Upload to YouTube Short</span>
+                            <span>
+                              {ytQuotaExceeded
+                                ? "Upload Limit Reached (Try Tomorrow)"
+                                : "Upload to YouTube Short"}
+                            </span>
                           </button>
 
                           {/* Selected Clip YouTube Status Banner */}

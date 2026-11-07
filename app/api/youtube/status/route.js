@@ -3,7 +3,14 @@ import dbConnect from '@/lib/db';
 import YouTubeAccount from '@/models/YouTubeAccount';
 import { extractServerConfig } from '@/lib/serverConfig';
 import { getAuthUser } from '@/lib/auth';
+import {
+  getYouTubeQuotaStatus,
+  resetYouTubeQuota,
+  markYouTubeQuotaExceeded,
+} from '@/lib/youtubeClient';
 import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   try {
@@ -32,19 +39,39 @@ export async function GET(req) {
       });
     }
 
-    return NextResponse.json({
-      connected: true,
-      isConfigured: Boolean(googleClientId && process.env.GOOGLE_CLIENT_SECRET),
-      googleProjectId,
-      account: {
-        channelId: account.channelId,
-        channelTitle: account.channelTitle,
-        channelHandle: account.channelHandle,
-        channelThumbnail: account.channelThumbnail,
-        subscriberCount: account.subscriberCount,
-        connectedAt: account.connectedAt,
+    const quotaStatus = await getYouTubeQuotaStatus(session.id, mongodbUri);
+    const uploadQuotaExceeded = quotaStatus.isExceeded;
+    const uploadQuotaResetAt = quotaStatus.resetAt;
+    const uploadQuotaMessage = uploadQuotaExceeded
+      ? "Today's upload limit has been reached! You can do it again tomorrow."
+      : null;
+
+    return NextResponse.json(
+      {
+        connected: true,
+        isConfigured: Boolean(googleClientId && process.env.GOOGLE_CLIENT_SECRET),
+        googleProjectId,
+        uploadQuotaExceeded,
+        uploadQuotaResetAt,
+        uploadQuotaMessage,
+        account: {
+          channelId: account.channelId,
+          channelTitle: account.channelTitle,
+          channelHandle: account.channelHandle,
+          channelThumbnail: account.channelThumbnail,
+          subscriberCount: account.subscriberCount,
+          connectedAt: account.connectedAt,
+          uploadQuotaExceeded,
+          uploadQuotaResetAt,
+          uploadQuotaMessage,
+        },
       },
-    });
+      {
+        headers: {
+          'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+        },
+      }
+    );
   } catch (err) {
     console.error('API YOUTUBE STATUS: Error fetching status:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -67,6 +94,16 @@ export async function POST(req) {
     if (action === 'disconnect') {
       await YouTubeAccount.updateMany({ userId: session.id }, { isConnected: false });
       return NextResponse.json({ success: true, message: 'YouTube channel disconnected.' });
+    }
+
+    if (action === 'reset-quota') {
+      await resetYouTubeQuota(session.id, mongodbUri);
+      return NextResponse.json({ success: true, message: 'Upload limit status reset successfully.' });
+    }
+
+    if (action === 'mark-quota-exceeded') {
+      const resetAt = await markYouTubeQuotaExceeded(session.id, mongodbUri);
+      return NextResponse.json({ success: true, message: "Marked upload limit as reached.", resetAt });
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

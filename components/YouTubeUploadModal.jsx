@@ -20,6 +20,8 @@ export default function YouTubeUploadModal({
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState(null);
   const [uploadProgressStep, setUploadProgressStep] = useState('');
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [quotaResetAt, setQuotaResetAt] = useState(null);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -43,6 +45,12 @@ export default function YouTubeUploadModal({
         const data = await res.json();
         if (data.connected && data.account) {
           setAccount(data.account);
+          if (data.uploadQuotaExceeded || data.account.uploadQuotaExceeded) {
+            setQuotaExceeded(true);
+            setQuotaResetAt(data.uploadQuotaResetAt || data.account.uploadQuotaResetAt);
+          } else {
+            setQuotaExceeded(false);
+          }
         } else {
           setAccount(null);
         }
@@ -182,6 +190,12 @@ export default function YouTubeUploadModal({
 
       const data = await res.json();
       if (!res.ok || !data.success) {
+        if (res.status === 429 || data.quotaExceeded) {
+          setQuotaExceeded(true);
+          if (data.resetAt) setQuotaResetAt(data.resetAt);
+          setUploadError("Today's upload limit has been reached! You can do it again tomorrow.");
+          return;
+        }
         throw new Error(data.error || 'Failed to upload Short to YouTube.');
       }
 
@@ -192,7 +206,13 @@ export default function YouTubeUploadModal({
     } catch (err) {
       clearInterval(stepInterval);
       console.error(err);
-      setUploadError(formatFriendlyError(err));
+      if (err.quotaExceeded) {
+        setQuotaExceeded(true);
+        if (err.resetAt) setQuotaResetAt(err.resetAt);
+        setUploadError("Today's upload limit has been reached! You can do it again tomorrow.");
+      } else {
+        setUploadError(formatFriendlyError(err));
+      }
     } finally {
       setIsUploading(false);
     }
@@ -293,6 +313,39 @@ export default function YouTubeUploadModal({
               >
                 Connect in Settings
               </Link>
+            </div>
+          )}
+
+          {/* Daily Upload Limit Exceeded Badge */}
+          {quotaExceeded && (
+            <div className="p-4 rounded-[12px] bg-gradient-to-r from-[#2c1313] via-[#3a1a1a] to-[#251010] border-2 border-[#f59e0b] shadow-xl text-left space-y-2.5 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] animate-ping shrink-0"></span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#f59e0b] text-black text-[11px] font-black uppercase tracking-wider">
+                    Upload Limit Reached
+                  </span>
+                </div>
+                <span className="text-[11px] font-mono text-[#fcd34d]">
+                  {quotaResetAt
+                    ? `Resets ${new Date(quotaResetAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : 'Resets daily at midnight PT'}
+                </span>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#f59e0b]/20 border border-[#f59e0b]/40 flex items-center justify-center text-lg shrink-0">
+                  ⏳
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white">
+                    Today&apos;s upload limit has been reached!
+                  </h4>
+                  <p className="text-xs text-[#fca5a5] mt-1 leading-relaxed">
+                    YouTube Data API limits video uploads per day. You can do it again tomorrow!
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -589,19 +642,34 @@ export default function YouTubeUploadModal({
 
                 <button
                   type="submit"
-                  disabled={isUploading || !account || !isRendered}
-                  className="px-5 py-2.5 bg-[#dd2222] hover:bg-[#b91c1c] text-white text-xs font-bold uppercase tracking-wider rounded-[8px] flex items-center gap-2 shadow-lg transition-transform hover:scale-105 cursor-pointer disabled:opacity-50 disabled:hover:scale-100"
+                  disabled={isUploading || !account || !isRendered || quotaExceeded}
+                  className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-[8px] flex items-center gap-2 shadow-lg transition-transform ${
+                    quotaExceeded
+                      ? 'bg-[#39414b] text-[#fca5a5] border border-[#f59e0b]/40 cursor-not-allowed'
+                      : isUploading || !account || !isRendered
+                      ? 'bg-[#39414b] text-[#909cac] cursor-not-allowed disabled:opacity-50'
+                      : 'bg-[#dd2222] hover:bg-[#b91c1c] text-white hover:scale-105 cursor-pointer'
+                  }`}
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                  </svg>
-                  <span>
-                    {isUploading
-                      ? 'Publishing Short...'
-                      : isScheduled
-                      ? 'Schedule YouTube Short'
-                      : 'Publish Short to YouTube'}
-                  </span>
+                  {quotaExceeded ? (
+                    <>
+                      <span>⏳</span>
+                      <span>Daily Upload Limit Reached</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                      <span>
+                        {isUploading
+                          ? 'Publishing Short...'
+                          : isScheduled
+                          ? 'Schedule YouTube Short'
+                          : 'Publish Short to YouTube'}
+                      </span>
+                    </>
+                  )}
                 </button>
               </div>
 
