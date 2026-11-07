@@ -3,6 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { isEmailAdmin } from '@/lib/constants';
 
 const MaintenanceContext = createContext({
   maintenance: {
@@ -31,25 +32,17 @@ export function MaintenanceProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
   const [bypassMaintenance, setBypassMaintenance] = useState(false);
-  const [serverIsAdmin, setServerIsAdmin] = useState(false);
 
-  // Check if active user has administrative privileges
-  const isAdmin = Boolean(
-    user?.isAdmin ||
-    user?.role === 'admin' ||
-    serverIsAdmin
-  );
+  // Check if active user is logged in AND their email strictly matches the admin email
+  const isAdmin = Boolean(user && user.email && isEmailAdmin(user.email));
 
   const refreshMaintenance = useCallback(async () => {
     try {
       const res = await fetch('/api/maintenance', {
-        headers: { 'Cache-Control': 'no-cache' },
+        headers: { 'Cache-Control': 'no-cache, no-store' },
       });
       if (res.ok) {
         const data = await res.json();
-        if (typeof data.isAdmin === 'boolean') {
-          setServerIsAdmin(data.isAdmin);
-        }
         setMaintenance({
           enabled: Boolean(data.enabled),
           message: data.message || '',

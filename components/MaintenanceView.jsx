@@ -4,10 +4,12 @@
 import { useState } from 'react';
 import { useMaintenance } from '@/contexts/MaintenanceContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { isEmailAdmin } from '@/lib/constants';
 
 export default function MaintenanceView() {
   const { maintenance, toggleMaintenance, isAdmin, setBypassMaintenance } = useMaintenance();
-  const { login } = useAuth();
+  const { user, login } = useAuth();
+  const isAuthorizedAdmin = Boolean(isAdmin && user && user.email && isEmailAdmin(user.email));
 
   const [isToggling, setIsToggling] = useState(false);
   const [toggleSuccess, setToggleSuccess] = useState(false);
@@ -59,7 +61,7 @@ export default function MaintenanceView() {
     setLoginLoading(true);
     try {
       const data = await login(adminEmailInput, adminPasswordInput);
-      if (!data?.user?.isAdmin && data?.user?.role !== 'admin') {
+      if (!data?.user?.email || !isEmailAdmin(data.user.email)) {
         setLoginError('Access denied: Administrator privileges required.');
       } else {
         setShowAdminLoginModal(false);
@@ -100,7 +102,7 @@ export default function MaintenanceView() {
             <span>Maintenance Mode</span>
           </div>
 
-          {isAdmin ? (
+          {isAuthorizedAdmin ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#241515] border border-[#731111] text-[#fca5a5] text-xs font-bold">
               <span>👑</span>
               <span className="text-[11px]">Administrator</span>
@@ -171,7 +173,7 @@ export default function MaintenanceView() {
         {/* ============================================================ */}
         {/* ADMIN-ONLY MAINTENANCE CONTROL PANEL (Visible ONLY to Admin) */}
         {/* ============================================================ */}
-        {isAdmin && (
+        {isAuthorizedAdmin && (
           <div className="w-full max-w-2xl bg-[#181d22] border border-[#dd2222]/50 rounded-2xl p-4 sm:p-6 text-left shadow-lg">
             {/* Admin Header with Status Switch */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#2b333c]">
@@ -297,7 +299,7 @@ export default function MaintenanceView() {
             <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>
             Core Systems: Updating
           </span>
-          {!isAdmin && (
+          {!isAuthorizedAdmin && (
             <button
               onClick={() => setShowAdminLoginModal(true)}
               className="hover:text-white transition-colors cursor-pointer"

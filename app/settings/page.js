@@ -6,11 +6,13 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { getStoredSettings, saveStoredSettings, DEFAULT_SETTINGS, fetchWithSettings } from '@/lib/settings';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaintenance } from '@/contexts/MaintenanceContext';
+import { isEmailAdmin } from '@/lib/constants';
 import ApiKeyModal from '@/components/ApiKeyModal';
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const { maintenance, toggleMaintenance, isAdmin } = useMaintenance();
+  const isAuthorizedAdmin = Boolean(isAdmin && user && user.email && isEmailAdmin(user.email));
   const [adminMaintenanceMsg, setAdminMaintenanceMsg] = useState('');
   const [adminSavingMaint, setAdminSavingMaint] = useState(false);
   const [adminMaintSuccess, setAdminMaintSuccess] = useState('');
@@ -351,7 +353,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Admin-Only Maintenance Control Section */}
-        {isAdmin && (
+        {isAuthorizedAdmin && (
           <div className="p-6 rounded-2xl bg-[#201515] border-2 border-[#dd2222] shadow-xl shadow-[#dd2222]/15 space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#dd2222]/30">
               <div>

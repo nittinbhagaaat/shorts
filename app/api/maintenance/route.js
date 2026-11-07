@@ -10,21 +10,36 @@ export async function GET(req) {
   try {
     const { mongodbUri } = extractServerConfig(req);
     const authUser = await getAuthUser(req);
-    const isAdmin = isUserAdmin(authUser);
+    const isAdmin = Boolean(authUser && isUserAdmin(authUser));
     const config = await getMaintenanceStatus(mongodbUri);
 
-    return NextResponse.json({
-      enabled: Boolean(config.enabled),
-      message: config.message,
-      estimatedTime: config.estimatedTime,
-      updatedAt: config.updatedAt,
-      isAdmin,
-    });
+    return NextResponse.json(
+      {
+        enabled: Boolean(config.enabled),
+        message: config.message,
+        estimatedTime: config.estimatedTime,
+        updatedAt: config.updatedAt,
+        isAdmin,
+      },
+      {
+        headers: {
+          'Cache-Control': 'private, no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Vary': 'Cookie, Authorization',
+        },
+      }
+    );
   } catch (err) {
     console.error('API MAINTENANCE GET: Error:', err);
     return NextResponse.json(
       { enabled: false, error: err.message },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'private, no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+        },
+      }
     );
   }
 }

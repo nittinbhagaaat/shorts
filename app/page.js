@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaintenance } from '@/contexts/MaintenanceContext';
+import { isEmailAdmin } from '@/lib/constants';
 
 export default function HomePage() {
   const router = useRouter();
   const { user, loginWithGoogle } = useAuth();
   const { maintenance, toggleMaintenance, isAdmin } = useMaintenance();
+  const isAuthorizedAdmin = Boolean(isAdmin && user && user.email && isEmailAdmin(user.email));
   const [url, setUrl] = useState('');
   const [clipCount, setClipCount] = useState(5);
   const [minDuration, setMinDuration] = useState(30);
@@ -198,7 +200,7 @@ export default function HomePage() {
 
           {/* Right Action Buttons */}
           <div className="flex items-center gap-3 shrink-0">
-            {isAdmin && (
+            {isAuthorizedAdmin && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#2a1313] border border-[#dd2222]/60 text-xs">
                 <span className="text-amber-400 font-bold hidden sm:inline">👑 Maintenance:</span>
                 <span className={`text-[10px] font-extrabold uppercase ${maintenance.enabled ? 'text-[#fca5a5]' : 'text-[#86efac]'}`}>

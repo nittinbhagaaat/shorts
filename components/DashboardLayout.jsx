@@ -6,12 +6,14 @@ import { usePathname } from 'next/navigation';
 import { getStoredSettings, hasConfiguredApiKey } from '@/lib/settings';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaintenance } from '@/contexts/MaintenanceContext';
+import { isEmailAdmin } from '@/lib/constants';
 import ApiKeyModal from '@/components/ApiKeyModal';
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const { user, loading: authLoading, logout } = useAuth();
   const { maintenance, toggleMaintenance, isAdmin } = useMaintenance();
+  const isAuthorizedAdmin = Boolean(isAdmin && user && user.email && isEmailAdmin(user.email));
   const [settings, setSettings] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -293,7 +295,7 @@ export default function DashboardLayout({ children }) {
           )}
 
           {/* Admin Maintenance Control Widget (Visible ONLY to Admin) */}
-          {isAdmin && (
+          {isAuthorizedAdmin && (
             !isCollapsed ? (
               <div className="p-3 rounded-xl bg-[#2a1313] border border-[#dd2222]/60 space-y-2">
                 <div className="flex items-center justify-between text-[11px]">
@@ -460,7 +462,7 @@ export default function DashboardLayout({ children }) {
           )}
 
           {/* Admin Mobile Maintenance Toggle (Visible ONLY to Admin) */}
-          {isAdmin && (
+          {isAuthorizedAdmin && (
             <div className="p-3 rounded-xl bg-[#2a1313] border border-[#dd2222]/50 flex items-center justify-between">
               <div>
                 <div className="text-xs font-bold text-white flex items-center gap-1.5">
